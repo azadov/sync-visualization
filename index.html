@@ -331,7 +331,7 @@ function createAndGetSVGObject(){
     var yAxis = d3.svg.axis()
             .scale(y_scale)
             .orient("left");
-    //d3.select("body").append("svg")
+    ///d3.select("body").append("svg")
     var svg_basis = d3.select("#plotContainer").append("svg")
             .attr("width", plot_width + plot_margin.left + plot_margin.right)
             .attr("height", plot_height + plot_margin.top + plot_margin.bottom)
