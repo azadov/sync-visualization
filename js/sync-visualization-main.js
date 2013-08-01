@@ -113,6 +113,8 @@ function loadDataForScoreID(_sID) {
 
     rectangles = [];
 
+    activityOfVideoIDs = {};
+
     var svg = createAndGetSVGObject();
 
     var doneCount = 0;
@@ -135,6 +137,7 @@ function loadDataForScoreID(_sID) {
 var maxX = 0;
 var maxY = 0;
 var rectangles = [];
+var activityOfVideoIDs = {};
 function createPlotElements(_data, _svg){
 //$.getJSON('00155_qEzZw8QIZ90.json', function(data) {
     var basis;
@@ -147,6 +150,7 @@ function createPlotElements(_data, _svg){
 
     _data.forEach(function(data) {
         rectanglesOfOneVideo = [];
+        if ( !activityOfVideoIDs.hasOwnProperty(data.uri1) ) {activityOfVideoIDs[data.uri1] = false; }
         //curves = [];
         data.localTimeMaps.forEach(function(d) {
             basis = d[0];
@@ -620,7 +624,28 @@ function onPlayerStateChange(newState) {
 //}
 
 function showSuitableVideoDivs(){
+    var actualMouseXPoint = x_scale.invert(d3.mouse(this)[0]);
+    //console.log(activityOfVideoIDs);
+    for (var videoID in activityOfVideoIDs) {
+        console.log(videoID + "                   " + activityOfVideoIDs[videoID]);
+        if ( activityOfVideoIDs.hasOwnProperty(videoID) ) {
+            activityOfVideoIDs[videoID] = false;
+        }
+    }
 
+    for (var i = 0; i < rectangles.length; i++) {
+          if ( actualMouseXPoint >= rectangles[i].x1 && actualMouseXPoint <= rectangles[i].x2 ) {
+              activityOfVideoIDs[rectangles[i].videoID] = true;
+          }
+    }
+
+    for (var videoID in activityOfVideoIDs) {
+        if ( activityOfVideoIDs[videoID] ) {
+            showDiv(document.getElementById(videoID));
+        } else {
+            hideDiv(document.getElementById(videoID));
+        }
+    }
 }
 
 function hideDiv(_div){
