@@ -180,14 +180,8 @@ function createPlotElements(_data, _svg){
         console.log(rectangles.length + "      " + rectanglesOfOneVideo.length);
 
         for (var i = 0; i < rectanglesOfOneVideo.length - 1; i++) {
-            var diff = rectanglesOfOneVideo[i+1].timeMap[1][rectanglesOfOneVideo[i+1].timeMap[1].length - 1] - rectanglesOfOneVideo[i].timeMap[1][rectanglesOfOneVideo[i].timeMap[1].length - 1];
-            var strokeDasharray = "0,0";
-            if ( diff < 1 ) {
-                strokeDasharray = "2,2";
-            }
 
-            var firstPoint = {x: rectanglesOfOneVideo[i].x2, y: rectanglesOfOneVideo[i].y - rectHeight/2,
-                videoID: data.uri1, timeMap: rectanglesOfOneVideo[i].timeMap, strokeDash: strokeDasharray};
+            var firstPoint = {x: rectanglesOfOneVideo[i].x2, y: rectanglesOfOneVideo[i].y - rectHeight/2};
 
             var secondPoint = {x: rectanglesOfOneVideo[i].x2 + 10, y: rectanglesOfOneVideo[i].y - rectHeight/2};
 
@@ -201,13 +195,25 @@ function createPlotElements(_data, _svg){
             var sixthPoint = {x: rectanglesOfOneVideo[i+1].x1, y: rectanglesOfOneVideo[i+1].y - rectHeight/2};
             //console.log(rectanglesOfOneVideo[i].x_notbasis);
 
-            var curve = [];
-            curve.push(firstPoint);
-            curve.push(secondPoint);
-            curve.push(thirdPoint);
-            curve.push(fourthPoint);
-            curve.push(fifthPoint);
-            curve.push(sixthPoint);
+            var points = [];
+            points.push(firstPoint);
+            points.push(secondPoint);
+            points.push(thirdPoint);
+            points.push(fourthPoint);
+            points.push(fifthPoint);
+            points.push(sixthPoint);
+
+            var curve = {};
+            curve['points'] = points;
+
+            var diff = rectanglesOfOneVideo[i+1].timeMap[1][rectanglesOfOneVideo[i+1].timeMap[1].length - 1] - rectanglesOfOneVideo[i].timeMap[1][rectanglesOfOneVideo[i].timeMap[1].length - 1];
+            var strokeDasharray = "0,0";
+            if ( diff < 1 ) {
+                strokeDasharray = "2,2";
+            }
+            curve['strokeDash'] = strokeDasharray;
+            curve['videoID'] =  data.uri1;
+            curve['timeMap'] = rectanglesOfOneVideo[i].timeMap;
 
             curves.push(curve);
         }
@@ -350,10 +356,10 @@ function createCurves(_svg, _curves){
     _svg.selectAll(".curve")
         .data(_curves)
         .enter().append("path")
-        .attr("d", function(d){return lineFunction(d);})
+        .attr("d", function(d){return lineFunction(d.points);})
         .attr("stroke", "blue")
         .attr("stroke-width", 3)
-        .attr("stroke-dasharray", function(d){return d[0].strokeDash})
+        .attr("stroke-dasharray", function(d){return d.strokeDash})
         //.attr("stroke-dasharray", "0,0")
         .attr("fill", "none")
         .on("click", updateVideoPositionCurve)
@@ -454,7 +460,7 @@ function updateVideoPositionRect(d) {
 }
 
 function updateVideoPositionCurve(d) {
-    console.log("videoID curve: " + d[0].videoID);
+    console.log("videoID curve: " + d.videoID);
 }
 
 function enlargeVideoDivRect(d) {
@@ -464,7 +470,7 @@ function enlargeVideoDivRect(d) {
 
 function enlargeVideoDivCurve(d) {
     //console.log("videoID rect: " + d[0].videoID);
-    enlargeVideoDiv(d[0].videoID);
+    enlargeVideoDiv(d.videoID);
 }
 
 function enlargeVideoDiv(_videoID) {
@@ -479,7 +485,7 @@ function reduceVideoDivRect(d) {
 }
 
 function reduceVideoDivCurve(d) {
-    reduceVideoDiv(d[0].videoID);
+    reduceVideoDiv(d.videoID);
 }
 
 function reduceVideoDiv(_videoID) {
