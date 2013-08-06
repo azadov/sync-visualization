@@ -39,12 +39,15 @@
 <form action="select.htm">
     IMSLP-ID:&nbsp
     <select id="scoreIDs" name="scoreIDs"></select>
+    &nbsp
+    <input type="checkbox" name="hide" id="hideVideoDivs">Hide not suitable videos
 </form>
 
 <div>
     <div id="blaha">
         <div id="plotContainer"> </div>
         <button id="pauseButton" width="80" height="30" onclick="pause()">pause </button>
+        <br>
         <div id="videos"></div>
     </div>
     <div id="PeachnoteViewerContainerId"></div>

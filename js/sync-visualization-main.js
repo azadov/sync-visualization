@@ -22,7 +22,11 @@ _pnq.push(['widgetWidth', 450]);
 _pnq.push(['addMeasureClickHandler', function (scoreId, page, measureNumber, totalMeasures) {
     console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
     var scoreTime = pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures;
-    showSuitableVideoDivsForTimePoint(scoreTime);
+    if ($('#hideVideoDivs').prop('checked')) {
+        showSuitableVideoDivsForTimePoint(scoreTime);
+    } else {
+        calculateVisibilityOfVideoIDs(scoreTime);
+    }
     for (var videoID in visibilityOfVideoIDs) {
         if ( visibilityOfVideoIDs[videoID] ) {
             var videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
@@ -115,6 +119,7 @@ function loadDataForScoreID(_sID) {
     d3.select(".mouseTrackLine").remove();
 
     mouseTrackLineExist = false;
+    videoTrackLineExist = false;
 
     $('#videos').empty();
 
@@ -191,7 +196,7 @@ function createPlotElements(_data, _svg){
         rectanglesOfOneVideo = sortRects(rectanglesOfOneVideo);
         assignY(rectanglesOfOneVideo);
         joinArrays(rectangles, rectanglesOfOneVideo);
-        console.log(rectangles.length + "      " + rectanglesOfOneVideo.length);
+        //console.log(rectangles.length + "      " + rectanglesOfOneVideo.length);
 
         for (var i = 0; i < rectanglesOfOneVideo.length - 1; i++) {
 
@@ -431,15 +436,15 @@ function createAndGetSVGObject(){
         .attr("transform", "translate(0," + plot_height + ")")
         .call(xAxis)
 
-    svg_basis.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-        .append("text")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text("Frequency");
+//    svg_basis.append("g")
+//        .attr("class", "y axis")
+//        .call(yAxis)
+//        .append("text")
+//        .attr("transform", "rotate(-90)")
+//        .attr("y", 6)
+//        .attr("dy", ".71em")
+//        .style("text-anchor", "end")
+//        .text("Frequency");
 
     return svg_basis;
 }
@@ -542,6 +547,32 @@ function removeMouseTrackLine(d){
     d3.select(".mouseTrackLine").remove();
 }
 
+var videoTrackLineExist = false;
+function updateVideoTrackLine(_scorePos){
+    if ( videoTrackLineExist ) {
+console.log("videoTrackLine da ");
+        d3.select(".videoTrackLine").attr("x1", x_scale(_scorePos))
+            .attr("y1", y_scale(0))
+            .attr("x2", x_scale(_scorePos))
+            .attr("y2", y_scale(maxPlotY));
+    } else {
+console.log("videoTrackLine net da: create videoTrackLine");
+        var svgContainer = d3.select("g");
+        var videoTrackLine = svgContainer.append("line")
+            .attr("class", "videoTrackLine")
+            .attr("x1", x_scale(_scorePos))
+            //.attr("x1", x_scale(x_scale.invert(d3.mouse(this)[0])))
+            .attr("y1", y_scale(0))
+            .attr("x2", x_scale(_scorePos))
+            //.attr("x2", x_scale(190))
+            .attr("y2", y_scale(maxPlotY))
+            .attr("stroke-width", 2)
+            .attr("stroke", "lightblue");
+        videoTrackLineExist = true;
+    }
+    //d3.select(".mouseTrackLine").remove();
+}
+
 function getVideoTimeFromScoreTime(_timeInScore, _timeMap){
     var indexOfLastSynchronizedTimePointInScore = 0;
     for (var i = 0; i < _timeMap[0].length - 1; i++) {
@@ -626,11 +657,11 @@ function initVideo(_videoContainerID, _videoID) {
     var ytplayer = new YT.Player(_videoContainerID, {
         height: '100',
         width: '150',
-        videoId: _videoID //ytVideoId,
-//        events: {
-//            'onReady': onPlayerReady,
-//            'onStateChange': onPlayerStateChange
-//        }
+        videoId: _videoID, //ytVideoId,
+        events: {
+            'onReady': onPlayerReady
+            //'onStateChange': onPlayerStateChange
+        }
     });
 
     ytPlayers[_videoID] = ytplayer;
@@ -638,28 +669,106 @@ function initVideo(_videoContainerID, _videoID) {
 };
 //window.initVideo = initVideo;
 
-function onPlayerStateChange(newState) {
-    //var newState = event.data;
-    console.log(newState);
-    if (newState == 1) {
-        if (videoState == 0) {
-            $('#pauseButton').click();
-            videoState = 1;
+function onPlayerReady(event) {
+    var videoID = event.target.getVideoData().video_id;
+    //console.log("OnPlayerReady: " + videoID);
+    ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
+}
+
+var curentPlayingYTVideoID = "";
+var loopId;
+function onPlayerStateChange(event) {
+    var newState = event.data;
+    //console.log("state: " + event.data + "     target: " + event.target.id);
+//    for (var videoID in ytPlayers) {
+//        if ( ytPlayers[videoID] == event.target ) {
+//            console.log("videoId: " + videoID);
+//        }
+//    }
+//    console.log("videoID: " + event.target.getVideoData().video_id);
+//    for (var key in event.target.getVideoData().video_id) {
+//        console.log("key: " + key);
+//    }
+    curentPlayingYTVideoID = event.target.getVideoData().video_id;
+    console.log("OnPlayerStateChange: " + curentPlayingYTVideoID);
+
+    if ( newState == 1 ) {
+        loopId = setInterval(updatePosition, 500);
+    } else if ( newState == 0 || newState == 2 ) {
+        clearInterval(loopId);
+    }
+
+}
+
+var prevPage;
+var foreRunningTime = 2.0;
+function updatePosition() {
+console.log("updatePosition: videoID: " + curentPlayingYTVideoID);
+    var videoTime = ytPlayers[curentPlayingYTVideoID].getCurrentTime();
+    var pageAndTime = getPageAndTimeForVideoTime(videoTime);
+    var pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + foreRunningTime);
+    if (typeof pageAndTime == "undefined") return;
+
+    var page = pageAndTime.page;
+    var pageTime = pageAndTime.pageTime;
+    var normalizedPageTime = getNormalizedTime(pageAndTime.page, pageAndTime.pageTime);
+
+    var pagePlus = pageAndTimePlus ? pageAndTimePlus.page : pageAndTime.page;
+
+    console.log("page: " + page + " pageTime: " + pageTime);
+
+    if (pagePlus != prevPage) {
+        _pnq.push(['loadPage', pagePlus]);
+        prevPage = pagePlus;
+    }
+
+    updateVideoTrackLine(pageTime);
+
+    _pnq.push(["clearMeasureHighlightings"]);
+    //if ($('#trackMeasure').prop('checked')) {
+        _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page, true]);
+    //}
+
+    //console.log(videoTime + " " + page);
+}
+
+function getPageAndTimeForVideoTime(time) {
+    var page = 0;
+    var pageTime = 0;
+    var timeMap = videoTimeMaps[curentPlayingYTVideoID];
+    var segmentScoreTime = getSegmentScoreTime(time);
+    if (typeof segmentScoreTime == "undefined") return undefined;
+    var segment = segmentScoreTime[0];
+    var scoreTime = timeMap[segment][0][segmentScoreTime[1]];
+    if (time < timeMap[segment][1][0]) return {"page": 0, "pageTime": 0};
+//    $("#confidences")
+//        .text("segment " + segment + ", confidences " + confidences[segment])
+//        .css("visibility", 'hidden')
+//    ;
+    for (var i in pageTimes) {
+        page = i;
+        pageTime = pageTimes[i];
+        if (pageTime >= scoreTime) {
+            return {"page": (page - 1), "pageTime": scoreTime};
         }
-    } else if (newState == -1) {
-        //$('#pauseButton').click();
-        //$('#pauseButton').text('start');
-    } else if (newState == 2) {
-        if ($('#pauseButton').text() == 'pause')
-            $('#pauseButton').click();
-        videoState = 0;
+    }
+    return {"page": page, "pageTime": scoreTime};
+}
+
+function getSegmentScoreTime(ytTime) {
+    var timeMap = videoTimeMaps[curentPlayingYTVideoID];
+    for (var s = 0; s < timeMap.length; s++) {
+        if (timeMap[s][1][0] > ytTime) continue;
+        var out = [s, 0];
+        for (var i in timeMap[s][1]) {
+            //if (timeMap[s][1][i] >= ytTime) return [s, i];
+            if (timeMap[s][1][i] <= ytTime) out = [s, i];
+        }
+        return out;
     }
 }
-//
-//function onPlayerReady(event) {
-//    ytplayer = event.target;
-//    //ytplayer.playVideo();
-//}
+
+
 function showSuitableVideoDivsForTimePoint(_tp){
     calculateVisibilityOfVideoIDs(_tp);
 
@@ -667,11 +776,14 @@ function showSuitableVideoDivsForTimePoint(_tp){
 }
 
 function showSuitableVideoDivsForCurrentMousePosition(){
-    var currentMouseXPoint = x_scale.invert(d3.mouse(this)[0]);
-    //console.log(visibilityOfVideoIDs);
-    calculateVisibilityOfVideoIDs(currentMouseXPoint);
 
-    showAndHideVideoDivs();
+    if ($('#hideVideoDivs').prop('checked')) {
+        var currentMouseXPoint = x_scale.invert(d3.mouse(this)[0]);
+        //console.log(visibilityOfVideoIDs);
+        calculateVisibilityOfVideoIDs(currentMouseXPoint);
+
+        showAndHideVideoDivs();
+    }
 }
 
 function calculateVisibilityOfVideoIDs(_scoreTime){
@@ -703,7 +815,12 @@ function showAndHideVideoDivs(){
         if ( visibilityOfVideoIDs[videoID] ) {
             showDiv(document.getElementById(videoID));
         } else {
+            console.log("HideVideoID: " + videoID);
+            ytPlayers[videoID].pauseVideo();
             hideDiv(document.getElementById(videoID));
+            //if ( curentPlayingYTVideoID == videoID ) {
+                //clearInterval(loopId);
+            //}
         }
     }
 }
@@ -717,9 +834,15 @@ function showDiv(_div){
 }
 
 function pause() {
-    for (var videoID in visibilityOfVideoIDs) {
-        if ( visibilityOfVideoIDs[videoID] ) {
-            ytPlayers[videoID].pauseVideo();}
+//    for (var videoID in visibilityOfVideoIDs) {
+//        if ( visibilityOfVideoIDs[videoID] ) {
+//            ytPlayers[videoID].pauseVideo();}
+//    }
+
+    for (var vID in ytPlayers){
+        if ( ytPlayers[vID].getPlayerState() == YT.PlayerState.PLAYING ){
+            ytPlayers[vID].pauseVideo();
+        }
     }
 }
 
