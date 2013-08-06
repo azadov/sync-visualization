@@ -428,7 +428,7 @@ function createAndGetSVGObject(){
         .append("g")
         .attr("transform", "translate(" + plot_margin.left + "," + plot_margin.top + ")")
         .on("click", updateScorePosition)
-    //.on("mousemove", updateMouseTrackLine);
+    .on("mousemove", updateMouseTrackLine);
     //.on("mouseout", removeMouseTrackLine);
 
     svg_basis.append("g")
@@ -476,6 +476,7 @@ function updateVideoPositionRect(d) {
     var timeInVideo = getVideoTimeFromScoreTime(timeInScore, d.timeMap);
 
     ytPlayers[d.videoID].seekTo(Math.max(0, timeInVideo));
+    ytPlayers[d.videoID].playVideo();
 }
 
 function updateVideoPositionCurve(d) {
@@ -536,7 +537,8 @@ function updateMouseTrackLine(d){
             //.attr("x2", x_scale(190))
             .attr("y2", y_scale(maxPlotY))
             .attr("stroke-width", 2)
-            .attr("stroke", "grey");
+            .attr("stroke", "grey")
+            .attr("pointer-events", "none");
         mouseTrackLineExist = true;
     }
     //d3.select(".mouseTrackLine").remove();
@@ -665,9 +667,8 @@ function initVideo(_videoContainerID, _videoID) {
     });
 
     ytPlayers[_videoID] = ytplayer;
-    //window.ytplayer = ytplayer;
 };
-//window.initVideo = initVideo;
+
 
 function onPlayerReady(event) {
     var videoID = event.target.getVideoData().video_id;
@@ -693,6 +694,7 @@ function onPlayerStateChange(event) {
     console.log("OnPlayerStateChange: " + curentPlayingYTVideoID);
 
     if ( newState == 1 ) {
+        clearInterval(loopId);
         loopId = setInterval(updatePosition, 500);
     } else if ( newState == 0 || newState == 2 ) {
         clearInterval(loopId);
@@ -814,6 +816,7 @@ function showAndHideVideoDivs(){
     for (var videoID in visibilityOfVideoIDs) {
         if ( visibilityOfVideoIDs[videoID] ) {
             showDiv(document.getElementById(videoID));
+            ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
         } else {
             console.log("HideVideoID: " + videoID);
             ytPlayers[videoID].pauseVideo();
