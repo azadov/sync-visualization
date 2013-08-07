@@ -62,11 +62,11 @@ $('#scoreIDs').change(function(){
     loadDataForScoreID(str);
 });
 
-$.getJSON('test/alignmentQuality.json', function (json) {
+$.getJSON('alignmentQuality.json', function (json) {
     for (var i = 0; i < json.length; i++) {
         var sid = json[i].id0;
         var id1 = json[i].id1;
-        var fname = "test/" + sid + '_' + id1 + '.json';
+        var fname = "alignments/" + sid + '_' + id1 + '.json';
 
         //console.log(sid + "      " + fname);
         if ( scoreToVids[sid] ) {scoreToVids[sid].push(fname); }
