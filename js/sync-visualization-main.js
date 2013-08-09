@@ -237,6 +237,11 @@ function createCurve(currSegment, nextSegment, videoId, timeMap) {
 }
 
 function computePlotDimensions() {
+    for (var pt in pageTimes){
+        if ( maxPlotX < pageTimes[pt] ){
+            maxPlotX = pageTimes[pt];
+        }
+    }
     x_scale.domain([0, maxPlotX]);
     minPlotY = 0;
     maxPlotY = numberOfVideoSegmentLevels * (rectHeight + distanceBetweenRects);
