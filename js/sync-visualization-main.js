@@ -65,7 +65,7 @@ var sIDNumber = 0;
 var maxPlotX = 0;
 var minPlotY = 0;
 var maxPlotY = 0;
-var rectangles = [];
+var allVideoSegments = [];
 var curves = [];
 
 var visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corresponding video
@@ -131,7 +131,7 @@ function resetScoreVariables(_sID) {
     mouseTrackLineExist = false;
     videoTrackLineExist = false;
     numberOfVideoSegmentLevels = 1;
-    rectangles = [];
+    allVideoSegments = [];
     curves = [];
     visibilityOfVideoIDs = {};
     videoTimeMaps = {};
@@ -269,7 +269,7 @@ function drawPlot(_svg) {
 
     createPageTicks(_svg, pageTimes);
 
-    createRectangles(_svg, rectangles);
+    createRectangles(_svg, allVideoSegments);
 
     createCurves(_svg, curves);
 }
@@ -307,7 +307,7 @@ function computePlotElements(_allPairsSyncData){
 
         assignSegmentYCoordinates(videoSegments);
 
-        appendArrays(rectangles, videoSegments);
+        appendArrays(allVideoSegments, videoSegments);
 
         for (var i = 0; i < videoSegments.length - 1; i++) {
             var currSegment = videoSegments[i];
@@ -472,7 +472,7 @@ function createPlotSVG() {
 
     xAxis.tickFormat(function (d) { return ''; });
 
-    // drawYAxis(svg_basis);
+    drawYAxis(svg_basis);
 
     return svg_basis;
 }
@@ -509,7 +509,7 @@ function updateScorePosition(d) {
 
 function updateVideoPositionRect(d) {
     var videoID = d.videoID;
-    console.log("update video position rect: " + videoID);
+    //console.log("update video position rect: " + videoID);
     var timeInScore = x_scale.invert(d3.mouse(this)[0]);
     var timeInVideo = getVideoTimeFromScoreTime(timeInScore, d.timeMap);
 
@@ -523,19 +523,19 @@ function updateVideoPositionCurve(d) {
 
 function enlargeVideoDivRect(d) {
     //console.log("videoID rect: " + d.videoID);
-    enlargeVideoDiv(d.videoID);
+    enlargeVideoDiv(d.videoID, 2);
 }
 
 function enlargeVideoDivCurve(d) {
     //console.log("videoID rect: " + d[0].videoID);
-    enlargeVideoDiv(d.videoID);
+    enlargeVideoDiv(d.videoID, 2);
 }
 
-function enlargeVideoDiv(_videoID) {
+function enlargeVideoDiv(_videoID, _coefficient) {
     //console.log("video to enlarge: " + _videoID);
     var divToEnlarge = document.getElementById(_videoID);
-    divToEnlarge.width = 2*VIDEO_WIDTH;
-    divToEnlarge.height = 2*VIDEO_HEIGHT;
+    divToEnlarge.width = _coefficient * VIDEO_WIDTH;
+    divToEnlarge.height = _coefficient * VIDEO_HEIGHT;
 }
 
 function resetVideoDivRect(d) {
@@ -562,19 +562,19 @@ function resetVideoDiv(_videoID) {
 
 function updateMouseTrackLine(d){
     //var mouseTrackLine = document.getElementsByClassName("mouseTrackLine"); //d3.select(".mouseTrackLine");
-
+    var currentMouseX = d3.mouse(this)[0];
     if ( mouseTrackLineExist ) {
-        d3.select(".mouseTrackLine").attr("x1", d3.mouse(this)[0])
+        d3.select(".mouseTrackLine").attr("x1", currentMouseX)
             .attr("y1", y_scale(0))
-            .attr("x2", d3.mouse(this)[0])
+            .attr("x2", currentMouseX)
             .attr("y2", y_scale(maxPlotY));
     } else {
         var svgContainer = d3.select("g");
         var mouseTrackLine = svgContainer.append("line")
             .attr("class", "mouseTrackLine")
-            .attr("x1", d3.mouse(this)[0])
+            .attr("x1", currentMouseX)
             .attr("y1", y_scale(0))
-            .attr("x2", d3.mouse(this)[0])
+            .attr("x2", currentMouseX)
             .attr("y2", y_scale(maxPlotY))
             .attr("stroke-width", 2)
             .attr("stroke", "grey")
@@ -724,7 +724,7 @@ function onPlayerStateChange(event) {
         }
         clearInterval(loopId);
         loopId = setInterval(updatePosition, 500);
-        enlargeVideoDiv(currentPlayingYTVideoID);
+        enlargeVideoDiv(currentPlayingYTVideoID, 2);
     } else if ( newState == YT.PlayerState.ENDED || newState == YT.PlayerState.PAUSED ) {
         if ( deleteInterval )
             clearInterval(loopId);
@@ -810,14 +810,52 @@ function showSuitableVideoDivsForTimePoint(_tp){
 }
 
 function showSuitableVideoDivsForCurrentMousePosition(){
+    var currentMouseXPoint = x_scale.invert(d3.mouse(this)[0]);
+    var currentMouseYPoint = y_scale.invert(d3.mouse(this)[1]);
+    console.log("hide video ID " + currentMouseXPoint);
+    calculateVisibilityOfVideoIDs(currentMouseXPoint);
 
     if ($('#hideVideoDivs').prop('checked')) {
-        var currentMouseXPoint = x_scale.invert(d3.mouse(this)[0]);
-        console.log("hide video ID " + currentMouseXPoint);
-        calculateVisibilityOfVideoIDs(currentMouseXPoint);
-
         showAndHideVideoDivs();
     }
+
+    //var segm = [];
+    var yAboveMousePoint = maxPlotY; //
+    var yUnderMousePoint = 0;
+    var videoIDAbove = "";
+    var videoIDUnder = "";
+    for (var i = 0; i < allVideoSegments.length; i++) {
+        var currentSegment = allVideoSegments[i];
+        if ( currentMouseXPoint >= currentSegment.x1 && currentMouseXPoint <= currentSegment.x2 ) {
+            if ( currentMouseYPoint > currentSegment.y && currentSegment.y > yUnderMousePoint ) {
+                yUnderMousePoint = currentSegment.y;
+                videoIDUnder = currentSegment.videoID;
+            }
+            var yAb = currentSegment.y - SEGMENT_RECT_HEIGHT;
+            if ( currentMouseYPoint < yAb && yAb < yAboveMousePoint ) {
+                yAboveMousePoint = yAb;
+                videoIDAbove = currentSegment.videoID;
+            }
+        }
+    }
+    //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
+
+    if ( videoIDUnder == "" ) {
+        enlargeVideoDiv(videoIDAbove, 2);
+    } else if ( videoIDAbove == "" ) {
+        enlargeVideoDiv(videoIDUnder, 2);
+    } else {
+        if ( (yAboveMousePoint - currentMouseXPoint) >= (currentMouseXPoint - yUnderMousePoint) ) {
+            // point under is the next to mouse point
+            var factor = 2;
+            enlargeVideoDiv(videoIDUnder, factor);
+        } else {
+            // point above is the next to mouse point
+            var factor = 2;
+            enlargeVideoDiv(videoIDAbove, factor)
+        }
+    }
+    //allVideoSegments;
 }
 
 function calculateVisibilityOfVideoIDs(_scoreTime){
@@ -828,9 +866,9 @@ function calculateVisibilityOfVideoIDs(_scoreTime){
         }
     }
 
-    for (var i = 0; i < rectangles.length; i++) {
-        if ( _scoreTime >= rectangles[i].x1 && _scoreTime <= rectangles[i].x2 ) {
-            visibilityOfVideoIDs[rectangles[i].videoID] = true;
+    for (var i = 0; i < allVideoSegments.length; i++) {
+        if ( _scoreTime >= allVideoSegments[i].x1 && _scoreTime <= allVideoSegments[i].x2 ) {
+            visibilityOfVideoIDs[allVideoSegments[i].videoID] = true;
         }
     }
 
