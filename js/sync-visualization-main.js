@@ -70,6 +70,7 @@ var curves = [];
 
 var visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corresponding video
 var videoTimeMaps = {};        // maps videoId to localTimeMaps
+var videoStatus = {};          // maps videoId to status
 
 var ytPlayers = {};
 
@@ -118,6 +119,7 @@ $.getJSON('alignmentQuality.json', function (json) {
 
     _pnq.push(['loadScore', "IMSLP" + initialScoreId]);
     loadDataForScoreID(initialScoreId);
+    setTimeout(function() {loadDataForScoreID(initialScoreId);}, 1000);
 
 });
 
@@ -130,7 +132,9 @@ function resetScoreVariables(_sID) {
     curves = [];
     visibilityOfVideoIDs = {};
     videoTimeMaps = {};
+    videoStatus = {};
     scoreSyncFileNames = scoreToSyncFileNames[_sID];
+    maxPlotX = 0;
 }
 
 function resetScoreDOM() {
@@ -278,6 +282,9 @@ function computePlotElements(_allPairsSyncData){
         if ( !videoTimeMaps.hasOwnProperty(videoId) ) {
             videoTimeMaps[videoId] =  pairSyncData.localTimeMaps;
         }
+        if ( !videoStatus.hasOwnProperty(videoId) ){
+            videoStatus[videoId] = YT.PlayerState.PAUSED;
+        }
 
         pairSyncData.localTimeMaps.forEach(function(segmentTimeMap) {
 
@@ -382,8 +389,6 @@ function createPageTicks(_svg, _pageTimes) {
             ;
         }
     }
-
-    xAxis.tickFormat(function (d) { return ''; });
 }
 
 function createRectangles(_svg, _rects){
@@ -451,10 +456,9 @@ function createPlotSVG() {
     svg_basis.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + plot_height + ")")
-        .call(xAxis)
+        .call(xAxis);
 
-
-    ;
+    xAxis.tickFormat(function (d) { return ''; });
 
     // drawYAxis(svg_basis);
 
@@ -672,7 +676,7 @@ function onPlayerReady(event) {
     //ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
 }
 
-
+var deleteInterval = true;
 function onPlayerStateChange(event) {
     var newState = event.data;
     //console.log("state: " + event.data + "     target: " + event.target.id);
@@ -685,20 +689,33 @@ function onPlayerStateChange(event) {
 //    for (var key in event.target.getVideoData().video_id) {
 //        console.log("key: " + key);
 //    }
-    currentPlayingYTVideoID = event.target.getVideoData().video_id;
-    console.log("OnPlayerStateChange: " + currentPlayingYTVideoID);
 
-    if ( newState == 1 ) {
+    console.log("OnPlayerStateChange: ");
+
+    if ( newState == YT.PlayerState.PLAYING ) {
+        currentPlayingYTVideoID = event.target.getVideoData().video_id;
+
+        for (var videoID in videoStatus){
+            if ( videoID != currentPlayingYTVideoID ) {
+                if ( ytPlayers[videoID].getPlayerState() == YT.PlayerState.PLAYING ) {
+                    ytPlayers[videoID].pauseVideo();
+                    deleteInterval = false;
+                }
+            }
+        }
         clearInterval(loopId);
         loopId = setInterval(updatePosition, 500);
-    } else if ( newState == 0 || newState == 2 ) {
-        clearInterval(loopId);
+    } else if ( newState == YT.PlayerState.ENDED || newState == YT.PlayerState.PAUSED ) {
+        if ( deleteInterval )
+            clearInterval(loopId);
+        else
+            deleteInterval = true;
     }
 
 }
 
 function updatePosition() {
-    console.log("updatePosition: videoID: " + currentPlayingYTVideoID);
+    console.log("\n updatePosition: videoID: " + currentPlayingYTVideoID + "\n");
     var videoTime = ytPlayers[currentPlayingYTVideoID].getCurrentTime();
     var pageAndTime = getPageAndTimeForVideoTime(videoTime);
     var pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + foreRunningTime);
@@ -808,12 +825,14 @@ function calculateVisibilityOfVideoIDs(_scoreTime){
 function showAndHideVideoDivs(){
     for (var videoID in visibilityOfVideoIDs) {
         if ( visibilityOfVideoIDs[videoID] ) {
-            showDiv(document.getElementById(videoID));
-            ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
+            showDiv(videoID);
+            //ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
         } else {
-            console.log("HideVideoID: " + videoID);
-            ytPlayers[videoID].pauseVideo();
-            hideDiv(document.getElementById(videoID));
+            if ( ytPlayers[videoID].getPlayerState() != YT.PlayerState.PLAYING ){
+                console.log("HideVideoID: " + videoID + "    state: " + ytPlayers[videoID].getPlayerState());
+                hideDiv(videoID);
+            }
+            //ytPlayers[videoID].pauseVideo();
             //if ( currentPlayingYTVideoID == videoID ) {
             //clearInterval(loopId);
             //}
@@ -821,12 +840,14 @@ function showAndHideVideoDivs(){
     }
 }
 
-function hideDiv(_div){
-    _div.style.display = "none";
+function hideDiv(_videoID){
+    //document.getElementById(_videoID).style.display = "none";
+    document.getElementById(_videoID).style.visibility = "hidden";
 }
 
-function showDiv(_div){
-    _div.style.display = "";
+function showDiv(_videoID){
+    //document.getElementById(_videoID).style.display = "";
+    document.getElementById(_videoID).style.visibility = "visible";
 }
 
 function pause() {
