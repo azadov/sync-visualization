@@ -839,23 +839,41 @@ function showSuitableVideoDivsForCurrentMousePosition(){
         }
     }
     //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
-
+    var factor = 0;
+    var videoToEnlarge = "";
     if ( videoIDUnder == "" ) {
-        enlargeVideoDiv(videoIDAbove, 2);
+        factor = currentMouseYPoint / yAboveMousePoint;
+        videoToEnlarge = videoIDAbove;
     } else if ( videoIDAbove == "" ) {
-        enlargeVideoDiv(videoIDUnder, 2);
+        factor = 1 - (currentMouseYPoint- yUnderMousePoint)/(maxPlotY - yUnderMousePoint);
+        videoToEnlarge = videoIDUnder;
+    } else if ( videoIDUnder == videoIDAbove ) {
+        factor = 1;
+        videoToEnlarge = videoIDUnder;
     } else {
-        if ( (yAboveMousePoint - currentMouseXPoint) >= (currentMouseXPoint - yUnderMousePoint) ) {
+        if ( (yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint) ) {
             // point under is the next to mouse point
-            var factor = 2;
-            enlargeVideoDiv(videoIDUnder, factor);
+            factor = 1 - (currentMouseYPoint - yUnderMousePoint)/((yAboveMousePoint - yUnderMousePoint)/2);
+            videoToEnlarge = videoIDUnder;
         } else {
             // point above is the next to mouse point
-            var factor = 2;
-            enlargeVideoDiv(videoIDAbove, factor)
+            factor = (currentMouseYPoint - yUnderMousePoint)/((yAboveMousePoint - yUnderMousePoint)/2) - 1;
+            videoToEnlarge = videoIDAbove;
         }
     }
-    //allVideoSegments;
+    if ( ytPlayers.hasOwnProperty(videoToEnlarge) ){
+        if ( ytPlayers[videoToEnlarge].getPlayerState() != YT.PlayerState.PLAYING ) {
+            enlargeVideoDiv(videoToEnlarge, 1 + factor);
+        }
+    }
+
+    if ( ! $('#hideVideoDivs').prop('checked') ) {
+        for (var id in visibilityOfVideoIDs) {
+            if ( id != videoIDAbove && id != videoIDUnder ) {
+                resetVideoDiv(id);
+            }
+        }
+    }
 }
 
 function calculateVisibilityOfVideoIDs(_scoreTime){
