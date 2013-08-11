@@ -3,11 +3,13 @@ tag.src = "https://www.youtube.com/iframe_api";
 var firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-if(!window.console) {window.console={}; window.console.log = function(){};}
+// needed for IE to have browser console.log
+if (!window.console) {window.console = {}; window.console.log = function () {}; }
 
 
 
 (function () {
+    "use strict";
     var pnsv = document.createElement('script');
     pnsv.type = 'text/javascript';
     pnsv.async = true;
@@ -20,20 +22,21 @@ _pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
 _pnq.push(['widgetHeight', 590]);
 _pnq.push(['widgetWidth', 450]);
 _pnq.push(['addMeasureClickHandler', function (scoreId, page, measureNumber, totalMeasures) {
+    "use strict";
     console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
-    var scoreTime = pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures;
+    var scoreTime = GLVARS.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures;
     if ($('#hideVideoDivs').prop('checked')) {
         showSuitableVideoDivsForTimePoint(scoreTime);
     } else {
         calculateVisibilityOfVideoIDs(scoreTime);
     }
-    for (var videoID in visibilityOfVideoIDs) {
-        if ( visibilityOfVideoIDs[videoID] ) {
+    for (var videoID in GLVARS.visibilityOfVideoIDs) {
+        if ( GLVARS.visibilityOfVideoIDs[videoID] ) {
             var videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
             //var state = videoState;
 //console.log('videoID: ' + videoID);
-            ytPlayers[videoID].seekTo(Math.max(0, videoTime));
-            ytPlayers[videoID].playVideo();
+            GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
+            GLVARS.ytPlayers[videoID].playVideo();
 //          ytplayer.seekTo(Math.max(0, videoTime));
 //          if (state != 1) {
 //              ytplayer.pauseVideo();
@@ -44,46 +47,58 @@ _pnq.push(['addMeasureClickHandler', function (scoreId, page, measureNumber, tot
     _pnq.push(["highlightMeasure", measureNumber, page]);
 }]);
 
-var SEGMENT_RECT_HEIGHT = 0.1;
-var DISTANCE_BETWEEN_SEGMENT_RECTS = 0.3;
-var numberOfVideoSegmentLevels = 1;
-var labelShift = 4;
+var CONSTANTS = {};
+CONSTANTS.SEGMENT_RECT_HEIGHT = 0.1;
+CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS = 0.3;
+CONSTANTS.VIDEO_WIDTH = 150;
+CONSTANTS.VIDEO_HEIGHT = 100;
 
-var plot_margin = {top: 20, right: 20, bottom: 30, left: 40},
-    plot_width = 600 - plot_margin.left - plot_margin.right,
-    plot_height = 320 - plot_margin.top - plot_margin.bottom;
+var GLVARS = {};
+GLVARS.numberOfVideoSegmentLevels = 1;
+GLVARS.labelShift = 4;
+
+GLVARS.plot_margin = {top: 20, right: 20, bottom: 30, left: 40};
+GLVARS.plot_width = 600 - GLVARS.plot_margin.left - GLVARS.plot_margin.right;
+GLVARS.plot_height = 320 - GLVARS.plot_margin.top - GLVARS.plot_margin.bottom;
 
 
-var scoreToSyncFileNames = {};          // list of file names of video syncs for a scoreId
-var sIDs = [];
-var pageTimes = [];
+GLVARS.x_scale = d3.scale.linear()
+                 .range([0, GLVARS.plot_width]);
+
+GLVARS.y_scale = d3.scale.linear()
+                .range([GLVARS.plot_height, 0]);
+
+GLVARS.xAxis = d3.svg.axis()
+               .scale(GLVARS.x_scale)
+               .orient("bottom");
+
+GLVARS.maxPlotX = 0;
+GLVARS.minPlotY = 0;
+GLVARS.maxPlotY = 0;
+
+GLVARS.scoreToSyncFileNames = {};          // list of file names of video syncs for a scoreId
+GLVARS.sIDs = [];
+GLVARS.pageTimes = [];
 
 
-var scoreSyncFileNames = [];
-var sIDNumber = 0;
+GLVARS.scoreSyncFileNames = [];
 
-var maxPlotX = 0;
-var minPlotY = 0;
-var maxPlotY = 0;
-var allVideoSegments = [];
-var curves = [];
+GLVARS.allVideoSegments = [];
+GLVARS.curves = [];
 
-var visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corresponding video
-var videoTimeMaps = {};        // maps videoId to localTimeMaps
-var videoStatus = {};          // maps videoId to status
+GLVARS.visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corresponding video
+GLVARS.videoTimeMaps = {};        // maps videoId to localTimeMaps
+GLVARS.videoStatus = {};          // maps videoId to status
 
-var ytPlayers = {};
+GLVARS.ytPlayers = {};
 
-var mouseTrackLineExist = false;
-var videoTrackLineExist = false;
+GLVARS.mouseTrackLineExist = false;
+GLVARS.videoTrackLineExist = false;
 
-var currentPlayingYTVideoID = "";
-var loopId;
-var prevPage;
-var foreRunningTime = 2.0;
-
-var VIDEO_WIDTH = 150;
-var VIDEO_HEIGHT = 100;
+GLVARS.currentPlayingYTVideoID = "";
+GLVARS.loopId;
+GLVARS.prevPage;
+GLVARS.foreRunningTime = 2.0;
 
 
 $('#scoreIDs').change(function(){
@@ -103,22 +118,22 @@ $.getJSON('alignmentQuality.json', function (json) {
         var fname = "alignments/" + sid + '_' + id1 + '.json';
 
         //console.log(sid + "      " + fname);
-        if (scoreToSyncFileNames[sid]) {
-            scoreToSyncFileNames[sid].push(fname);
+        if (GLVARS.scoreToSyncFileNames[sid]) {
+            GLVARS.scoreToSyncFileNames[sid].push(fname);
         }
         else {
-            scoreToSyncFileNames[sid] = [fname];
-            sIDs.push(sid);
+            GLVARS.scoreToSyncFileNames[sid] = [fname];
+            GLVARS.sIDs.push(sid);
         }
     }
 
     // populate the dropdown for score selection
     var select = $("#scoreIDs");
-    for (var i = 0; i < sIDs.length; i++) {
-        select.append($("<option />").val(sIDs[i]).text(sIDs[i]));
+    for (var i = 0; i < GLVARS.sIDs.length; i++) {
+        select.append($("<option />").val(GLVARS.sIDs[i]).text(GLVARS.sIDs[i]));
     }
 
-    var initialScoreId = sIDs[0];
+    var initialScoreId = GLVARS.sIDs[0];
 
     _pnq.push(['loadScore', "IMSLP" + initialScoreId]);
     loadDataForScoreID(initialScoreId);
@@ -128,16 +143,16 @@ $.getJSON('alignmentQuality.json', function (json) {
 
 
 function resetScoreVariables(_sID) {
-    mouseTrackLineExist = false;
-    videoTrackLineExist = false;
-    numberOfVideoSegmentLevels = 1;
-    allVideoSegments = [];
-    curves = [];
-    visibilityOfVideoIDs = {};
-    videoTimeMaps = {};
-    videoStatus = {};
-    scoreSyncFileNames = scoreToSyncFileNames[_sID];
-    maxPlotX = 0;
+    GLVARS.mouseTrackLineExist = false;
+    GLVARS.videoTrackLineExist = false;
+    GLVARS.numberOfVideoSegmentLevels = 1;
+    GLVARS.allVideoSegments = [];
+    GLVARS.curves = [];
+    GLVARS.visibilityOfVideoIDs = {};
+    GLVARS.videoTimeMaps = {};
+    GLVARS.videoStatus = {};
+    GLVARS.scoreSyncFileNames = GLVARS.scoreToSyncFileNames[_sID];
+    GLVARS.maxPlotX = 0;
 }
 
 function resetScoreDOM() {
@@ -162,12 +177,12 @@ function loadDataForScoreID(_sID) {
         initVideos(allPairsSyncData);
     }
 
-    $.each(scoreSyncFileNames, function (i, file) {
+    $.each(GLVARS.scoreSyncFileNames, function (i, file) {
         $.getJSON(file)
             .done(function (json) {
                 doneCount++;
                 allPairsSyncData.push(json);
-                if (doneCount == scoreSyncFileNames.length) {
+                if (doneCount == GLVARS.scoreSyncFileNames.length) {
                     whenDone();
                 }
             })
@@ -175,7 +190,7 @@ function loadDataForScoreID(_sID) {
                 doneCount++;
                 var err = textStatus + ', ' + error;
                 console.log( "Request Failed: " + err);
-                if (doneCount == scoreSyncFileNames.length) {
+                if (doneCount == GLVARS.scoreSyncFileNames.length) {
                     whenDone();
                 }
             });
@@ -187,8 +202,8 @@ function createVideoSegment(segmentTimeMap, videoId) {
     var scoreTimeAxis = segmentTimeMap[0];
     var videoSegmentAxis = segmentTimeMap[1];
 
-    if ( maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1] ) {
-        maxPlotX = scoreTimeAxis[scoreTimeAxis.length - 1];
+    if ( GLVARS.maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1] ) {
+        GLVARS.maxPlotX = scoreTimeAxis[scoreTimeAxis.length - 1];
     }
 
     var newRectangle = {};
@@ -204,17 +219,17 @@ function createVideoSegment(segmentTimeMap, videoId) {
 
 function createCurve(currSegment, nextSegment, videoId, timeMap) {
 
-    var firstPoint = {x: currSegment.x2, y: currSegment.y - SEGMENT_RECT_HEIGHT/2};
+    var firstPoint = {x: currSegment.x2, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT/2};
 
-    var secondPoint = {x: currSegment.x2 + 10, y: currSegment.y - SEGMENT_RECT_HEIGHT/2};
+    var secondPoint = {x: currSegment.x2 + 10, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT/2};
 
-    var thirdPoint ={x: currSegment.x2 + 10, y: currSegment.y + modulus(currSegment.y-nextSegment.y)/2 - SEGMENT_RECT_HEIGHT/2};
+    var thirdPoint ={x: currSegment.x2 + 10, y: currSegment.y + modulus(currSegment.y-nextSegment.y)/2 - CONSTANTS.SEGMENT_RECT_HEIGHT/2};
 
-    var fourthPoint = {x: nextSegment.x1 - 10, y: currSegment.y + modulus(currSegment.y-nextSegment.y)/2 - SEGMENT_RECT_HEIGHT/2};
+    var fourthPoint = {x: nextSegment.x1 - 10, y: currSegment.y + modulus(currSegment.y-nextSegment.y)/2 - CONSTANTS.SEGMENT_RECT_HEIGHT/2};
 
-    var fifthPoint = {x: nextSegment.x1 - 10, y: nextSegment.y - SEGMENT_RECT_HEIGHT/2};
+    var fifthPoint = {x: nextSegment.x1 - 10, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT/2};
 
-    var sixthPoint = {x: nextSegment.x1, y: nextSegment.y - SEGMENT_RECT_HEIGHT/2};
+    var sixthPoint = {x: nextSegment.x1, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT/2};
 
     var points = [];
     points.push(firstPoint);
@@ -240,16 +255,16 @@ function createCurve(currSegment, nextSegment, videoId, timeMap) {
 }
 
 function computePlotDimensions() {
-    for (var pt in pageTimes){
-        if ( maxPlotX < pageTimes[pt] ){
-            maxPlotX = pageTimes[pt];
+    for (var pt in GLVARS.pageTimes){
+        if ( GLVARS.maxPlotX < GLVARS.pageTimes[pt] ){
+            GLVARS.maxPlotX = GLVARS.pageTimes[pt];
         }
     }
-    x_scale.domain([0, maxPlotX]);
-    minPlotY = 0;
-    maxPlotY = numberOfVideoSegmentLevels * (SEGMENT_RECT_HEIGHT + DISTANCE_BETWEEN_SEGMENT_RECTS);
-    y_scale.domain([minPlotY, maxPlotY]);
-    //console.log("extremes: " + maxPlotX_basis + "     " + numberOfVideoSegmentLevels * (SEGMENT_RECT_HEIGHT+DISTANCE_BETWEEN_SEGMENT_RECTS));
+    GLVARS.x_scale.domain([0, GLVARS.maxPlotX]);
+    GLVARS.minPlotY = 0;
+    GLVARS.maxPlotY = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+    GLVARS.y_scale.domain([GLVARS.minPlotY, GLVARS.maxPlotY]);
+    //console.log("extremes: " + GLVARS.maxPlotX_basis + "     " + GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT+CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS));
 }
 
 function drawPlot(_svg) {
@@ -257,42 +272,42 @@ function drawPlot(_svg) {
     // add blank rectangle
     _svg.append("rect")
         .attr("class", "blankrectangle")
-        .attr("x", x_scale(0))
-        .attr("width", x_scale(maxPlotX))
-        .attr("y", y_scale(maxPlotY))
-        .attr("height", plot_height - y_scale(maxPlotY + minPlotY))
+        .attr("x", GLVARS.x_scale(0))
+        .attr("width", GLVARS.x_scale(GLVARS.maxPlotX))
+        .attr("y", GLVARS.y_scale(GLVARS.maxPlotY))
+        .attr("height", GLVARS.plot_height - GLVARS.y_scale(GLVARS.maxPlotY))
         //.on("click", updateScorePosition)
         //.on("mousemove", updateMouseTrackLine)
         //.on("mouseout", removeMouseTrackLine)
         .on("mousemove", showSuitableVideoDivsForCurrentMousePosition)
         ;
 
-    createPageTicks(_svg, pageTimes);
+    createPageTicks(_svg, GLVARS.pageTimes);
 
-    createRectangles(_svg, allVideoSegments);
+    createRectangles(_svg, GLVARS.allVideoSegments);
 
-    createCurves(_svg, curves);
+    createCurves(_svg, GLVARS.curves);
 }
 
 function computePlotElements(_allPairsSyncData){
 
     var videoSegments = [];
 
-    pageTimes = _allPairsSyncData[0].streamTimes0;
+    GLVARS.pageTimes = _allPairsSyncData[0].streamTimes0;
 
     _allPairsSyncData.forEach(function(pairSyncData) {
 
         videoSegments = [];
         var videoId = pairSyncData.uri1;
 
-        if ( !visibilityOfVideoIDs.hasOwnProperty(videoId) ) {
-            visibilityOfVideoIDs[videoId] = false;
+        if ( !GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoId) ) {
+            GLVARS.visibilityOfVideoIDs[videoId] = false;
         }
-        if ( !videoTimeMaps.hasOwnProperty(videoId) ) {
-            videoTimeMaps[videoId] =  pairSyncData.localTimeMaps;
+        if ( !GLVARS.videoTimeMaps.hasOwnProperty(videoId) ) {
+            GLVARS.videoTimeMaps[videoId] =  pairSyncData.localTimeMaps;
         }
-        if ( !videoStatus.hasOwnProperty(videoId) ){
-            videoStatus[videoId] = YT.PlayerState.PAUSED;
+        if ( !GLVARS.videoStatus.hasOwnProperty(videoId) ){
+            GLVARS.videoStatus[videoId] = YT.PlayerState.PAUSED;
         }
 
         pairSyncData.localTimeMaps.forEach(function(segmentTimeMap) {
@@ -307,13 +322,13 @@ function computePlotElements(_allPairsSyncData){
 
         assignSegmentYCoordinates(videoSegments);
 
-        appendArrays(allVideoSegments, videoSegments);
+        appendArrays(GLVARS.allVideoSegments, videoSegments);
 
         for (var i = 0; i < videoSegments.length - 1; i++) {
             var currSegment = videoSegments[i];
             var nextSegment = videoSegments[i + 1];
             var curve = createCurve(currSegment, nextSegment, videoId, currSegment.timeMap);
-            curves.push(curve);
+            GLVARS.curves.push(curve);
         }
 
         $('<div>').attr('class', 'video').attr('id', videoId).appendTo($('#videos'));
@@ -361,9 +376,9 @@ function sortRects(_arrayOfRects) {
  */
 function assignSegmentYCoordinates(_arrayOfSortedRects) {
 
-    numberOfVideoSegmentLevels++;
+    GLVARS.numberOfVideoSegmentLevels++;
 
-    _arrayOfSortedRects[0].y = numberOfVideoSegmentLevels*(SEGMENT_RECT_HEIGHT + DISTANCE_BETWEEN_SEGMENT_RECTS);
+    _arrayOfSortedRects[0].y = GLVARS.numberOfVideoSegmentLevels*(CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
 
     for (var i = 1; i < _arrayOfSortedRects.length; i++) {
 
@@ -373,9 +388,9 @@ function assignSegmentYCoordinates(_arrayOfSortedRects) {
 
         } else {
 
-            numberOfVideoSegmentLevels++;
+            GLVARS.numberOfVideoSegmentLevels++;
 
-            _arrayOfSortedRects[i].y = numberOfVideoSegmentLevels * (SEGMENT_RECT_HEIGHT + DISTANCE_BETWEEN_SEGMENT_RECTS);
+            _arrayOfSortedRects[i].y = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
 
         }
     }
@@ -387,10 +402,10 @@ function createPageTicks(_svg, _pageTimes) {
 
     for (var key in _pageTimes) {
         if (_pageTimes.hasOwnProperty(key)) {
-            var betterLabelShift = (0 - - key) > 9 ? labelShift : labelShift / 2;
+            var betterLabelShift = (0 - - key) > 9 ? GLVARS.labelShift : GLVARS.labelShift / 2;
             _svg.append("text")
-                .attr("x", x_scale(_pageTimes[key]) - betterLabelShift)
-                .attr("y", y_scale(0))
+                .attr("x", GLVARS.x_scale(_pageTimes[key]) - betterLabelShift)
+                .attr("y", GLVARS.y_scale(0))
                 .attr("font-family", "sans-serif")
                 .attr("font-size", "12px")
                 .attr("fill", "grey")
@@ -405,10 +420,10 @@ function createRectangles(_svg, _rects){
         .data(_rects)
         .enter().append("rect")
         .attr("class", "rectangle")
-        .attr("x", function(d) { return x_scale(d.x1); })
-        .attr("width", function(d) { return x_scale(d.width); })
-        .attr("y", function(d) { return y_scale(d.y); })
-        .attr("height", plot_height - y_scale(SEGMENT_RECT_HEIGHT + minPlotY))
+        .attr("x", function(d) { return GLVARS.x_scale(d.x1); })
+        .attr("width", function(d) { return GLVARS.x_scale(d.width); })
+        .attr("y", function(d) { return GLVARS.y_scale(d.y); })
+        .attr("height", GLVARS.plot_height - GLVARS.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT))
         .on("click", updateVideoPositionRect)
         .on("mouseover", enlargeVideoDivRect)
         .on("mouseout", resetVideoDivRect);
@@ -419,8 +434,8 @@ function createCurves(_svg, _curves){
     // var lineData = [ { "x": 61,  "y": 0.75}, { "x": 80,  "y": 0.75},
     //                  { "x": 55,  "y": 2.75}, { "x": 61,  "y": 2.75}];
     var lineFunction = d3.svg.line()
-        .x(function(d) { return x_scale(d.x); })
-        .y(function(d) { return y_scale(d.y); })
+        .x(function(d) { return GLVARS.x_scale(d.x); })
+        .y(function(d) { return GLVARS.y_scale(d.y); })
         .interpolate("basis");
 
     _svg.selectAll(".curve")
@@ -438,25 +453,14 @@ function createCurves(_svg, _curves){
 }
 
 
-var x_scale = d3.scale.linear()
-    .range([0, plot_width]);
-
-var y_scale = d3.scale.linear()
-    .range([plot_height, 0]);
-
-var xAxis = d3.svg.axis()
-    .scale(x_scale)
-    .orient("bottom");
-
-
 function createPlotSVG() {
 
 
     var svg_basis = d3.select("#plotContainer").append("svg")
-        .attr("width", plot_width + plot_margin.left + plot_margin.right)
-        .attr("height", plot_height + plot_margin.top + plot_margin.bottom)
+        .attr("width", GLVARS.plot_width + GLVARS.plot_margin.left + GLVARS.plot_margin.right)
+        .attr("height", GLVARS.plot_height + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom)
         .append("g")
-        .attr("transform", "translate(" + plot_margin.left + "," + plot_margin.top + ")")
+        .attr("transform", "translate(" + GLVARS.plot_margin.left + "," + GLVARS.plot_margin.top + ")")
 
         .on("click", updateScorePosition)
         .on("mousemove", updateMouseTrackLine)
@@ -467,10 +471,10 @@ function createPlotSVG() {
 
     svg_basis.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + plot_height + ")")
-        .call(xAxis);
+        .attr("transform", "translate(0," + GLVARS.plot_height + ")")
+        .call(GLVARS.xAxis);
 
-    xAxis.tickFormat(function (d) { return ''; });
+    GLVARS.xAxis.tickFormat(function (d) { return ''; });
 
     drawYAxis(svg_basis);
 
@@ -480,7 +484,7 @@ function createPlotSVG() {
 
 function drawYAxis(svg_basis) {
     var yAxis = d3.svg.axis()
-        .scale(y_scale)
+        .scale(GLVARS.y_scale)
         .orient("left");
     svg_basis.append("g")
         .attr("class", "y axis")
@@ -496,7 +500,7 @@ function drawYAxis(svg_basis) {
 function updateScorePosition(d) {
 
     console.log("update score position");
-    var pageAndTime = getPageAndTime(x_scale.invert(d3.mouse(this)[0]));
+    var pageAndTime = getPageAndTime(GLVARS.x_scale.invert(d3.mouse(this)[0]));
     var page = pageAndTime.page;
     var pageTime = pageAndTime.pageTime;
     var normalizedPageTime = getNormalizedTime(page, pageTime);
@@ -510,11 +514,11 @@ function updateScorePosition(d) {
 function updateVideoPositionRect(d) {
     var videoID = d.videoID;
     //console.log("update video position rect: " + videoID);
-    var timeInScore = x_scale.invert(d3.mouse(this)[0]);
+    var timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]);
     var timeInVideo = getVideoTimeFromScoreTime(timeInScore, d.timeMap);
 
-    ytPlayers[videoID].seekTo(Math.max(0, timeInVideo));
-    ytPlayers[videoID].playVideo();
+    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, timeInVideo));
+    GLVARS.ytPlayers[videoID].playVideo();
 }
 
 function updateVideoPositionCurve(d) {
@@ -534,8 +538,8 @@ function enlargeVideoDivCurve(d) {
 function enlargeVideoDiv(_videoID, _coefficient) {
     //console.log("video to enlarge: " + _videoID);
     var divToEnlarge = document.getElementById(_videoID);
-    divToEnlarge.width = _coefficient * VIDEO_WIDTH;
-    divToEnlarge.height = _coefficient * VIDEO_HEIGHT;
+    divToEnlarge.width = _coefficient * CONSTANTS.VIDEO_WIDTH;
+    divToEnlarge.height = _coefficient * CONSTANTS.VIDEO_HEIGHT;
 }
 
 function resetVideoDivRect(d) {
@@ -547,11 +551,11 @@ function resetVideoDivCurve(d) {
 }
 
 function resetVideoDiv(_videoID) {
-    //console.log("\nvideo to reset: " + _videoID + "    status: " + ytPlayers[_videoID].getPlayerState() + "\n");
-    if ( ytPlayers[_videoID].getPlayerState() != YT.PlayerState.PLAYING ) {
+    //console.log("\nvideo to reset: " + _videoID + "    status: " + GLVARS.ytPlayers[_videoID].getPlayerState() + "\n");
+    if ( GLVARS.ytPlayers[_videoID].getPlayerState() != YT.PlayerState.PLAYING ) {
         var divToReset = document.getElementById(_videoID);
-        divToReset.width = VIDEO_WIDTH;
-        divToReset.height = VIDEO_HEIGHT;
+        divToReset.width = CONSTANTS.VIDEO_WIDTH;
+        divToReset.height = CONSTANTS.VIDEO_HEIGHT;
     }
 }
 
@@ -563,49 +567,49 @@ function resetVideoDiv(_videoID) {
 function updateMouseTrackLine(d){
     //var mouseTrackLine = document.getElementsByClassName("mouseTrackLine"); //d3.select(".mouseTrackLine");
     var currentMouseX = d3.mouse(this)[0];
-    if ( mouseTrackLineExist ) {
+    if ( GLVARS.mouseTrackLineExist ) {
         d3.select(".mouseTrackLine").attr("x1", currentMouseX)
-            .attr("y1", y_scale(0))
+            .attr("y1", GLVARS.y_scale(0))
             .attr("x2", currentMouseX)
-            .attr("y2", y_scale(maxPlotY));
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
     } else {
         var svgContainer = d3.select("g");
         var mouseTrackLine = svgContainer.append("line")
             .attr("class", "mouseTrackLine")
             .attr("x1", currentMouseX)
-            .attr("y1", y_scale(0))
+            .attr("y1", GLVARS.y_scale(0))
             .attr("x2", currentMouseX)
-            .attr("y2", y_scale(maxPlotY))
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
             .attr("stroke-width", 2)
             .attr("stroke", "grey")
             .attr("pointer-events", "none");
-        mouseTrackLineExist = true;
+        GLVARS.mouseTrackLineExist = true;
     }
 }
 
 function removeMouseTrackLine(d){
     console.log("remove mouseTrackLine");
     d3.select(".mouseTrackLine").remove();
-    mouseTrackLineExist = false;
+    GLVARS.mouseTrackLineExist = false;
 }
 
 function updateVideoTrackLine(_scorePos){
-    if ( videoTrackLineExist ) {
-        d3.select(".videoTrackLine").attr("x1", x_scale(_scorePos))
-            .attr("y1", y_scale(0))
-            .attr("x2", x_scale(_scorePos))
-            .attr("y2", y_scale(maxPlotY));
+    if ( GLVARS.videoTrackLineExist ) {
+        d3.select(".videoTrackLine").attr("x1", GLVARS.x_scale(_scorePos))
+            .attr("y1", GLVARS.y_scale(0))
+            .attr("x2", GLVARS.x_scale(_scorePos))
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
     } else {
         var svgContainer = d3.select("g");
         var videoTrackLine = svgContainer.append("line")
             .attr("class", "videoTrackLine")
-            .attr("x1", x_scale(_scorePos))
-            .attr("y1", y_scale(0))
-            .attr("x2", x_scale(_scorePos))
-            .attr("y2", y_scale(maxPlotY))
+            .attr("x1", GLVARS.x_scale(_scorePos))
+            .attr("y1", GLVARS.y_scale(0))
+            .attr("x2", GLVARS.x_scale(_scorePos))
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
             .attr("stroke-width", 2)
             .attr("stroke", "lightblue");
-        videoTrackLineExist = true;
+        GLVARS.videoTrackLineExist = true;
     }
 }
 
@@ -625,9 +629,9 @@ function getPageAndTime(_scoreTime){
     var page = 0;
     var pageTime = 0;
     //console.log("score time: " + _scoreTime);
-    for (var i in pageTimes) {
+    for (var i in GLVARS.pageTimes) {
         page = i;
-        pageTime = pageTimes[i];
+        pageTime = GLVARS.pageTimes[i];
         if (pageTime >= _scoreTime) {
             console.log("page: " + page - 1);
             return {"page": (page - 1), "pageTime": _scoreTime};
@@ -638,23 +642,23 @@ function getPageAndTime(_scoreTime){
 }
 
 function pageDuration(page) {
-    if (pageTimes[page + 1]) {
-        return pageTimes[page + 1] - pageTimes[page];
+    if (GLVARS.pageTimes[page + 1]) {
+        return GLVARS.pageTimes[page + 1] - GLVARS.pageTimes[page];
     } else {
         var maxTime = 0;
         for (var s = 0; s < timeMap.length; s++) {
             maxTime = Math.max(maxTime, Math.max.apply(null, timeMap[s][0]));
         }
-        return maxTime - pageTimes[page];
+        return maxTime - GLVARS.pageTimes[page];
     }
 }
 
 function getNormalizedTime(page, pageTime) {
-    return (pageTime - pageTimes[page]) / pageDuration(page);
+    return (pageTime - GLVARS.pageTimes[page]) / pageDuration(page);
 }
 
 function getYtOffsetByScoreTime(videoID, time) {
-    var timeMap = videoTimeMaps[videoID];
+    var timeMap = GLVARS.videoTimeMaps[videoID];
     for (var s = 0; s < timeMap.length; s++) {
         if (timeMap[s][0][0] > time) continue;
         for (var i in timeMap[s][0]) {
@@ -665,9 +669,9 @@ function getYtOffsetByScoreTime(videoID, time) {
 
 function getVideoTimeForPagePosition(videoID, page, pt) {
     //console.log("getting time for page position " + page + " " + relPos);
-    //var pt = pageTimes[page] + pageDuration(page) * relPos;
+    //var pt = GLVARS.pageTimes[page] + pageDuration(page) * relPos;
     var segmentScoreTime = getYtOffsetByScoreTime(videoID, pt);
-    var timeMap = videoTimeMaps[videoID];
+    var timeMap = GLVARS.videoTimeMaps[videoID];
     return timeMap[segmentScoreTime[0]][1][segmentScoreTime[1]];
 }
 
@@ -676,8 +680,8 @@ function initVideo(_videoContainerID, _videoID) {
     if (typeof YT == 'undefined') return;
 
     var ytplayer = new YT.Player(_videoContainerID, {
-        height: VIDEO_HEIGHT,
-        width: VIDEO_WIDTH,
+        height: CONSTANTS.VIDEO_HEIGHT,
+        width: CONSTANTS.VIDEO_WIDTH,
         videoId: _videoID,
         events: {
             'onReady': onPlayerReady,
@@ -685,22 +689,22 @@ function initVideo(_videoContainerID, _videoID) {
         }
     });
 
-    ytPlayers[_videoID] = ytplayer;
+    GLVARS.ytPlayers[_videoID] = ytplayer;
 };
 
 
 function onPlayerReady(event) {
     var videoID = event.target.getVideoData().video_id;
     console.log("OnPlayerReady: " + videoID);
-    //ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
+    //GLVARS.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
 }
 
 var deleteInterval = true;
 function onPlayerStateChange(event) {
     var newState = event.data;
     //console.log("state: " + event.data + "     target: " + event.target.id);
-//    for (var videoID in ytPlayers) {
-//        if ( ytPlayers[videoID] == event.target ) {
+//    for (var videoID in GLVARS.ytPlayers) {
+//        if ( GLVARS.ytPlayers[videoID] == event.target ) {
 //            console.log("videoId: " + videoID);
 //        }
 //    }
@@ -711,23 +715,23 @@ function onPlayerStateChange(event) {
 
     console.log("OnPlayerStateChange: ");
 
-    if ( newState == YT.PlayerState.PLAYING ) {
-        currentPlayingYTVideoID = event.target.getVideoData().video_id;
+    if ( newState == YT.PlayerState.PLAYING || newState == YT.PlayerState.BUFFERING ) {
+        GLVARS.currentPlayingYTVideoID = event.target.getVideoData().video_id;
 
-        for (var videoID in videoStatus){
-            if ( videoID != currentPlayingYTVideoID ) {
-                if ( ytPlayers[videoID].getPlayerState() == YT.PlayerState.PLAYING ) {
-                    ytPlayers[videoID].pauseVideo();
+        for (var videoID in GLVARS.videoStatus){
+            if ( videoID != GLVARS.currentPlayingYTVideoID ) {
+                if ( GLVARS.ytPlayers[videoID].getPlayerState() == YT.PlayerState.PLAYING ) {
+                    GLVARS.ytPlayers[videoID].pauseVideo();
                     deleteInterval = false;
                 }
             }
         }
-        clearInterval(loopId);
-        loopId = setInterval(updatePosition, 500);
-        enlargeVideoDiv(currentPlayingYTVideoID, 2);
+        clearInterval(GLVARS.loopId);
+        GLVARS.loopId = setInterval(updatePosition, 500);
+        enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
     } else if ( newState == YT.PlayerState.ENDED || newState == YT.PlayerState.PAUSED ) {
         if ( deleteInterval )
-            clearInterval(loopId);
+            clearInterval(GLVARS.loopId);
         else
             deleteInterval = true;
 
@@ -737,10 +741,10 @@ function onPlayerStateChange(event) {
 }
 
 function updatePosition() {
-    console.log("updatePosition: videoID: " + currentPlayingYTVideoID + "");
-    var videoTime = ytPlayers[currentPlayingYTVideoID].getCurrentTime();
+    console.log("updatePosition: videoID: " + GLVARS.currentPlayingYTVideoID + "");
+    var videoTime = GLVARS.ytPlayers[GLVARS.currentPlayingYTVideoID].getCurrentTime();
     var pageAndTime = getPageAndTimeForVideoTime(videoTime);
-    var pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + foreRunningTime);
+    var pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + GLVARS.foreRunningTime);
     if (typeof pageAndTime == "undefined") return;
 
     var page = pageAndTime.page;
@@ -751,9 +755,9 @@ function updatePosition() {
 
     console.log("page: " + page + " pageTime: " + pageTime);
 
-    if (pagePlus != prevPage) {
+    if (pagePlus != GLVARS.prevPage) {
         _pnq.push(['loadPage', pagePlus]);
-        prevPage = pagePlus;
+        GLVARS.prevPage = pagePlus;
     }
 
     updateVideoTrackLine(pageTime);
@@ -769,7 +773,7 @@ function updatePosition() {
 function getPageAndTimeForVideoTime(time) {
     var page = 0;
     var pageTime = 0;
-    var timeMap = videoTimeMaps[currentPlayingYTVideoID];
+    var timeMap = GLVARS.videoTimeMaps[GLVARS.currentPlayingYTVideoID];
     var segmentScoreTime = getSegmentScoreTime(time);
     if (typeof segmentScoreTime == "undefined") return undefined;
     var segment = segmentScoreTime[0];
@@ -779,9 +783,9 @@ function getPageAndTimeForVideoTime(time) {
 //        .text("segment " + segment + ", confidences " + confidences[segment])
 //        .css("visibility", 'hidden')
 //    ;
-    for (var i in pageTimes) {
+    for (var i in GLVARS.pageTimes) {
         page = i;
-        pageTime = pageTimes[i];
+        pageTime = GLVARS.pageTimes[i];
         if (pageTime >= scoreTime) {
             return {"page": (page - 1), "pageTime": scoreTime};
         }
@@ -790,7 +794,7 @@ function getPageAndTimeForVideoTime(time) {
 }
 
 function getSegmentScoreTime(ytTime) {
-    var timeMap = videoTimeMaps[currentPlayingYTVideoID];
+    var timeMap = GLVARS.videoTimeMaps[GLVARS.currentPlayingYTVideoID];
     for (var s = 0; s < timeMap.length; s++) {
         if (timeMap[s][1][0] > ytTime) continue;
         var out = [s, 0];
@@ -810,8 +814,8 @@ function showSuitableVideoDivsForTimePoint(_tp){
 }
 
 function showSuitableVideoDivsForCurrentMousePosition(){
-    var currentMouseXPoint = x_scale.invert(d3.mouse(this)[0]);
-    var currentMouseYPoint = y_scale.invert(d3.mouse(this)[1]);
+    var currentMouseXPoint = GLVARS.x_scale.invert(d3.mouse(this)[0]);
+    var currentMouseYPoint = GLVARS.y_scale.invert(d3.mouse(this)[1]);
     console.log("hide video ID " + currentMouseXPoint);
     calculateVisibilityOfVideoIDs(currentMouseXPoint);
 
@@ -820,18 +824,18 @@ function showSuitableVideoDivsForCurrentMousePosition(){
     }
 
     //var segm = [];
-    var yAboveMousePoint = maxPlotY; //
+    var yAboveMousePoint = GLVARS.maxPlotY; //
     var yUnderMousePoint = 0;
     var videoIDAbove = "";
     var videoIDUnder = "";
-    for (var i = 0; i < allVideoSegments.length; i++) {
-        var currentSegment = allVideoSegments[i];
+    for (var i = 0; i < GLVARS.allVideoSegments.length; i++) {
+        var currentSegment = GLVARS.allVideoSegments[i];
         if ( currentMouseXPoint >= currentSegment.x1 && currentMouseXPoint <= currentSegment.x2 ) {
             if ( currentMouseYPoint > currentSegment.y && currentSegment.y > yUnderMousePoint ) {
                 yUnderMousePoint = currentSegment.y;
                 videoIDUnder = currentSegment.videoID;
             }
-            var yAb = currentSegment.y - SEGMENT_RECT_HEIGHT;
+            var yAb = currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT;
             if ( currentMouseYPoint < yAb && yAb < yAboveMousePoint ) {
                 yAboveMousePoint = yAb;
                 videoIDAbove = currentSegment.videoID;
@@ -845,7 +849,7 @@ function showSuitableVideoDivsForCurrentMousePosition(){
         factor = currentMouseYPoint / yAboveMousePoint;
         videoToEnlarge = videoIDAbove;
     } else if ( videoIDAbove == "" ) {
-        factor = 1 - (currentMouseYPoint- yUnderMousePoint)/(maxPlotY - yUnderMousePoint);
+        factor = 1 - (currentMouseYPoint- yUnderMousePoint)/(GLVARS.maxPlotY - yUnderMousePoint);
         videoToEnlarge = videoIDUnder;
     } else if ( videoIDUnder == videoIDAbove ) {
         factor = 1;
@@ -861,14 +865,14 @@ function showSuitableVideoDivsForCurrentMousePosition(){
             videoToEnlarge = videoIDAbove;
         }
     }
-    if ( ytPlayers.hasOwnProperty(videoToEnlarge) ){
-        if ( ytPlayers[videoToEnlarge].getPlayerState() != YT.PlayerState.PLAYING ) {
+    if ( GLVARS.ytPlayers.hasOwnProperty(videoToEnlarge) ){
+        if ( GLVARS.ytPlayers[videoToEnlarge].getPlayerState() != YT.PlayerState.PLAYING ) {
             enlargeVideoDiv(videoToEnlarge, 1 + factor);
         }
     }
 
     if ( ! $('#hideVideoDivs').prop('checked') ) {
-        for (var id in visibilityOfVideoIDs) {
+        for (var id in GLVARS.visibilityOfVideoIDs) {
             if ( id != videoIDAbove && id != videoIDUnder ) {
                 resetVideoDiv(id);
             }
@@ -877,42 +881,42 @@ function showSuitableVideoDivsForCurrentMousePosition(){
 }
 
 function calculateVisibilityOfVideoIDs(_scoreTime){
-    for (var videoID in visibilityOfVideoIDs) {
-        //console.log(videoID + "                   " + visibilityOfVideoIDs[videoID]);
-        if ( visibilityOfVideoIDs.hasOwnProperty(videoID) ) {
-            visibilityOfVideoIDs[videoID] = false;
+    for (var videoID in GLVARS.visibilityOfVideoIDs) {
+        //console.log(videoID + "                   " + GLVARS.visibilityOfVideoIDs[videoID]);
+        if ( GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID) ) {
+            GLVARS.visibilityOfVideoIDs[videoID] = false;
         }
     }
 
-    for (var i = 0; i < allVideoSegments.length; i++) {
-        if ( _scoreTime >= allVideoSegments[i].x1 && _scoreTime <= allVideoSegments[i].x2 ) {
-            visibilityOfVideoIDs[allVideoSegments[i].videoID] = true;
+    for (var i = 0; i < GLVARS.allVideoSegments.length; i++) {
+        if ( _scoreTime >= GLVARS.allVideoSegments[i].x1 && _scoreTime <= GLVARS.allVideoSegments[i].x2 ) {
+            GLVARS.visibilityOfVideoIDs[GLVARS.allVideoSegments[i].videoID] = true;
         }
     }
 
-    for (var i = 0; i < curves.length; i++) {
-        var minX = getMin(curves[i].points[0].x, curves[i].points[5].x);
-        var maxX = getMax(curves[i].points[0].x, curves[i].points[5].x);
+    for (var i = 0; i < GLVARS.curves.length; i++) {
+        var minX = getMin(GLVARS.curves[i].points[0].x, GLVARS.curves[i].points[5].x);
+        var maxX = getMax(GLVARS.curves[i].points[0].x, GLVARS.curves[i].points[5].x);
 
         if ( _scoreTime >= minX && _scoreTime <= maxX ) {
-            visibilityOfVideoIDs[curves[i].videoID] = true;
+            GLVARS.visibilityOfVideoIDs[GLVARS.curves[i].videoID] = true;
         }
     }
 }
 
 function showAndHideVideoDivs(){
-    for (var videoID in visibilityOfVideoIDs) {
-        if ( visibilityOfVideoIDs[videoID] ) {
+    for (var videoID in GLVARS.visibilityOfVideoIDs) {
+        if ( GLVARS.visibilityOfVideoIDs[videoID] ) {
             showDiv(videoID);
-            //ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
+            //GLVARS.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
         } else {
-            if ( ytPlayers[videoID].getPlayerState() != YT.PlayerState.PLAYING ){
-                console.log("HideVideoID: " + videoID + "    state: " + ytPlayers[videoID].getPlayerState());
+            if ( GLVARS.ytPlayers[videoID].getPlayerState() != YT.PlayerState.PLAYING ){
+                console.log("HideVideoID: " + videoID + "    state: " + GLVARS.ytPlayers[videoID].getPlayerState());
                 hideDiv(videoID);
             }
-            //ytPlayers[videoID].pauseVideo();
-            //if ( currentPlayingYTVideoID == videoID ) {
-            //clearInterval(loopId);
+            //GLVARS.ytPlayers[videoID].pauseVideo();
+            //if ( GLVARS.currentPlayingYTVideoID == videoID ) {
+            //clearInterval(GLVARS.loopId);
             //}
         }
     }
@@ -929,22 +933,22 @@ function showDiv(_videoID){
     //document.getElementById(_videoID).style.display = "";
     //document.getElementById(_videoID).style.visibility = "visible";
     var faktor = 1;
-    if ( ytPlayers[_videoID].getPlayerState() == YT.PlayerState.PLAYING ){
+    if ( GLVARS.ytPlayers[_videoID].getPlayerState() == YT.PlayerState.PLAYING ){
         faktor = 2;
     }
-    document.getElementById(_videoID).width = faktor * VIDEO_WIDTH;
-    document.getElementById(_videoID).height = faktor * VIDEO_HEIGHT;
+    document.getElementById(_videoID).width = faktor * CONSTANTS.VIDEO_WIDTH;
+    document.getElementById(_videoID).height = faktor * CONSTANTS.VIDEO_HEIGHT;
 }
 
 function pause() {
-//    for (var videoID in visibilityOfVideoIDs) {
-//        if ( visibilityOfVideoIDs[videoID] ) {
-//            ytPlayers[videoID].pauseVideo();}
+//    for (var videoID in GLVARS.visibilityOfVideoIDs) {
+//        if ( GLVARS.visibilityOfVideoIDs[videoID] ) {
+//            GLVARS.ytPlayers[videoID].pauseVideo();}
 //    }
 
-    for (var vID in ytPlayers){
-        if ( ytPlayers[vID].getPlayerState() == YT.PlayerState.PLAYING ){
-            ytPlayers[vID].pauseVideo();
+    for (var vID in GLVARS.ytPlayers){
+        if ( GLVARS.ytPlayers[vID].getPlayerState() == YT.PlayerState.PLAYING ){
+            GLVARS.ytPlayers[vID].pauseVideo();
         }
     }
 }
