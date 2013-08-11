@@ -1,52 +1,3 @@
-var tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-var firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-// needed for IE to have browser console.log
-if (!window.console) {window.console = {}; window.console.log = function () {}; }
-
-
-
-(function () {
-    "use strict";
-    var pnsv = document.createElement('script');
-    pnsv.type = 'text/javascript';
-    pnsv.async = true;
-    pnsv.src = 'http://pchnote.appspot.com/scoreviewer/scoreviewer.nocache.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(pnsv);
-})();
-
-var _pnq = _pnq || [];
-_pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
-_pnq.push(['widgetHeight', 590]);
-_pnq.push(['widgetWidth', 450]);
-_pnq.push(['addMeasureClickHandler', function (scoreId, page, measureNumber, totalMeasures) {
-    "use strict";
-    console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
-    var scoreTime = GLVARS.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures;
-    if ($('#hideVideoDivs').prop('checked')) {
-        showSuitableVideoDivsForTimePoint(scoreTime);
-    } else {
-        calculateVisibilityOfVideoIDs(scoreTime);
-    }
-    for (var videoID in GLVARS.visibilityOfVideoIDs) {
-        if ( GLVARS.visibilityOfVideoIDs[videoID] ) {
-            var videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
-            //var state = videoState;
-//console.log('videoID: ' + videoID);
-            GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
-            GLVARS.ytPlayers[videoID].playVideo();
-//          ytplayer.seekTo(Math.max(0, videoTime));
-//          if (state != 1) {
-//              ytplayer.pauseVideo();
-//          }
-        }
-    }
-    _pnq.push(["clearMeasureHighlightings"]);
-    _pnq.push(["highlightMeasure", measureNumber, page]);
-}]);
-
 var CONSTANTS = {};
 CONSTANTS.SEGMENT_RECT_HEIGHT = 0.1;
 CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS = 0.3;
@@ -61,16 +12,17 @@ GLVARS.plot_margin = {top: 20, right: 20, bottom: 30, left: 40};
 GLVARS.plot_width = 600 - GLVARS.plot_margin.left - GLVARS.plot_margin.right;
 GLVARS.plot_height = 320 - GLVARS.plot_margin.top - GLVARS.plot_margin.bottom;
 
+/*global d3, $, document, window*/
 
 GLVARS.x_scale = d3.scale.linear()
-                 .range([0, GLVARS.plot_width]);
+    .range([0, GLVARS.plot_width]);
 
 GLVARS.y_scale = d3.scale.linear()
-                .range([GLVARS.plot_height, 0]);
+    .range([GLVARS.plot_height, 0]);
 
 GLVARS.xAxis = d3.svg.axis()
-               .scale(GLVARS.x_scale)
-               .orient("bottom");
+    .scale(GLVARS.x_scale)
+    .orient("bottom");
 
 GLVARS.maxPlotX = 0;
 GLVARS.minPlotY = 0;
@@ -96,12 +48,41 @@ GLVARS.mouseTrackLineExist = false;
 GLVARS.videoTrackLineExist = false;
 
 GLVARS.currentPlayingYTVideoID = "";
-GLVARS.loopId;
-GLVARS.prevPage;
+GLVARS.loopId = 0;
+GLVARS.prevPage = 0;
 GLVARS.foreRunningTime = 2.0;
 
 
-$('#scoreIDs').change(function(){
+var tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+var firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+// needed for IE to have browser console.log
+if (!window.console) {window.console = {}; window.console.log = function () {'use strict'; }; }
+
+
+
+(function () {
+    "use strict";
+
+    var pnsv = document.createElement('script');
+    pnsv.type = 'text/javascript';
+    pnsv.async = true;
+    pnsv.src = 'http://pchnote.appspot.com/scoreviewer/scoreviewer.nocache.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(pnsv);
+})();
+
+var _pnq = _pnq || [];
+_pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
+_pnq.push(['widgetHeight', 590]);
+_pnq.push(['widgetWidth', 450]);
+_pnq.push(['addMeasureClickHandler', measureClickHandler]);
+
+
+$('#scoreIDs').change(function () {
+    'use strict';
+
     var scoreId = "";
     $("select option:selected").each(function () {
         scoreId = $(this).text();
@@ -112,37 +93,41 @@ $('#scoreIDs').change(function(){
 });
 
 $.getJSON('alignmentQuality.json', function (json) {
-    for (var i = 0; i < json.length; i++) {
-        var sid = json[i].id0;
-        var id1 = json[i].id1;
-        var fname = "alignments/" + sid + '_' + id1 + '.json';
+    'use strict';
+
+    var i, sid, id1, fname, select = $("#scoreIDs"), initialScoreId;
+
+    for (i = 0; i < json.length; i = i + 1) {
+        sid = json[i].id0;
+        id1 = json[i].id1;
+        fname = "alignments/" + sid + '_' + id1 + '.json';
 
         //console.log(sid + "      " + fname);
         if (GLVARS.scoreToSyncFileNames[sid]) {
             GLVARS.scoreToSyncFileNames[sid].push(fname);
-        }
-        else {
+        } else {
             GLVARS.scoreToSyncFileNames[sid] = [fname];
             GLVARS.sIDs.push(sid);
         }
     }
 
     // populate the dropdown for score selection
-    var select = $("#scoreIDs");
-    for (var i = 0; i < GLVARS.sIDs.length; i++) {
+    for (i = 0; i < GLVARS.sIDs.length; i = i + 1) {
         select.append($("<option />").val(GLVARS.sIDs[i]).text(GLVARS.sIDs[i]));
     }
 
-    var initialScoreId = GLVARS.sIDs[0];
+    initialScoreId = GLVARS.sIDs[0];
 
     _pnq.push(['loadScore', "IMSLP" + initialScoreId]);
     loadDataForScoreID(initialScoreId);
-    setTimeout(function() {loadDataForScoreID(initialScoreId);}, 1000);
+    setTimeout(function () {loadDataForScoreID(initialScoreId); }, 1000);
 
 });
 
 
 function resetScoreVariables(_sID) {
+    'use strict';
+
     GLVARS.mouseTrackLineExist = false;
     GLVARS.videoTrackLineExist = false;
     GLVARS.numberOfVideoSegmentLevels = 1;
@@ -156,19 +141,20 @@ function resetScoreVariables(_sID) {
 }
 
 function resetScoreDOM() {
+    'use strict';
+
     d3.select('svg').remove();
     d3.select(".mouseTrackLine").remove();
     $('#videos').empty();
 }
 
 function loadDataForScoreID(_sID) {
+    'use strict';
 
     resetScoreVariables(_sID);
     resetScoreDOM();
 
-    var svg = createPlotSVG();
-    var doneCount = 0;
-    var allPairsSyncData = [];
+    var svg = createPlotSVG(), doneCount = 0, allPairsSyncData = [];
 
     function whenDone() {
         computePlotElements(allPairsSyncData, svg);
@@ -180,17 +166,17 @@ function loadDataForScoreID(_sID) {
     $.each(GLVARS.scoreSyncFileNames, function (i, file) {
         $.getJSON(file)
             .done(function (json) {
-                doneCount++;
+                doneCount = doneCount + 1;
                 allPairsSyncData.push(json);
-                if (doneCount == GLVARS.scoreSyncFileNames.length) {
+                if (doneCount === GLVARS.scoreSyncFileNames.length) {
                     whenDone();
                 }
             })
-            .fail(function( jqxhr, textStatus, error ) {
-                doneCount++;
+            .fail(function (jqxhr, textStatus, error) {
+                doneCount = doneCount + 1;
                 var err = textStatus + ', ' + error;
-                console.log( "Request Failed: " + err);
-                if (doneCount == GLVARS.scoreSyncFileNames.length) {
+                console.log("Request Failed: " + err);
+                if (doneCount === GLVARS.scoreSyncFileNames.length) {
                     whenDone();
                 }
             });
@@ -199,10 +185,11 @@ function loadDataForScoreID(_sID) {
 
 
 function createVideoSegment(segmentTimeMap, videoId) {
-    var scoreTimeAxis = segmentTimeMap[0];
-    var videoSegmentAxis = segmentTimeMap[1];
+    'use strict';
 
-    if ( GLVARS.maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1] ) {
+    var scoreTimeAxis = segmentTimeMap[0], videoSegmentAxis = segmentTimeMap[1];
+
+    if (GLVARS.maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1]) {
         GLVARS.maxPlotX = scoreTimeAxis[scoreTimeAxis.length - 1];
     }
 
@@ -951,6 +938,32 @@ function pause() {
             GLVARS.ytPlayers[vID].pauseVideo();
         }
     }
+}
+
+function measureClickHandler(scoreId, page, measureNumber, totalMeasures) {
+    "use strict";
+    console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
+    var scoreTime = GLVARS.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures;
+    if ($('#hideVideoDivs').prop('checked')) {
+        showSuitableVideoDivsForTimePoint(scoreTime);
+    } else {
+        calculateVisibilityOfVideoIDs(scoreTime);
+    }
+    for (var videoID in GLVARS.visibilityOfVideoIDs) {
+        if ( GLVARS.visibilityOfVideoIDs[videoID] ) {
+            var videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
+            //var state = videoState;
+//console.log('videoID: ' + videoID);
+            GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
+            GLVARS.ytPlayers[videoID].playVideo();
+//          ytplayer.seekTo(Math.max(0, videoTime));
+//          if (state != 1) {
+//              ytplayer.pauseVideo();
+//          }
+        }
+    }
+    _pnq.push(["clearMeasureHighlightings"]);
+    _pnq.push(["highlightMeasure", measureNumber, page]);
 }
 
 function appendArrays(_array1, _array2) {
