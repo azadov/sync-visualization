@@ -836,7 +836,7 @@ function getPageAndTimeForVideoTime(time) {
 
     segment = segmentScoreTime[0];
     scoreTime = timeMap[segment][0][segmentScoreTime[1]];
-
+console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
     if (time < timeMap[segment][1][0]) {return {"page": 0, "pageTime": 0}; }
 //    $("#confidences")
 //        .text("segment " + segment + ", confidences " + confidences[segment])
@@ -858,16 +858,24 @@ function getSegmentScoreTime(ytTime) {
     'use strict';
 
     var timeMap = GLVARS.videoTimeMaps[GLVARS.currentPlayingYTVideoID], s, i, out;
+//console.log("Segment0: " + s + "    " + timeMap[0][1][0] + "    " + timeMap[0][1][timeMap[0][1].length-1]);
+//console.log("Segment1: " + s + "    " + timeMap[1][1][0] + "    " + timeMap[1][1][timeMap[1][1].length-1]);
+//console.log("Segment2: " + s + "    " + timeMap[2][1][0] + "    " + timeMap[2][1][timeMap[2][1].length-1]);
+//console.log("Segment3: " + s + "    " + timeMap[3][1][0] + "    " + timeMap[3][1][timeMap[3][1].length-1]);
     for (s = 0; s < timeMap.length; s = s + 1) {
-        if (timeMap[s][1][0] > ytTime) {continue; }
-        out = [s, 0];
-        for (i in timeMap[s][1]) {
-            if (timeMap[s][1].hasOwnProperty(i)) {
-                //if (timeMap[s][1][i] >= ytTime) return [s, i];
-                if (timeMap[s][1][i] <= ytTime) {out = [s, i]; }
+        //if (timeMap[s][1][0] > ytTime) {continue; }
+        //console.log("segm: " + s + "   1st: " + timeMap[s][1][0] + "   ytime: " + ytTime);
+        if ( timeMap[s][1][0] <= ytTime && ytTime < timeMap[s][1][timeMap[s][1].length - 1] ){
+            out = [s, 0];
+            for (i in timeMap[s][1]) {
+                if (timeMap[s][1].hasOwnProperty(i)) {
+                    //if (timeMap[s][1][i] >= ytTime) return [s, i];
+                    if (timeMap[s][1][i] <= ytTime) {out = [s, i]; }
+                }
             }
+            //console.log("time: " + ytTime + "      segm: " + out[0] + "    scoretime: " + out[1]);
+            return out;
         }
-        return out;
     }
 }
 
