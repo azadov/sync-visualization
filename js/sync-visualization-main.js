@@ -1,8 +1,8 @@
 var CONSTANTS = {};
 CONSTANTS.SEGMENT_RECT_HEIGHT = 0.1;
 CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS = 0.3;
-CONSTANTS.VIDEO_WIDTH = 150;
-CONSTANTS.VIDEO_HEIGHT = 100;
+CONSTANTS.VIDEO_WIDTH = 140;
+CONSTANTS.VIDEO_HEIGHT = 90;
 
 var GLVARS = {};
 GLVARS.numberOfVideoSegmentLevels = 1;
@@ -665,6 +665,15 @@ function removeMouseTrackLine(d) {
     console.log("remove mouseTrackLine");
     d3.select(".mouseTrackLine").remove();
     GLVARS.mouseTrackLineExist = false;
+
+    var id;
+    if (!$('#hideVideoDivs').prop('checked')) {
+        for (id in GLVARS.visibilityOfVideoIDs) {
+            if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(id)) {
+                resetVideoDiv(id);
+            }
+        }
+    }
 }
 
 function updateVideoTrackLine(_scorePos) {
@@ -896,10 +905,7 @@ function getPageAndTimeForVideoTime(time) {
     scoreTime = timeMap[segment][0][segmentScoreTime[1]];
 console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
     if (time < timeMap[segment][1][0]) {return {"page": 0, "pageTime": 0}; }
-//    $("#confidences")
-//        .text("segment " + segment + ", confidences " + confidences[segment])
-//        .css("visibility", 'hidden')
-//    ;
+
     for (i in GLVARS.pageTimes) {
         if (GLVARS.pageTimes.hasOwnProperty(i)) {
             page = i;
@@ -1121,7 +1127,7 @@ function pause() {
 function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) {
     "use strict";
 
-    var page = viewerPage - - 1;
+    var page = viewerPage - -1, oneVideoPlaying = false;
     console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
     var scoreTime = GLVARS.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures,
         videoID,
@@ -1133,16 +1139,14 @@ function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) 
     }
     for (videoID in GLVARS.visibilityOfVideoIDs) {
         if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            if (GLVARS.visibilityOfVideoIDs[videoID]) {
+            if (GLVARS.visibilityOfVideoIDs[videoID] && !oneVideoPlaying) {
                 videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
                 //var state = videoState;
     //console.log('videoID: ' + videoID);
                 GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
                 GLVARS.ytPlayers[videoID].playVideo();
-    //          ytplayer.seekTo(Math.max(0, videoTime));
-    //          if (state != 1) {
-    //              ytplayer.pauseVideo();
-    //          }
+
+                oneVideoPlaying = true;
             }
         }
     }
