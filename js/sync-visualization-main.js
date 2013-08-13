@@ -100,7 +100,7 @@ $('#scoreIDs').change(function () {
 $('#qualityFilter').change(function () {
     'use strict';
 
-    var quality = "";
+    var quality = 0;
     $("select option:selected").each(function () {
         quality = $(this).text();
     });
@@ -218,7 +218,7 @@ function loadDataForScoreID(_sID, _quality) {
 }
 
 
-function createVideoSegment(segmentTimeMap, videoId) {
+function createVideoSegment(segmentTimeMap, videoId, _conf) {
     'use strict';
 
     var scoreTimeAxis = segmentTimeMap[0], videoSegmentAxis = segmentTimeMap[1], newRectangle = {};
@@ -231,8 +231,10 @@ function createVideoSegment(segmentTimeMap, videoId) {
     newRectangle.x2 = scoreTimeAxis[scoreTimeAxis.length - 1];
     newRectangle.width = scoreTimeAxis[scoreTimeAxis.length - 1] - scoreTimeAxis[0];
     newRectangle.x1_notbasis = videoSegmentAxis[0];
+    newRectangle.segmentConfidence = _conf;
     newRectangle.videoID = videoId;
     newRectangle.timeMap = segmentTimeMap;
+
 
     return newRectangle;
 }
@@ -323,7 +325,7 @@ function computePlotElements(_allPairsSyncData) {
     _allPairsSyncData.forEach(function (pairSyncData) {
 
         videoSegments = [];
-        var videoId = pairSyncData.uri1, i;
+        var videoId = pairSyncData.uri1, i, videoSegment, conf;
 
         if (!GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoId)) {
             GLVARS.visibilityOfVideoIDs[videoId] = false;
@@ -335,13 +337,14 @@ function computePlotElements(_allPairsSyncData) {
             GLVARS.videoStatus[videoId] = YT.PlayerState.PAUSED;
         }
 
-        pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
-
-            var videoSegment = createVideoSegment(segmentTimeMap, videoId);
+        //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
+        for (i = 0; i < pairSyncData.localTimeMaps.length; i = i + 1) {
+            conf = getMin(pairSyncData.confidences[i][0], pairSyncData.confidences[i][1]);
+            videoSegment = createVideoSegment(pairSyncData.localTimeMaps[i], videoId, conf);
 
             videoSegments.push(videoSegment);
 
-        });
+        }
 
         videoSegments = sortRects(videoSegments);
 
@@ -583,6 +586,7 @@ function enlargeVideoDivRect(d) {
 
     //console.log("videoID rect: " + d.videoID);
     enlargeVideoDiv(d.videoID, 2);
+    $("#segmQual").text(d.segmentConfidence);
 }
 
 function enlargeVideoDivCurve(d) {
