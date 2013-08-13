@@ -1056,9 +1056,10 @@ function pause() {
     }
 }
 
-function measureClickHandler(scoreId, page, measureNumber, totalMeasures) {
+function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) {
     "use strict";
 
+    var page = viewerPage - - 1;
     console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
     var scoreTime = GLVARS.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures,
         videoID,
