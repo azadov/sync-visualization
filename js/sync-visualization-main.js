@@ -48,6 +48,8 @@ GLVARS.mouseTrackLineExist = false;
 GLVARS.videoTrackLineExist = false;
 
 GLVARS.currentPlayingYTVideoID = "";
+GLVARS.videoIDNextToCursor = "";
+GLVARS.videoSegmentIndexNextToCursor;
 GLVARS.loopId = 0;
 GLVARS.prevPage = 0;
 GLVARS.foreRunningTime = 2.0;
@@ -203,7 +205,7 @@ function createVideoSegment(segmentTimeMap, videoId) {
     return newRectangle;
 }
 
-function createCurve(currSegment, nextSegment, videoId, timeMap) {
+function createCurve(currSegment, nextSegment, videoId) {
     'use strict';
 
     var firstPoint = {x: currSegment.x2, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
@@ -233,7 +235,7 @@ function createCurve(currSegment, nextSegment, videoId, timeMap) {
     }
     curve.strokeDash = strokeDasharray;
     curve.videoID =  videoId;
-    curve.timeMap = timeMap;
+    //curve.timeMap = timeMap;
 
     return curve;
 }
@@ -318,7 +320,7 @@ function computePlotElements(_allPairsSyncData) {
         for (i = 0; i < videoSegments.length - 1; i = i + 1) {
             currSegment = videoSegments[i];
             nextSegment = videoSegments[i + 1];
-            curve = createCurve(currSegment, nextSegment, videoId, currSegment.timeMap);
+            curve = createCurve(currSegment, nextSegment, videoId);
             GLVARS.curves.push(curve);
         }
 
@@ -423,9 +425,10 @@ function createRectangles(_svg, _rects) {
         .attr("width", function (d) { return GLVARS.x_scale(d.width); })
         .attr("y", function (d) { return GLVARS.y_scale(d.y); })
         .attr("height", GLVARS.plot_height - GLVARS.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT))
-        .on("click", updateVideoPositionRect)
+        //.on("click", updateVideoPositionRect)
         .on("mouseover", enlargeVideoDivRect)
-        .on("mouseout", resetVideoDivRect);
+        //.on("mouseout", resetVideoDivRect)
+        ;
 }
 
 function createCurves(_svg, _curves) {
@@ -450,7 +453,8 @@ function createCurves(_svg, _curves) {
         .attr("fill", "none")
         .on("click", updateVideoPositionCurve)
         .on("mouseover", enlargeVideoDivCurve)
-        .on("mouseout", resetVideoDivCurve);
+        //.on("mouseout", resetVideoDivCurve)
+        //;
 }
 
 
@@ -507,25 +511,34 @@ function updateScorePosition(d) {
     var pageAndTime = getPageAndTime(GLVARS.x_scale.invert(d3.mouse(this)[0])),
         page = pageAndTime.page,
         pageTime = pageAndTime.pageTime,
-        normalizedPageTime = getNormalizedTime(page, pageTime);
+        normalizedPageTime = getNormalizedTime(page, pageTime),
+        timeInScore, timeInVideo;
 
     _pnq.push(['loadPage', page - 1]);
     _pnq.push(["clearMeasureHighlightings"]);
     _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
 
-}
-
-function updateVideoPositionRect(d) {
-    'use strict';
-
-    var videoID = d.videoID,
-    //console.log("update video position rect: " + videoID);
+    if (GLVARS.ytPlayers.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
+        console.log("VideoIDNextToCursor: " + GLVARS.videoIDNextToCursor);
         timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]),
-        timeInVideo = getVideoTimeFromScoreTime(timeInScore, d.timeMap);
+        timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.videoTimeMaps[GLVARS.videoIDNextToCursor]);
 
-    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, timeInVideo));
-    GLVARS.ytPlayers[videoID].playVideo();
+        GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
+        GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].playVideo();
+    }
 }
+
+//function updateVideoPositionRect(d) {
+//    'use strict';
+//
+//    var videoID = d.videoID,
+//    //console.log("update video position rect: " + videoID);
+//        timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]),
+//        timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.videoTimeMaps[videoID]);
+//
+//    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, timeInVideo));
+//    GLVARS.ytPlayers[videoID].playVideo();
+//}
 
 function updateVideoPositionCurve(d) {
     'use strict';
@@ -644,14 +657,23 @@ function updateVideoTrackLine(_scorePos) {
 function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
     'use strict';
 
-    var indexOfLastSynchronizedTimePointInScore = 0, i;
-    for (i = 0; i < _timeMap[0].length - 1; i = i + 1) {
-        if ((_timeInScore >= _timeMap[0][i]) && (_timeInScore < _timeMap[0][i + 1])) {
-            indexOfLastSynchronizedTimePointInScore = i;
+    var indexOfLastSynchronizedTimePointInScore = 0, i, segm;
+//    for (i = 0; i < _timeMap[0].length - 1; i = i + 1) {
+//        if ((_timeInScore >= _timeMap[0][i]) && (_timeInScore < _timeMap[0][i + 1])) {
+//            indexOfLastSynchronizedTimePointInScore = i;
+//        }
+//    }
+//    return _timeMap[1][indexOfLastSynchronizedTimePointInScore];
+
+    for (segm = 0; segm < _timeMap.length; segm = segm + 1) {
+        if ((_timeMap[segm][0][0] <= _timeInScore) && (_timeInScore <= _timeMap[segm][0][_timeMap[segm][0].length - 1])) {
+            for (i = 0; i < _timeMap[segm][0].length - 1; i = i + 1) {
+                if ((_timeMap[segm][0][i] <= _timeInScore) && (_timeInScore < _timeMap[segm][0][i + 1])) {
+                     return _timeMap[segm][1][i];
+                }
+            }
         }
     }
-
-    return _timeMap[1][indexOfLastSynchronizedTimePointInScore];
 }
 
 
@@ -930,11 +952,12 @@ function showSuitableVideoDivsForCurrentMousePosition() {
         }
     }
     //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
+    factor = 1;
     if (videoIDUnder === "") {
-        factor = currentMouseYPoint / yAboveMousePoint;
+        //factor = currentMouseYPoint / yAboveMousePoint;
         videoToEnlarge = videoIDAbove;
     } else if (videoIDAbove === "") {
-        factor = 1 - (currentMouseYPoint - yUnderMousePoint) / (GLVARS.maxPlotY - yUnderMousePoint);
+        //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / (GLVARS.maxPlotY - yUnderMousePoint);
         videoToEnlarge = videoIDUnder;
     } else if (videoIDUnder === videoIDAbove) {
         factor = 1;
@@ -942,11 +965,11 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     } else {
         if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
             // point under is the next to mouse point
-            factor = 1 - (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2);
+            //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2);
             videoToEnlarge = videoIDUnder;
         } else {
             // point above is the next to mouse point
-            factor = (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2) - 1;
+            //factor = (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2) - 1;
             videoToEnlarge = videoIDAbove;
         }
     }
@@ -959,12 +982,15 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     if (!$('#hideVideoDivs').prop('checked')) {
         for (id in GLVARS.visibilityOfVideoIDs) {
             if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(id)) {
-                if (id !== videoIDAbove && id !== videoIDUnder) {
+                //if (id !== videoIDAbove && id !== videoIDUnder) {
+                if (id !== videoToEnlarge) {
                     resetVideoDiv(id);
                 }
             }
         }
     }
+
+    GLVARS.videoIDNextToCursor = videoToEnlarge;
 }
 
 function calculateVisibilityOfVideoIDs(_scoreTime) {
