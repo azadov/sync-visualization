@@ -86,29 +86,54 @@ $('#scoreIDs').change(function () {
     'use strict';
 
     var scoreId = "";
+//    $("select option:selected").each(function () {
+//        scoreId = $(this).text();
+//    });
+    scoreId = $("#scoreIDs").val();
+
+    var quality = $("#qualityFilter").val();
+    console.log("ScoreID: " + scoreId + "    Qual: " + quality);
+    _pnq.push(['loadScore', scoreId]);
+    loadDataForScoreID(scoreId, quality);
+});
+
+$('#qualityFilter').change(function () {
+    'use strict';
+
+    var quality = "";
     $("select option:selected").each(function () {
-        scoreId = $(this).text();
+        quality = $(this).text();
     });
 
+    var scoreId = $("#scoreIDs").val();
+
     _pnq.push(['loadScore', scoreId]);
-    loadDataForScoreID(scoreId);
+    loadDataForScoreID(scoreId, quality);
 });
+// populate the dropdown for quality selection
+var ind;
+var qualities = [0, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7];
+for (ind = 0; ind < qualities.length; ind = ind + 1) {
+    $('#qualityFilter').append($("<option />").val(qualities[ind]).text(qualities[ind]));
+}
+
 
 $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
     'use strict';
 
-    var i, sid, id1, fname, select = $("#scoreIDs"), initialScoreId;
+    var i, sid, id1, fname, select = $("#scoreIDs"), initialScoreId, confidence;
 
     for (i = 0; i < json.length; i = i + 1) {
         sid = json[i].id0;
         id1 = json[i].id1;
         fname = "alignments/" + sid + '_' + id1 + '.json';
+        confidence = json[i].minConfidence;
 
         //console.log(sid + "      " + fname);
         if (GLVARS.scoreToSyncFileNames[sid]) {
-            GLVARS.scoreToSyncFileNames[sid].push(fname);
+            GLVARS.scoreToSyncFileNames[sid].push([fname, confidence]);
         } else {
-            GLVARS.scoreToSyncFileNames[sid] = [fname];
+            GLVARS.scoreToSyncFileNames[sid] = [[fname, confidence]];
             GLVARS.sIDs.push(sid);
         }
     }
@@ -121,8 +146,8 @@ $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
     initialScoreId = GLVARS.sIDs[0];
 
     _pnq.push(['loadScore', initialScoreId]);
-    loadDataForScoreID(initialScoreId);
-    setTimeout(function () {loadDataForScoreID(initialScoreId); }, 1000);
+    loadDataForScoreID(initialScoreId, 0);
+    setTimeout(function () {loadDataForScoreID(initialScoreId, 0); }, 1000);
 
 });
 
@@ -150,7 +175,7 @@ function resetScoreDOM() {
     $('#videos').empty();
 }
 
-function loadDataForScoreID(_sID) {
+function loadDataForScoreID(_sID, _quality) {
     'use strict';
 
     resetScoreVariables(_sID);
@@ -165,23 +190,30 @@ function loadDataForScoreID(_sID) {
         initVideos(allPairsSyncData);
     }
 
-    $.each(GLVARS.scoreSyncFileNames, function (i, file) {
-        $.getJSON(file)
-            .done(function (json) {
-                doneCount = doneCount + 1;
-                allPairsSyncData.push(json);
-                if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                    whenDone();
-                }
-            })
-            .fail(function (jqxhr, textStatus, error) {
-                doneCount = doneCount + 1;
-                var err = textStatus + ', ' + error;
-                console.log("Request Failed: " + err);
-                if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                    whenDone();
-                }
-            });
+    $.each(GLVARS.scoreSyncFileNames, function (i, fileQual) {
+        if (fileQual[1] >= _quality) {
+            $.getJSON(fileQual[0])
+                .done(function (json) {
+                    doneCount = doneCount + 1;
+                    allPairsSyncData.push(json);
+                    if (doneCount === GLVARS.scoreSyncFileNames.length) {
+                        whenDone();
+                    }
+                })
+                .fail(function (jqxhr, textStatus, error) {
+                    doneCount = doneCount + 1;
+                    var err = textStatus + ', ' + error;
+                    console.log("Request Failed: " + err);
+                    if (doneCount === GLVARS.scoreSyncFileNames.length) {
+                        whenDone();
+                    }
+                });
+        } else {
+            doneCount = doneCount + 1;
+            if (doneCount === GLVARS.scoreSyncFileNames.length) {
+                whenDone();
+            }
+        }
     });
 }
 
