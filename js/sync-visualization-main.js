@@ -88,11 +88,11 @@ $('#scoreIDs').change(function () {
         scoreId = $(this).text();
     });
 
-    _pnq.push(['loadScore', "IMSLP" + scoreId]);
+    _pnq.push(['loadScore', scoreId]);
     loadDataForScoreID(scoreId);
 });
 
-$.getJSON('alignmentQuality.json', function (json) {
+$.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
     'use strict';
 
     var i, sid, id1, fname, select = $("#scoreIDs"), initialScoreId;
@@ -118,7 +118,7 @@ $.getJSON('alignmentQuality.json', function (json) {
 
     initialScoreId = GLVARS.sIDs[0];
 
-    _pnq.push(['loadScore', "IMSLP" + initialScoreId]);
+    _pnq.push(['loadScore', initialScoreId]);
     loadDataForScoreID(initialScoreId);
     setTimeout(function () {loadDataForScoreID(initialScoreId); }, 1000);
 
@@ -406,7 +406,7 @@ function createPageTicks(_svg, _pageTimes) {
                 .attr("font-family", "sans-serif")
                 .attr("font-size", "12px")
                 .attr("fill", "grey")
-                .text(key - - 1)
+                .text(key)
             ;
         }
     }
@@ -509,9 +509,9 @@ function updateScorePosition(d) {
         pageTime = pageAndTime.pageTime,
         normalizedPageTime = getNormalizedTime(page, pageTime);
 
-    _pnq.push(['loadPage', page]);
+    _pnq.push(['loadPage', page - 1]);
     _pnq.push(["clearMeasureHighlightings"]);
-    _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page, true]);
+    _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
 
 }
 
@@ -664,7 +664,7 @@ function getPageAndTime(_scoreTime) {
             page = i;
             pageTime = GLVARS.pageTimes[i];
             if (pageTime >= _scoreTime) {
-                console.log("page: " + page - 1);
+                console.log("page: " + (page - 1));
                 return {"page": (page - 1), "pageTime": _scoreTime};
             }
         }
@@ -809,7 +809,7 @@ function updatePosition() {
     console.log("page: " + page + " pageTime: " + pageTime);
 
     if (pagePlus !== GLVARS.prevPage) {
-        _pnq.push(['loadPage', pagePlus]);
+        _pnq.push(['loadPage', pagePlus - 1]);
         GLVARS.prevPage = pagePlus;
     }
 
@@ -817,7 +817,7 @@ function updatePosition() {
 
     _pnq.push(["clearMeasureHighlightings"]);
     //if ($('#trackMeasure').prop('checked')) {
-    _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page, true]);
+    _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
     //}
 
     //console.log(videoTime + " " + page);
@@ -857,11 +857,14 @@ console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: 
 function getSegmentScoreTime(ytTime) {
     'use strict';
 
-    var timeMap = GLVARS.videoTimeMaps[GLVARS.currentPlayingYTVideoID], s, i, out;
+    var timeMap = GLVARS.videoTimeMaps[GLVARS.currentPlayingYTVideoID],
+        s, i, out;
+
 //console.log("Segment0: " + s + "    " + timeMap[0][1][0] + "    " + timeMap[0][1][timeMap[0][1].length-1]);
 //console.log("Segment1: " + s + "    " + timeMap[1][1][0] + "    " + timeMap[1][1][timeMap[1][1].length-1]);
 //console.log("Segment2: " + s + "    " + timeMap[2][1][0] + "    " + timeMap[2][1][timeMap[2][1].length-1]);
 //console.log("Segment3: " + s + "    " + timeMap[3][1][0] + "    " + timeMap[3][1][timeMap[3][1].length-1]);
+
     for (s = 0; s < timeMap.length; s = s + 1) {
         //if (timeMap[s][1][0] > ytTime) {continue; }
         //console.log("segm: " + s + "   1st: " + timeMap[s][1][0] + "   ytime: " + ytTime);
@@ -1081,7 +1084,7 @@ function measureClickHandler(scoreId, page, measureNumber, totalMeasures) {
         }
     }
     _pnq.push(["clearMeasureHighlightings"]);
-    _pnq.push(["highlightMeasure", measureNumber, page]);
+    _pnq.push(["highlightMeasure", measureNumber, page - 1]);
 }
 
 function appendArrays(_array1, _array2) {
