@@ -874,6 +874,7 @@ function onPlayerReady(event) {
     var videoID = event.target.getVideoData().video_id;
     event.target.seekTo(Math.max(0, GLVARS.videoStartPosition[videoID]));
     event.target.playVideo();
+    enlargeVideoDiv(videoID, 2);
     //console.log("OnPlayerReady: " + videoID);
     //GLVARS.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
 }
@@ -894,13 +895,13 @@ function onPlayerStateChange(event) {
 //        console.log("key: " + key);
 //    }
 
-    console.log("OnPlayerStateChange: ");
+    console.log("OnPlayerStateChange: " + newState );
 
     if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
         GLVARS.currentPlayingYTVideoID = event.target.getVideoData().video_id;
 
-        for (videoID in GLVARS.videoStatus) {
-            if (GLVARS.videoStatus.hasOwnProperty(videoID)) {
+        for (videoID in GLVARS.ytPlayers) {
+            if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
                 if (videoID !== GLVARS.currentPlayingYTVideoID) {
                     if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING) {
                         GLVARS.ytPlayers[videoID].pauseVideo();
@@ -939,7 +940,7 @@ function updatePosition() {
     //if (typeof pageAndTime == "undefined") return;
     if (pageAndTime === "undefined") {return; }
 
-    console.log("page: " + page + " pageTime: " + pageTime);
+    //console.log("page: " + page + " pageTime: " + pageTime);
 
     if (pagePlus !== GLVARS.prevPage) {
         _pnq.push(['loadPage', pagePlus - 1]);
@@ -969,7 +970,7 @@ function getPageAndTimeForVideoTime(time) {
 
     segment = segmentScoreTime[0];
     scoreTime = timeMap[segment][0][segmentScoreTime[1]];
-console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
+//console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
     if (time < timeMap[segment][1][0]) {return {"page": 0, "pageTime": 0}; }
 
     for (i in GLVARS.pageTimes) {
@@ -1139,17 +1140,19 @@ function showAndHideVideoDivs() {
     for (videoID in GLVARS.visibilityOfVideoIDs) {
         if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
             if (GLVARS.visibilityOfVideoIDs[videoID]) {
+                //console.log("SHOW");
                 showDiv(videoID);
-                //GLVARS.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
             } else {
-                if (GLVARS.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.PLAYING && GLVARS.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
-                    //console.log("HideVideoID: " + videoID + "    state: " + GLVARS.ytPlayers[videoID].getPlayerState());
+                if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
+                    //console.log("Video in ytPlayer: " + videoID);
+                    if (GLVARS.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.PLAYING && GLVARS.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
+                        //console.log("HideVideoID: " + videoID + "    state: " + GLVARS.ytPlayers[videoID].getPlayerState());
+                        hideDiv(videoID);
+                    }
+                }
+                if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
                     hideDiv(videoID);
                 }
-                //GLVARS.ytPlayers[videoID].pauseVideo();
-                //if ( GLVARS.currentPlayingYTVideoID == videoID ) {
-                //clearInterval(GLVARS.loopId);
-                //}
             }
         }
     }
@@ -1160,8 +1163,26 @@ function hideDiv(_videoID) {
 
     //document.getElementById(_videoID).style.display = "none";
     //document.getElementById(_videoID).style.visibility = "hidden";
-    document.getElementById(_videoID).width = 0;
-    document.getElementById(_videoID).height = 0;
+    var elementToHide;
+    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
+        elementToHide = document.getElementById(_videoID);
+        elementToHide.width = 0;
+        elementToHide.height = 0;
+    }
+
+    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+        elementToHide = document.getElementById(_videoID).firstChild;
+        elementToHide.style.width = 0 + "px";
+        elementToHide.style.height = 0 + "px";
+
+        var secondElementToHide = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToHide.style.width = 0 + "px";
+        secondElementToHide.style.height = 0 + "px";
+
+        var thirdElementToHide = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thirdElementToHide.style.width = 0 + "px";
+        thirdElementToHide.style.height = 0 + "px";
+    }
 }
 
 function showDiv(_videoID) {
@@ -1169,12 +1190,29 @@ function showDiv(_videoID) {
 
     //document.getElementById(_videoID).style.display = "";
     //document.getElementById(_videoID).style.visibility = "visible";
-    var faktor = 1;
-    if (GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
-        faktor = 2;
+    var faktor = 1, elementToShow;
+    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
+        if (GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+            faktor = 2;
+        }
+        elementToShow = document.getElementById(_videoID);
+        elementToShow.width = faktor * CONSTANTS.VIDEO_WIDTH;
+        elementToShow.height = faktor * CONSTANTS.VIDEO_HEIGHT;
     }
-    document.getElementById(_videoID).width = faktor * CONSTANTS.VIDEO_WIDTH;
-    document.getElementById(_videoID).height = faktor * CONSTANTS.VIDEO_HEIGHT;
+
+    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+        elementToShow = document.getElementById(_videoID).firstChild;
+        elementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        elementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+
+        var secondElementToShow = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        secondElementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+
+        var thirdElementToShow = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thirdElementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        thirdElementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+    }
 }
 
 function pause() {
@@ -1211,10 +1249,16 @@ function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) 
         if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
             if (GLVARS.visibilityOfVideoIDs[videoID] && !oneVideoPlaying) {
                 videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
-                //var state = videoState;
-    //console.log('videoID: ' + videoID);
-                GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
-                GLVARS.ytPlayers[videoID].playVideo();
+                if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
+
+                    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
+                    GLVARS.ytPlayers[videoID].playVideo();
+
+                } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+
+                    GLVARS.videoStartPosition[videoID] = videoTime;
+                    loadVideo(videoID, videoID);
+                }
 
                 oneVideoPlaying = true;
             }
