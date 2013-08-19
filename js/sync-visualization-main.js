@@ -491,6 +491,7 @@ function createPageTicks(_svg, _pageTimes) {
 
     var key, betterLabelShift;
     for (key in _pageTimes) {
+        //console.log("page: " + key);
         if (_pageTimes.hasOwnProperty(key)) {
             betterLabelShift = (0 - - key) > 9 ? GLVARS.labelShift : GLVARS.labelShift / 2;
             _svg.append("text")
@@ -572,7 +573,7 @@ function createPlotSVG() {
 
     GLVARS.xAxis.tickFormat(function (d) { return ''; });
 
-    drawYAxis(svg_basis);
+    //drawYAxis(svg_basis);
 
     return svg_basis;
 }
@@ -839,9 +840,14 @@ function pageDuration(page) {
     if (GLVARS.pageTimes[page + 1]) {
         return GLVARS.pageTimes[page + 1] - GLVARS.pageTimes[page];
     } else {
-        var maxTime = 0, s = 0;
-        for (s = 0; s < timeMap.length; s = s + 1) {
-            maxTime = Math.max(maxTime, Math.max.apply(null, timeMap[s][0]));
+        var maxTime = 0, i, s, timeMap;
+        for (i in GLVARS.videoTimeMaps) {
+            if (GLVARS.videoTimeMaps.hasOwnProperty(i)) {
+                timeMap = GLVARS.videoTimeMaps[i];
+                for (s = 0; s < timeMap.length; s = s + 1) {
+                    maxTime = Math.max(maxTime, Math.max.apply(null, timeMap[s][0]));
+                }
+            }
         }
         return maxTime - GLVARS.pageTimes[page];
     }
@@ -1188,15 +1194,20 @@ function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) 
     "use strict";
 
     var page = viewerPage - -1, oneVideoPlaying = false;
+    _pnq.push(["clearMeasureHighlightings"]);
+    _pnq.push(["highlightMeasure", measureNumber, page - 1]);
+
     console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
     var scoreTime = GLVARS.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures,
         videoID,
         videoTime;
+    //console.log("hier");
     if ($('#hideVideoDivs').prop('checked')) {
         showSuitableVideoDivsForTimePoint(scoreTime);
     } else {
         calculateVisibilityOfVideoIDs(scoreTime);
     }
+    //console.log("da");
     for (videoID in GLVARS.visibilityOfVideoIDs) {
         if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
             if (GLVARS.visibilityOfVideoIDs[videoID] && !oneVideoPlaying) {
@@ -1216,6 +1227,4 @@ function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) 
             }
         }
     }
-    _pnq.push(["clearMeasureHighlightings"]);
-    _pnq.push(["highlightMeasure", measureNumber, page - 1]);
 }

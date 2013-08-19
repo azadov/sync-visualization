@@ -37,6 +37,7 @@ GLVARS.scoreSyncFileNames = [];
 
 GLVARS.allVideoSegments = [];
 GLVARS.curves = [];
+GLVARS.radiobuttons = [];
 
 GLVARS.visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corresponding video
 GLVARS.videoTimeMaps = {};        // maps videoId to localTimeMaps
