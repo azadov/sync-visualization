@@ -103,6 +103,7 @@ function resetScoreVariables(_sID) {
     GLVARS.numberOfVideoSegmentLevels = 1;
     GLVARS.allVideoSegments = [];
     GLVARS.curves = [];
+    GLVARS.radiobuttons = [];
     GLVARS.visibilityOfVideoIDs = {};
     GLVARS.videoTimeMaps = {};
     GLVARS.videoStatus = {};
@@ -259,6 +260,8 @@ function drawPlot(_svg) {
     createRectangles(_svg, GLVARS.allVideoSegments);
 
     createCurves(_svg, GLVARS.curves);
+
+    createRadioButtons(_svg, GLVARS.radiobuttons);
 }
 
 function computePlotElements(_allPairsSyncData) {
@@ -271,7 +274,7 @@ function computePlotElements(_allPairsSyncData) {
     _allPairsSyncData.forEach(function (pairSyncData) {
 
         videoSegments = [];
-        var videoId = pairSyncData.uri1, i, videoSegment, conf;
+        var videoId = pairSyncData.uri1, i, videoSegment, conf, rbutton = {};
 
         if (!GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoId)) {
             GLVARS.visibilityOfVideoIDs[videoId] = false;
@@ -307,6 +310,10 @@ function computePlotElements(_allPairsSyncData) {
             curve = createCurve(currSegment, nextSegment, videoId);
             GLVARS.curves.push(curve);
         }
+
+//        rbutton.videoID = videoId;
+//        rbutton.y = videoSegments[0].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+//        GLVARS.radiobuttons.push(rbutton);
     });
 }
 
@@ -332,12 +339,12 @@ function initVideo(_videoContainerID, _videoID) {
         ph=Math.ceil(CONSTANTS.VIDEO_HEIGHT/2+38.5);
 
     // The image+button overlay code.
-    var code='<div alt="For this Google+ like YouTube trick, please see http://www.skipser.com/510" style="width:'
+    var code='<div style="width:'
         + CONSTANTS.VIDEO_WIDTH + 'px; height:' + CONSTANTS.VIDEO_HEIGHT
         + 'px; margin:0 auto"><a href="#"  onclick="loadVideo(\'' + _videoContainerID + '\', \'' + _videoID
         + '\');return false;" id="skipser-youtubevid-' + _videoID + '"><img src="http://i.ytimg.com/vi/'+ _videoID
         + '/hqdefault.jpg" style="width:' + CONSTANTS.VIDEO_WIDTH + 'px; height:'+ CONSTANTS.VIDEO_HEIGHT
-        +'px;" /><div style="background: url(\'data:image/png;base64,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\') no-repeat scroll 0 0 transparent;height: 77px;width: 77px; position:relative; margin-left:'
+        +'px;" /><div class="yt-thumbnail-playbutton" style="margin-left:'
         + pw + 'px; margin-top:-' + ph + 'px;"></div></a></div>';
 
     // Replace the iframe with a the image+button code.
@@ -549,6 +556,27 @@ function createCurves(_svg, _curves) {
         //;
 }
 
+function createRadioButtons(_svg, _radiobuttons) {
+    'use strict';
+
+    _svg.selectAll(".rbuttons")
+        .data(_radiobuttons)
+        .enter().append("circle")
+        .attr("cx", GLVARS.x_scale(-20))
+        .attr("cy", function (d) { return GLVARS.y_scale(d.y); })
+        .attr("r", 5)
+        .attr("id", function (d) {return d.videoID; })
+        .attr("stroke", "blue")
+        //.style("fill", "steelblue")
+        .style("fill", "white")
+        //.on("click", rbClickHandler)
+    ;
+
+//    _svg.append("circle")
+//                             .attr("cx", GLVARS.x_scale(-20))
+//                             .attr("cy", GLVARS.y_scale(2))
+//                             .attr("r", 20);
+}
 
 function createPlotSVG() {
     'use strict';
@@ -571,6 +599,7 @@ function createPlotSVG() {
         .attr("transform", "translate(0," + GLVARS.plot_height + ")")
         .call(GLVARS.xAxis);
 
+    // don't show the ticks of x-axis
     GLVARS.xAxis.tickFormat(function (d) { return ''; });
 
     //drawYAxis(svg_basis);
@@ -596,6 +625,14 @@ function drawYAxis(svg_basis) {
         .text("Frequency");
 }
 
+function rbClickHandler(d) {
+    'use strict';
+
+    var circle = d3.selectAll("circle");
+
+    circle.style("fill", "steelblue");
+}
+
 function updateScorePosition(d) {
     'use strict';
 
@@ -610,31 +647,22 @@ function updateScorePosition(d) {
     _pnq.push(["clearMeasureHighlightings"]);
     _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
 
-    timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]),
-    timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.videoTimeMaps[GLVARS.videoIDNextToCursor]);
-    if (GLVARS.ytPlayers.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
+    if (GLVARS.videoIDNextToCursor !== "") {
+        timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]),
+        timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.videoTimeMaps[GLVARS.videoIDNextToCursor]);
+        if (GLVARS.ytPlayers.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
 
-        GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
-        GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].playVideo();
+            GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
+            GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].playVideo();
 
-    } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
+        } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
 
-        GLVARS.videoStartPosition[GLVARS.videoIDNextToCursor] = timeInVideo;
-        loadVideo(GLVARS.videoIDNextToCursor, GLVARS.videoIDNextToCursor);
+            GLVARS.videoStartPosition[GLVARS.videoIDNextToCursor] = timeInVideo;
+            loadVideo(GLVARS.videoIDNextToCursor, GLVARS.videoIDNextToCursor);
+        }
     }
 }
 
-//function updateVideoPositionRect(d) {
-//    'use strict';
-//
-//    var videoID = d.videoID,
-//    //console.log("update video position rect: " + videoID);
-//        timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]),
-//        timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.videoTimeMaps[videoID]);
-//
-//    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, timeInVideo));
-//    GLVARS.ytPlayers[videoID].playVideo();
-//}
 
 function updateVideoPositionCurve(d) {
     'use strict';
@@ -1019,7 +1047,10 @@ function showSuitableVideoDivsForCurrentMousePosition() {
         }
     }
 
-    if (videoIDUnder === "" && videoIDAbove === "")  {return; }
+    if (videoIDUnder === "" && videoIDAbove === "")  {
+        GLVARS.videoIDNextToCursor = "";
+        return;
+    }
     //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
     factor = 1;
     if (videoIDUnder === "") {
@@ -1193,7 +1224,7 @@ function pause() {
 function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) {
     "use strict";
 
-    var page = viewerPage - -1, oneVideoPlaying = false;
+    var page = viewerPage - -1, oneVideoPlaying = false, videosToPlay = [], randomIndex;
     _pnq.push(["clearMeasureHighlightings"]);
     _pnq.push(["highlightMeasure", measureNumber, page - 1]);
 
@@ -1210,21 +1241,38 @@ function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) 
     //console.log("da");
     for (videoID in GLVARS.visibilityOfVideoIDs) {
         if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            if (GLVARS.visibilityOfVideoIDs[videoID] && !oneVideoPlaying) {
-                videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
-                if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
-
-                    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
-                    GLVARS.ytPlayers[videoID].playVideo();
-
-                } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
-
-                    GLVARS.videoStartPosition[videoID] = videoTime;
-                    loadVideo(videoID, videoID);
-                }
-
-                oneVideoPlaying = true;
+            if (GLVARS.visibilityOfVideoIDs[videoID]) {
+                videosToPlay.push(videoID);
+//                videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
+//                if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
+//
+//                    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
+//                    GLVARS.ytPlayers[videoID].playVideo();
+//
+//                } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+//
+//                    GLVARS.videoStartPosition[videoID] = videoTime;
+//                    loadVideo(videoID, videoID);
+//                }
+//
+//                oneVideoPlaying = true;
             }
         }
+    }
+
+    randomIndex = getRandom(0, videosToPlay.length - 1);
+    //console.log("length: " + videosToPlay.length + "      index: " + randomIndex);
+
+    videoID = videosToPlay[randomIndex];
+    videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
+    if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
+
+        GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
+        GLVARS.ytPlayers[videoID].playVideo();
+
+    } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+
+        GLVARS.videoStartPosition[videoID] = videoTime;
+        loadVideo(videoID, videoID);
     }
 }
