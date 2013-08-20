@@ -120,6 +120,7 @@ function resetScoreDOM() {
     d3.select('svg').remove();
     d3.select(".mouseTrackLine").remove();
     $('#videos').empty();
+    $('#plotContainer').empty();
 }
 
 function loadDataForScoreID(_sID, _quality) {
@@ -311,9 +312,10 @@ function computePlotElements(_allPairsSyncData) {
             GLVARS.curves.push(curve);
         }
 
-//        rbutton.videoID = videoId;
-//        rbutton.y = videoSegments[0].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
-//        GLVARS.radiobuttons.push(rbutton);
+        rbutton.videoID = videoId;
+        rbutton.y = videoSegments[0].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+        //rbutton.ypx =  GLVARS.y_scale(videoSegments[0].y);//GLVARS.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT)
+        GLVARS.radiobuttons.push(rbutton);
     });
 }
 
@@ -559,23 +561,34 @@ function createCurves(_svg, _curves) {
 function createRadioButtons(_svg, _radiobuttons) {
     'use strict';
 
-    _svg.selectAll(".rbuttons")
-        .data(_radiobuttons)
-        .enter().append("circle")
-        .attr("cx", GLVARS.x_scale(-20))
-        .attr("cy", function (d) { return GLVARS.y_scale(d.y); })
-        .attr("r", 5)
-        .attr("id", function (d) {return d.videoID; })
-        .attr("stroke", "blue")
-        //.style("fill", "steelblue")
-        .style("fill", "white")
-        //.on("click", rbClickHandler)
-    ;
+//    _svg.selectAll(".rbuttons")
+//        .data(_radiobuttons)
+//        .enter().append("circle")
+//        .attr("cx", GLVARS.x_scale(-20))
+//        .attr("cy", function (d) { return GLVARS.y_scale(d.y); })
+//        .attr("r", 5)
+//        .attr("id", function (d) {return d.videoID; })
+//        .attr("stroke", "blue")
+//        //.style("fill", "steelblue")
+//        .style("fill", "white")
+//        //.on("click", rbClickHandler)
+//    ;
+//
+////    _svg.append("circle")
+////                             .attr("cx", GLVARS.x_scale(-20))
+////                             .attr("cy", GLVARS.y_scale(2))
+////                             .attr("r", 20);
+    var i, plotDiv = document.getElementById("plotContainer"), selectVideoRB;
+    for (i = 0; i < _radiobuttons.length; i = i + 1) {
+        selectVideoRB = document.createElement('input');
+        selectVideoRB.setAttribute('id', _radiobuttons[i].videoID + "RB");
+        selectVideoRB.setAttribute('type', 'radio');
+        selectVideoRB.setAttribute('name', 'selectVideoRB');
+        selectVideoRB.setAttribute('class', 'videoRB');
+        selectVideoRB.style.top = (GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom) + "px";
+        plotDiv.appendChild(selectVideoRB);
+    }
 
-//    _svg.append("circle")
-//                             .attr("cx", GLVARS.x_scale(-20))
-//                             .attr("cy", GLVARS.y_scale(2))
-//                             .attr("r", 20);
 }
 
 function createPlotSVG() {
@@ -774,6 +787,8 @@ function updateMouseTrackLine(d) {
             .attr("pointer-events", "none");
         GLVARS.mouseTrackLineExist = true;
     }
+
+    //$("#segmQual").text(currentMouseX + "     " + d3.mouse(this)[1]);
 }
 
 function removeMouseTrackLine(d) {
