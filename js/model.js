@@ -52,6 +52,7 @@ GLVARS.videoTrackLineExist = false;
 
 GLVARS.currentPlayingYTVideoID = "";
 GLVARS.videoIDNextToCursor = "";
+GLVARS.segmentNextToCursor = {};
 GLVARS.loopId = 0;
 GLVARS.prevPage = 0;
 GLVARS.foreRunningTime = 2.0;

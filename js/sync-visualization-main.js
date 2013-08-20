@@ -649,7 +649,7 @@ function updateScorePosition(d) {
 
     if (GLVARS.videoIDNextToCursor !== "") {
         timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]),
-        timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.videoTimeMaps[GLVARS.videoIDNextToCursor]);
+        timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.segmentNextToCursor.timeMap); //GLVARS.videoTimeMaps[GLVARS.videoIDNextToCursor]
         if (GLVARS.ytPlayers.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
 
             GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
@@ -750,11 +750,6 @@ function resetVideoDiv(_videoID) {
     }
 }
 
-//function handleMouseMoveEvent(d){
-//    updateMouseTrackLine(d);
-//    showSuitableVideoDivsForCurrentMousePosition();
-//}
-
 function updateMouseTrackLine(d) {
     'use strict';
 
@@ -825,22 +820,22 @@ function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
     'use strict';
 
     var indexOfLastSynchronizedTimePointInScore = 0, i, segm;
-//    for (i = 0; i < _timeMap[0].length - 1; i = i + 1) {
-//        if ((_timeInScore >= _timeMap[0][i]) && (_timeInScore < _timeMap[0][i + 1])) {
-//            indexOfLastSynchronizedTimePointInScore = i;
-//        }
-//    }
-//    return _timeMap[1][indexOfLastSynchronizedTimePointInScore];
-
-    for (segm = 0; segm < _timeMap.length; segm = segm + 1) {
-        if ((_timeMap[segm][0][0] <= _timeInScore) && (_timeInScore <= _timeMap[segm][0][_timeMap[segm][0].length - 1])) {
-            for (i = 0; i < _timeMap[segm][0].length - 1; i = i + 1) {
-                if ((_timeMap[segm][0][i] <= _timeInScore) && (_timeInScore < _timeMap[segm][0][i + 1])) {
-                     return _timeMap[segm][1][i];
-                }
-            }
+    for (i = 0; i < _timeMap[0].length - 1; i = i + 1) {
+        if ((_timeInScore >= _timeMap[0][i]) && (_timeInScore < _timeMap[0][i + 1])) {
+            return _timeMap[1][i];
         }
     }
+    //return _timeMap[1][indexOfLastSynchronizedTimePointInScore];
+
+//    for (segm = 0; segm < _timeMap.length; segm = segm + 1) {
+//        if ((_timeMap[segm][0][0] <= _timeInScore) && (_timeInScore <= _timeMap[segm][0][_timeMap[segm][0].length - 1])) {
+//            for (i = 0; i < _timeMap[segm][0].length - 1; i = i + 1) {
+//                if ((_timeMap[segm][0][i] <= _timeInScore) && (_timeInScore < _timeMap[segm][0][i + 1])) {
+//                     return _timeMap[segm][1][i];
+//                }
+//            }
+//        }
+//    }
 }
 
 
@@ -1017,10 +1012,13 @@ function showSuitableVideoDivsForCurrentMousePosition() {
         yUnderMousePoint = 0,
         videoIDAbove = "",
         videoIDUnder = "",
+        videoSegmentAbove,
+        videoSegmentUnder,
         i,
         id,
         currentSegment,
         yAb,
+        yUn,
         factor = 0,
         videoToEnlarge = "";
 
@@ -1035,14 +1033,17 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     for (i = 0; i < GLVARS.allVideoSegments.length; i = i + 1) {
         currentSegment = GLVARS.allVideoSegments[i];
         if (currentMouseXPoint >= currentSegment.x1 && currentMouseXPoint <= currentSegment.x2) {
-            if (currentMouseYPoint > currentSegment.y && currentSegment.y > yUnderMousePoint) {
-                yUnderMousePoint = currentSegment.y;
+            yUn = currentSegment.y;// - CONSTANTS.SEGMENT_RECT_HEIGHT;
+            if (currentMouseYPoint > yUn && yUn > yUnderMousePoint) {
+                yUnderMousePoint = yUn;
                 videoIDUnder = currentSegment.videoID;
+                videoSegmentUnder = currentSegment;
             }
             yAb = currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT;
             if (currentMouseYPoint < yAb && yAb < yAboveMousePoint) {
                 yAboveMousePoint = yAb;
                 videoIDAbove = currentSegment.videoID;
+                videoSegmentAbove = currentSegment;
             }
         }
     }
@@ -1056,21 +1057,30 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     if (videoIDUnder === "") {
         //factor = currentMouseYPoint / yAboveMousePoint;
         videoToEnlarge = videoIDAbove;
+        GLVARS.segmentNextToCursor = videoSegmentAbove;
     } else if (videoIDAbove === "") {
         //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / (GLVARS.maxPlotY - yUnderMousePoint);
         videoToEnlarge = videoIDUnder;
+        GLVARS.segmentNextToCursor = videoSegmentUnder;
     } else if (videoIDUnder === videoIDAbove) {
         factor = 1;
         videoToEnlarge = videoIDUnder;
+        if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
+            GLVARS.segmentNextToCursor = videoSegmentUnder;
+        } else {
+            GLVARS.segmentNextToCursor = videoSegmentAbove;
+        }
     } else {
         if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
             // point under is the next to mouse point
             //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2);
             videoToEnlarge = videoIDUnder;
+            GLVARS.segmentNextToCursor = videoSegmentUnder;
         } else {
             // point above is the next to mouse point
             //factor = (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2) - 1;
             videoToEnlarge = videoIDAbove;
+            GLVARS.segmentNextToCursor = videoSegmentAbove;
         }
     }
     if (GLVARS.ytPlayers.hasOwnProperty(videoToEnlarge)) {
