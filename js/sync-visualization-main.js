@@ -315,8 +315,10 @@ function computePlotElements(_allPairsSyncData) {
         rbutton.videoID = videoId;
         //rbutton.y = videoSegments[0].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
         rbutton.y = videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
-        rbutton.height = videoSegments.length * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+        //rbutton.height = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+        rbutton.height = (videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2) - (videoSegments[0].y - CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT)
         GLVARS.radiobuttons.push(rbutton);
+        //console.log("SegmLen: " + videoSegments.length);
     });
 }
 
@@ -424,7 +426,10 @@ function onPlayerStateChange(event) {
         }
         clearInterval(GLVARS.loopId);
         GLVARS.loopId = setInterval(updatePosition, 500);
+
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
+
+        document.getElementById(GLVARS.currentPlayingYTVideoID + "RB").checked = true;
     } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
         if (deleteInterval) {
             clearInterval(GLVARS.loopId);
@@ -580,7 +585,8 @@ function createRadioButtons(_svg, _radiobuttons) {
 ////                             .attr("cy", GLVARS.y_scale(2))
 ////                             .attr("r", 20);
     var i, plotDiv = document.getElementById("plotContainer"), selectVideoRB, selectVideoDiv, topForDiv, topForRB, heightForDiv;
-    for (i = 0; i < _radiobuttons.length; i = i + 1) {
+    // if loop starts from 0 then rb will be added from bottom to top and this affects control from keyboard
+    for (i = _radiobuttons.length - 1; i >= 0; i = i - 1) {
         selectVideoDiv = document.createElement('div');
         selectVideoDiv.setAttribute('class', 'videoRBDiv');
 
@@ -598,9 +604,9 @@ function createRadioButtons(_svg, _radiobuttons) {
         selectVideoRB.setAttribute('class', 'videoRB');
         selectVideoRB.setAttribute('onclick', 'rbClickHandler(this)');
         //selectVideoRB.style.height = (GLVARS.plot_height - GLVARS.y_scale(_radiobuttons[i].height)) + "px";
-        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + heightForDiv/2 + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom;
+        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + heightForDiv / 2 + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom;
         selectVideoRB.style.top = topForRB + "px";
-        console.log("Top: " + topForRB + "     y: " + _radiobuttons[i].y + "     height: " + _radiobuttons[i].height);
+        console.log("Top: " + topForRB + "     y: " + GLVARS.y_scale(_radiobuttons[i].y) + "     height: " + _radiobuttons[i].height);
         //selectVideoDiv.appendChild(selectVideoRB);
         plotDiv.appendChild(selectVideoRB);
 
