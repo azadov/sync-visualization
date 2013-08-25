@@ -129,13 +129,13 @@ function loadDataForScoreID(_sID, _quality) {
     resetScoreVariables(_sID);
     resetScoreDOM();
 
-    var svg = createPlotSVG(), doneCount = 0, allPairsSyncData = [];
+    var svg = createPlotSVG(), doneCount = 0, allScoreToVideoPairsSyncData = [];
 
     function whenDone() {
-        computePlotElements(allPairsSyncData, svg);
+        computePlotElements(allScoreToVideoPairsSyncData, svg);
         computePlotDimensions();
         drawPlot(svg);
-        initVideos(allPairsSyncData);
+        initVideos(allScoreToVideoPairsSyncData);
     }
 
     $.each(GLVARS.scoreSyncFileNames, function (i, fileQual) {
@@ -143,7 +143,7 @@ function loadDataForScoreID(_sID, _quality) {
             $.getJSON(fileQual[0])
                 .done(function (json) {
                     doneCount = doneCount + 1;
-                    allPairsSyncData.push(json);
+                    allScoreToVideoPairsSyncData.push(json);
                     if (doneCount === GLVARS.scoreSyncFileNames.length) {
                         whenDone();
                     }
@@ -265,17 +265,17 @@ function drawPlot(_svg) {
     createRadioButtons(_svg, GLVARS.radiobuttons);
 }
 
-function computePlotElements(_allPairsSyncData) {
+function computePlotElements(_allScoreToVideoPairsSyncData) {
     'use strict';
 
     var videoSegments = [], currSegment, nextSegment, curve;
 
-    GLVARS.pageTimes = _allPairsSyncData[0].streamTimes0;
+    GLVARS.pageTimes = _allScoreToVideoPairsSyncData[0].streamTimes0;
 
-    _allPairsSyncData.forEach(function (pairSyncData) {
+    _allScoreToVideoPairsSyncData.forEach(function (pairSyncData) {
 
         videoSegments = [];
-        var videoId = pairSyncData.uri1, i, videoSegment, conf, rbutton = {};
+        var videoId = pairSyncData.uri1, i, videoSegment, conf, rbutton;
 
         if (!GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoId)) {
             GLVARS.visibilityOfVideoIDs[videoId] = false;
@@ -303,7 +303,6 @@ function computePlotElements(_allPairsSyncData) {
 
         assignSegmentYCoordinates(videoSegments);
 
-        appendArrays(GLVARS.allVideoSegments, videoSegments);
 
         for (i = 0; i < videoSegments.length - 1; i = i + 1) {
             currSegment = videoSegments[i];
@@ -312,20 +311,31 @@ function computePlotElements(_allPairsSyncData) {
             GLVARS.curves.push(curve);
         }
 
-        rbutton.videoID = videoId;
-        //rbutton.y = videoSegments[0].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
-        rbutton.y = videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
-        //rbutton.height = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
-        rbutton.height = (videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2) - (videoSegments[0].y - CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT)
-        GLVARS.radiobuttons.push(rbutton);
-        //console.log("SegmLen: " + videoSegments.length);
+        for (i = 0; i < videoSegments.length; i = i + 1) {
+            rbutton = {};
+            rbutton.videoID = videoId;
+            rbutton.segmentIndex = GLVARS.allVideoSegments.length + i; // index in GLVARS.allVideoSegments array
+            rbutton.y = videoSegments[i].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+            GLVARS.radiobuttons.push(rbutton);
+            //console.log("Length: " + GLVARS.allVideoSegments.length + "    i: " + "     index: " + rbutton.index);
+        }
+
+        appendArrays(GLVARS.allVideoSegments, videoSegments);
+
+//        rbutton.videoID = videoId;
+//        //rbutton.y = videoSegments[0].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+//        rbutton.y = videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
+//        //rbutton.height = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+//        rbutton.height = (videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2) - (videoSegments[0].y - CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT)
+//        GLVARS.radiobuttons.push(rbutton);
+//        //console.log("SegmLen: " + videoSegments.length);
     });
 }
 
-function initVideos(_allPairsSyncData) {
+function initVideos(_allScoreToVideoPairsSyncData) {
     'use strict';
 
-    _allPairsSyncData.forEach(function (pairSyncData) {
+    _allScoreToVideoPairsSyncData.forEach(function (pairSyncData) {
         var videoId = pairSyncData.uri1;
 
         $('<div>').attr('class', 'yt-videos').attr('id', videoId).appendTo($('#videos'));
@@ -429,7 +439,7 @@ function onPlayerStateChange(event) {
 
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
 
-        document.getElementById(GLVARS.currentPlayingYTVideoID + "RB").checked = true;
+        //document.getElementById(GLVARS.currentPlayingYTVideoID + "RB").checked = true;
     } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
         if (deleteInterval) {
             clearInterval(GLVARS.loopId);
@@ -567,58 +577,32 @@ function createCurves(_svg, _curves) {
 function createRadioButtons(_svg, _radiobuttons) {
     'use strict';
 
-//    _svg.selectAll(".rbuttons")
-//        .data(_radiobuttons)
-//        .enter().append("circle")
-//        .attr("cx", GLVARS.x_scale(-20))
-//        .attr("cy", function (d) { return GLVARS.y_scale(d.y); })
-//        .attr("r", 5)
-//        .attr("id", function (d) {return d.videoID; })
-//        .attr("stroke", "blue")
-//        //.style("fill", "steelblue")
-//        .style("fill", "white")
-//        //.on("click", rbClickHandler)
-//    ;
-//
-////    _svg.append("circle")
-////                             .attr("cx", GLVARS.x_scale(-20))
-////                             .attr("cy", GLVARS.y_scale(2))
-////                             .attr("r", 20);
-    var i, plotDiv = document.getElementById("plotContainer"), selectVideoRB, selectVideoDiv, topForDiv, topForRB, heightForDiv;
+    var i, plotDiv = document.getElementById("plotContainer"), selectVideoRB, topForRB;
     // if loop starts from 0 then rb will be added from bottom to top and this affects control from keyboard
     for (i = _radiobuttons.length - 1; i >= 0; i = i - 1) {
-        selectVideoDiv = document.createElement('div');
-        selectVideoDiv.setAttribute('class', 'videoRBDiv');
-
-        heightForDiv = GLVARS.plot_height - GLVARS.y_scale(_radiobuttons[i].height);
-        // selectVideoRB.style.setAttribute('heigth', '...') could not work for IE
-        selectVideoDiv.style.height = heightForDiv + "px";
-
-        topForDiv = GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom + 8.9;
-        selectVideoDiv.style.top = topForDiv + "px";
 
         selectVideoRB = document.createElement('input');
-        selectVideoRB.setAttribute('id', _radiobuttons[i].videoID + "RB");
+        selectVideoRB.setAttribute('id', _radiobuttons[i].videoID + "_" + _radiobuttons[i].segmentIndex + "_RB");
+        //selectVideoRB.setAttribute('index', _radiobuttons[i].index);
         selectVideoRB.setAttribute('type', 'radio');
         selectVideoRB.setAttribute('name', 'selectVideoGroupRB');
         selectVideoRB.setAttribute('class', 'videoRB');
         selectVideoRB.setAttribute('onclick', 'rbClickHandler(this)');
-        //selectVideoRB.style.height = (GLVARS.plot_height - GLVARS.y_scale(_radiobuttons[i].height)) + "px";
-        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + heightForDiv / 2 + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom;
+
+        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom;
         selectVideoRB.style.top = topForRB + "px";
-        console.log("Top: " + topForRB + "     y: " + GLVARS.y_scale(_radiobuttons[i].y) + "     height: " + _radiobuttons[i].height);
-        //selectVideoDiv.appendChild(selectVideoRB);
+
         plotDiv.appendChild(selectVideoRB);
 
-        d3.select("g").append("line")
-            .attr("class", "videoTopLine")
-            .attr("x1", GLVARS.x_scale(0))
-            .attr("y1", GLVARS.y_scale(_radiobuttons[i].y))
-            .attr("x2", GLVARS.x_scale(GLVARS.maxPlotX))
-            .attr("y2", GLVARS.y_scale(_radiobuttons[i].y))
-            .attr("stroke-width", 1)
-            .attr("stroke", "lightgrey")
-            .attr("pointer-events", "none");
+//        d3.select("g").append("line")
+//            .attr("class", "videoTopLine")
+//            .attr("x1", GLVARS.x_scale(0))
+//            .attr("y1", GLVARS.y_scale(_radiobuttons[i].y))
+//            .attr("x2", GLVARS.x_scale(GLVARS.maxPlotX))
+//            .attr("y2", GLVARS.y_scale(_radiobuttons[i].y))
+//            .attr("stroke-width", 1)
+//            .attr("stroke", "lightgrey")
+//            .attr("pointer-events", "none");
     }
 
 }
@@ -673,31 +657,38 @@ function drawYAxis(svg_basis) {
 function rbClickHandler(d) {
     'use strict';
 
-    var rbVideoID = d.id.substr(0, d.id.length - 2), videoID, videoTime = 0, scoreTime = 0, playingVideoTime = 0, i, changeVideoTime = false;
-    console.log("RBClickHandler " + d.id + "   " + rbVideoID);
+    var splt = d.id.split("_"), rbVideoID = "", rbSegmentIndex = splt[splt.length - 2], videoID, videoTime = 0, pageTime, scoreTime = 0, playingVideoTime = 0, i;
+
+    for (i = 0; i < splt.length - 2; i = i + 1) {
+        rbVideoID = rbVideoID + splt[i] + "_";
+    }
+    rbVideoID = rbVideoID.substr(0, rbVideoID.length - 1);
+    console.log("RBClickHandler " + d.id + "   videoID: " + rbVideoID + "     Index: " + rbSegmentIndex);
 
     for (videoID in GLVARS.ytPlayers) {
         if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
-            if (videoID !== rbVideoID) {
+            //if (videoID !== rbVideoID) {
                 if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
                     playingVideoTime = GLVARS.ytPlayers[videoID].getCurrentTime();
-                    scoreTime = getPageAndTimeForVideoTime(playingVideoTime, videoID).pageTime;
+                    pageTime = getPageAndTimeForVideoTime(playingVideoTime, videoID);
                     GLVARS.ytPlayers[videoID].pauseVideo();
-                    //deleteInterval = false;
                 }
-            }
+            //}
         }
     }
 
-    if ( scoreTime > 0 ) {
-        for (i = 0; i < GLVARS.allVideoSegments.length; i = i + 1) {
-            if (GLVARS.allVideoSegments[i].videoID === rbVideoID && GLVARS.allVideoSegments[i].x1 <= scoreTime && scoreTime <= GLVARS.allVideoSegments[i].x2) {
-                changeVideoTime = true;
-                console.log("true");
-            }
-        }
-        if (changeVideoTime) {
-            videoTime = getVideoTimeForPagePosition(rbVideoID, 0, scoreTime);
+    if (pageTime === undefined) {
+        scoreTime = 0;
+    } else {
+        scoreTime = pageTime.pageTime;
+    }
+
+    videoTime = GLVARS.allVideoSegments[rbSegmentIndex].timeMap[1][0];
+    if (scoreTime > 0) {
+        if (GLVARS.allVideoSegments[rbSegmentIndex].x1 <= scoreTime && scoreTime <= GLVARS.allVideoSegments[rbSegmentIndex].x2) {
+            videoTime = getSegmentVideoTimeForPagePosition(rbVideoID, rbSegmentIndex, scoreTime);
+            //changeVideoTime = true;
+            //console.log("true");
         }
     }
 
@@ -979,7 +970,7 @@ function getYtOffsetByScoreTime(videoID, time) {
     }
 }
 
-function getVideoTimeForPagePosition(videoID, page, pt) {
+function getVideoTimeForPagePosition(videoID, pt) {
     'use strict';
 
     //console.log("getting time for page position " + page + " " + relPos);
@@ -989,6 +980,20 @@ function getVideoTimeForPagePosition(videoID, page, pt) {
     return timeMap[segmentScoreTime[0]][1][segmentScoreTime[1]];
 }
 
+function getSegmentVideoTimeForPagePosition(_videoID, _segmentIndex, _pt) {
+    'use strict';
+
+    var segmTimeMap = GLVARS.allVideoSegments[_segmentIndex].timeMap, i, videoTime = 0;
+
+    for (i = 0; i < segmTimeMap[0].length - 1; i = i + 1) {
+        if ((segmTimeMap[0][i] <= _pt) && (_pt < segmTimeMap[0][i + 1])) {
+            videoTime = segmTimeMap[1][i];
+        }
+    }
+
+    return videoTime;
+}
+
 function updatePosition() {
     'use strict';
 
@@ -996,13 +1001,18 @@ function updatePosition() {
     var videoTime = GLVARS.ytPlayers[GLVARS.currentPlayingYTVideoID].getCurrentTime(),
         pageAndTime = getPageAndTimeForVideoTime(videoTime, GLVARS.currentPlayingYTVideoID),
         pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + GLVARS.foreRunningTime, GLVARS.currentPlayingYTVideoID),
-        page = pageAndTime.page,
-        pageTime = pageAndTime.pageTime,
-        normalizedPageTime = getNormalizedTime(pageAndTime.page, pageAndTime.pageTime),
-        pagePlus = pageAndTimePlus ? pageAndTimePlus.page : pageAndTime.page;
+        page,
+        pageTime,
+        normalizedPageTime,
+        pagePlus;
 
     //if (typeof pageAndTime == "undefined") return;
-    if (pageAndTime === "undefined") {return; }
+    if (pageAndTime === undefined) {return; }
+
+    page = pageAndTime.page;
+    pageTime = pageAndTime.pageTime;
+    normalizedPageTime = getNormalizedTime(pageAndTime.page, pageAndTime.pageTime);
+    pagePlus = pageAndTimePlus ? pageAndTimePlus.page : pageAndTime.page;
 
     //console.log("page: " + page + " pageTime: " + pageTime);
 
@@ -1030,7 +1040,7 @@ function getPageAndTimeForVideoTime(time, _videoID) {
         segment, scoreTime,
         i;
 
-    if (segmentScoreTime === "undefined") {return undefined; }
+    if (segmentScoreTime === undefined) {return undefined; }
 
     segment = segmentScoreTime[0];
     scoreTime = timeMap[segment][0][segmentScoreTime[1]];
@@ -1054,11 +1064,6 @@ function getSegmentScoreTime(ytTime, _videoID) {
 
     var timeMap = GLVARS.videoTimeMaps[_videoID],
         s, i, out;
-
-//console.log("Segment0: " + s + "    " + timeMap[0][1][0] + "    " + timeMap[0][1][timeMap[0][1].length-1]);
-//console.log("Segment1: " + s + "    " + timeMap[1][1][0] + "    " + timeMap[1][1][timeMap[1][1].length-1]);
-//console.log("Segment2: " + s + "    " + timeMap[2][1][0] + "    " + timeMap[2][1][timeMap[2][1].length-1]);
-//console.log("Segment3: " + s + "    " + timeMap[3][1][0] + "    " + timeMap[3][1][timeMap[3][1].length-1]);
 
     for (s = 0; s < timeMap.length; s = s + 1) {
         //if (timeMap[s][1][0] > ytTime) {continue; }
@@ -1336,19 +1341,6 @@ function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) 
         if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
             if (GLVARS.visibilityOfVideoIDs[videoID]) {
                 videosToPlay.push(videoID);
-//                videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
-//                if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
-//
-//                    GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
-//                    GLVARS.ytPlayers[videoID].playVideo();
-//
-//                } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
-//
-//                    GLVARS.videoStartPosition[videoID] = videoTime;
-//                    loadVideo(videoID, videoID);
-//                }
-//
-//                oneVideoPlaying = true;
             }
         }
     }
@@ -1357,7 +1349,7 @@ function measureClickHandler(scoreId, viewerPage, measureNumber, totalMeasures) 
     //console.log("length: " + videosToPlay.length + "      index: " + randomIndex);
 
     videoID = videosToPlay[randomIndex];
-    videoTime = getVideoTimeForPagePosition(videoID, page, scoreTime);
+    videoTime = getVideoTimeForPagePosition(videoID, scoreTime);
     if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
 
         GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
