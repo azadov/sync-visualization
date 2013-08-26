@@ -439,7 +439,6 @@ function onPlayerStateChange(event) {
 
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
 
-        //document.getElementById(GLVARS.currentPlayingYTVideoID + "RB").checked = true;
     } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
         if (deleteInterval) {
             clearInterval(GLVARS.loopId);
@@ -667,13 +666,14 @@ function rbClickHandler(d) {
 
     for (videoID in GLVARS.ytPlayers) {
         if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
-            //if (videoID !== rbVideoID) {
-                if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
-                    playingVideoTime = GLVARS.ytPlayers[videoID].getCurrentTime();
-                    pageTime = getPageAndTimeForVideoTime(playingVideoTime, videoID);
+            if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+                playingVideoTime = GLVARS.ytPlayers[videoID].getCurrentTime();
+                pageTime = getPageAndTimeForVideoTime(playingVideoTime, videoID);
+
+                if (videoID !== rbVideoID) {
                     GLVARS.ytPlayers[videoID].pauseVideo();
                 }
-            //}
+            }
         }
     }
 
@@ -994,6 +994,20 @@ function getSegmentVideoTimeForPagePosition(_videoID, _segmentIndex, _pt) {
     return videoTime;
 }
 
+function getSegmentIndexFromVideoTime(_videoID, _vtime) {
+    'use strict';
+
+    var i, segm;
+    for (i = 0; i < GLVARS.allVideoSegments.length; i = i + 1) {
+        segm = GLVARS.allVideoSegments[i];
+        if (segm.videoID === _videoID) {
+            if ((segm.timeMap[1][0] <= _vtime) && (_vtime <= segm.timeMap[1][segm.timeMap[1].length - 1])) {
+                return i;
+            }
+        }
+    }
+}
+
 function updatePosition() {
     'use strict';
 
@@ -1004,7 +1018,8 @@ function updatePosition() {
         page,
         pageTime,
         normalizedPageTime,
-        pagePlus;
+        pagePlus,
+        rbID;
 
     //if (typeof pageAndTime == "undefined") return;
     if (pageAndTime === undefined) {return; }
@@ -1024,11 +1039,12 @@ function updatePosition() {
     updateVideoTrackLine(pageTime);
 
     _pnq.push(["clearMeasureHighlightings"]);
-    //if ($('#trackMeasure').prop('checked')) {
     _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
-    //}
 
-    //console.log(videoTime + " " + page);
+    rbID = GLVARS.currentPlayingYTVideoID + "_" + getSegmentIndexFromVideoTime(GLVARS.currentPlayingYTVideoID, videoTime) + "_RB";
+    if (!document.getElementById(rbID).checked) {
+        document.getElementById(rbID).checked = true;
+    }
 }
 
 function getPageAndTimeForVideoTime(time, _videoID) {
