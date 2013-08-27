@@ -129,7 +129,7 @@ function loadDataForScoreID(_sID, _quality) {
     resetScoreVariables(_sID);
     resetScoreDOM();
 
-    var svg = createPlotSVG(), doneCount = 0, allScoreToVideoPairsSyncData = [];
+    var svg = createPlotSVG(), doneCount = 0, allScoreToVideoPairsSyncData = [], vid, url;
 
     function whenDone() {
         computePlotElements(allScoreToVideoPairsSyncData, svg);
@@ -289,6 +289,9 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
         if (!GLVARS.videoStartPosition.hasOwnProperty((videoId))) {
             GLVARS.videoStartPosition[videoId] = 0;
         }
+        if (!GLVARS.videoTitle.hasOwnProperty(videoId)) {
+            addVideoTitle(videoId);
+        }
 
         //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
         for (i = 0; i < pairSyncData.localTimeMaps.length; i = i + 1) {
@@ -439,6 +442,8 @@ function onPlayerStateChange(event) {
 
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
 
+        //$("#videoTitle").text(GLVARS.videoTitle[GLVARS.currentPlayingYTVideoID]);
+
     } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
         if (deleteInterval) {
             clearInterval(GLVARS.loopId);
@@ -451,6 +456,24 @@ function onPlayerStateChange(event) {
 
 }
 
+function addVideoTitle(_videoID) {
+    'use strict';
+
+
+    var url = "http://gdata.youtube.com/feeds/api/videos/" + _videoID + "?v=2&alt=json-in-script&callback=?";
+    //console.log(url + "      ");
+    $.getJSON(url)
+        .done(function (jsonObj) {
+            //var vidID = jsonObj.entry['media$group']['yt$videoid']['$t']; // it is wrong use 'vid' hier
+            GLVARS.videoTitle[_videoID] = jsonObj.entry.title['$t'];
+            //console.log(_videoID + "       " + GLVARS.videoTitle[_videoID]);
+        })
+        .fail(function(jqxhr, textStatus, error) {
+            GLVARS.videoTitle[_videoID] = "Data not available";
+            //console.log("Fail: " + textStatus + ', ' + error);
+        });
+
+}
 
 /**
  * sorts rectangles according the x coordinate of video id axis file
@@ -656,13 +679,13 @@ function drawYAxis(svg_basis) {
 function rbClickHandler(d) {
     'use strict';
 
-    var splt = d.id.split("_"), rbVideoID = "", rbSegmentIndex = splt[splt.length - 2], videoID, videoTime = 0, pageTime, scoreTime = 0, playingVideoTime = 0, i;
+    var splt = d.id.split("_"), rbVideoID = "", rbSegmentIndex = splt[splt.length - 2], videoID, videoTime, pageTime, scoreTime = 0, playingVideoTime = 0, i;
 
     for (i = 0; i < splt.length - 2; i = i + 1) {
         rbVideoID = rbVideoID + splt[i] + "_";
     }
     rbVideoID = rbVideoID.substr(0, rbVideoID.length - 1);
-    console.log("RBClickHandler " + d.id + "   videoID: " + rbVideoID + "     Index: " + rbSegmentIndex);
+    //console.log("RBClickHandler " + d.id + "   videoID: " + rbVideoID + "     Index: " + rbSegmentIndex);
 
     for (videoID in GLVARS.ytPlayers) {
         if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
@@ -760,7 +783,7 @@ function enlargeVideoDivCurve(d) {
 function enlargeVideoDiv(_videoID, _coefficient) {
     'use strict';
 
-    var elementToEnlarge, secondElementToEnlarge, thirdElementToEnlarge;
+    var elementToEnlarge, secondElementToEnlarge, thirdElementToEnlarge, vID, someVideoPlaying = false;
     if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
         elementToEnlarge = document.getElementById(_videoID);  //.firstChild.firstChild
         elementToEnlarge.width = _coefficient * CONSTANTS.VIDEO_WIDTH;
@@ -779,6 +802,17 @@ function enlargeVideoDiv(_videoID, _coefficient) {
         thirdElementToEnlarge = document.getElementById(_videoID).firstChild.firstChild.lastChild;
         thirdElementToEnlarge.style.width = _coefficient * CONSTANTS.VIDEO_WIDTH + "px";
         thirdElementToEnlarge.style.height = _coefficient * CONSTANTS.VIDEO_HEIGHT + "px";
+    }
+
+    for (vID in GLVARS.ytPlayers) {
+        if (GLVARS.ytPlayers.hasOwnProperty(vID)) {
+            if (GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.BUFFERING) {
+                someVideoPlaying = true;
+            }
+        }
+    }
+    if (!someVideoPlaying) {
+        $("#videoTitle").text(GLVARS.videoTitle[_videoID]);
     }
 }
 

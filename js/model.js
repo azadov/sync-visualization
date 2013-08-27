@@ -43,6 +43,7 @@ GLVARS.visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corre
 GLVARS.videoTimeMaps = {};        // maps videoId to localTimeMaps
 GLVARS.videoStatus = {};          // maps videoId to status
 GLVARS.videoStartPosition = {};   // maps videoId to start position
+GLVARS.videoTitle = {};           // maps videoId to video title
 
 GLVARS.ytPlayers = {};
 GLVARS.ytPlayerThumbnails = {};
