@@ -28,7 +28,7 @@ GLVARS.maxPlotX = 0;
 GLVARS.minPlotY = 0;
 GLVARS.maxPlotY = 0;
 
-GLVARS.scoreToSyncFileNames = {};          // list of file names of video syncs for a scoreId
+GLVARS.allScoreToSyncFileNames = {};          // list of file names of video syncs for a scoreId
 GLVARS.sIDs = [];
 GLVARS.pageTimes = [];
 

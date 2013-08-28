@@ -73,10 +73,10 @@ $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
         confidence = json[i].minConfidence;
 
         //console.log(sid + "      " + fname);
-        if (GLVARS.scoreToSyncFileNames[sid]) {
-            GLVARS.scoreToSyncFileNames[sid].push([fname, confidence]);
+        if (GLVARS.allScoreToSyncFileNames[sid]) {
+            GLVARS.allScoreToSyncFileNames[sid].push([fname, confidence, id1]);
         } else {
-            GLVARS.scoreToSyncFileNames[sid] = [[fname, confidence]];
+            GLVARS.allScoreToSyncFileNames[sid] = [[fname, confidence, id1]];
             GLVARS.sIDs.push(sid);
         }
     }
@@ -108,7 +108,7 @@ function resetScoreVariables(_sID) {
     GLVARS.videoTimeMaps = {};
     GLVARS.videoStatus = {};
     GLVARS.videoTitle = {};
-    GLVARS.scoreSyncFileNames = GLVARS.scoreToSyncFileNames[_sID];
+    GLVARS.scoreSyncFileNames = GLVARS.allScoreToSyncFileNames[_sID];
     GLVARS.maxPlotX = 0;
     GLVARS.ytPlayers = {};
     GLVARS.ytPlayerThumbnails = {};
@@ -130,7 +130,7 @@ function loadDataForScoreID(_sID, _quality) {
     resetScoreVariables(_sID);
     resetScoreDOM();
 
-    var svg = createPlotSVG(), doneCount = 0, allScoreToVideoPairsSyncData = [], vid, url;
+    var svg = createPlotSVG(), doneCount = 0, doneCountCheck1 = 0, allScoreToVideoPairsSyncData = [], vid, url, noRestrictedVideos = [];
 
     function whenDone() {
         computePlotElements(allScoreToVideoPairsSyncData, svg);
@@ -139,30 +139,63 @@ function loadDataForScoreID(_sID, _quality) {
         initVideos(allScoreToVideoPairsSyncData);
     }
 
-    $.each(GLVARS.scoreSyncFileNames, function (i, fileQual) {
-        if (fileQual[1] >= _quality) {
-            $.getJSON(fileQual[0])
-                .done(function (json) {
-                    doneCount = doneCount + 1;
-                    allScoreToVideoPairsSyncData.push(json);
-                    if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                        whenDone();
-                    }
-                })
-                .fail(function (jqxhr, textStatus, error) {
-                    doneCount = doneCount + 1;
-                    var err = textStatus + ', ' + error;
-                    console.log("Request Failed: " + err);
-                    if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                        whenDone();
-                    }
-                });
-        } else {
-            doneCount = doneCount + 1;
-            if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                whenDone();
+    function whenChekingAvailabilityOfVidesIsDone() {
+
+        $.each(GLVARS.scoreSyncFileNames, function (i, fileQual) {
+            if (fileQual[1] >= _quality) {
+                $.getJSON(fileQual[0])
+                    .done(function (json) {
+                        doneCount = doneCount + 1;
+
+                        allScoreToVideoPairsSyncData.push(json);
+                        if (doneCount === GLVARS.scoreSyncFileNames.length) {
+                            whenDone();
+                        }
+                    })
+                    .fail(function (jqxhr, textStatus, error) {
+                        doneCount = doneCount + 1;
+                        var err = textStatus + ', ' + error;
+                        console.log("Request Failed: " + err);
+                        if (doneCount === GLVARS.scoreSyncFileNames.length) {
+                            whenDone();
+                        }
+                    });
+            } else {
+                doneCount = doneCount + 1;
+                if (doneCount === GLVARS.scoreSyncFileNames.length) {
+                    whenDone();
+                }
             }
-        }
+        });
+    }
+
+    $.each(GLVARS.scoreSyncFileNames, function (i, entry) {
+        var url = "http://gdata.youtube.com/feeds/api/videos/" + entry[2] + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
+        //console.log(url + "      ");
+        $.getJSON(url)
+            .done(function (jsonObj) {
+                doneCountCheck1 = doneCountCheck1 + 1
+                //var vidID = jsonObj.entry['media$group']['yt$videoid']['$t']; // it is wrong use 'vid' hier
+                GLVARS.videoTitle[entry[2]] = jsonObj.entry.title['$t'];
+
+//                if (jsonObj.entry.app$control.yt$state['$t'] !== "This video is not available in your region.") {
+//                    noRestrictedVideos.push(entry);
+//                }
+
+                if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
+                    //GLVARS.scoreSyncFileNames = noRestrictedVideos;
+                    whenChekingAvailabilityOfVidesIsDone();
+                }
+            })
+            .fail(function(jqxhr, textStatus, error) {
+                doneCountCheck1 = doneCountCheck1 + 1
+                GLVARS.videoTitle[entry[2]] = "Data not available";
+
+                if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
+                    //GLVARS.scoreSyncFileNames = noRestrictedVideos;
+                    whenChekingAvailabilityOfVidesIsDone();
+                }
+            });
     });
 }
 
@@ -290,9 +323,9 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
         if (!GLVARS.videoStartPosition.hasOwnProperty((videoId))) {
             GLVARS.videoStartPosition[videoId] = 0;
         }
-        if (!GLVARS.videoTitle.hasOwnProperty(videoId)) {
-            addVideoTitle(videoId);
-        }
+//        if (!GLVARS.videoTitle.hasOwnProperty(videoId)) {
+//            addVideoTitle(videoId);
+//        }
 
         //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
         for (i = 0; i < pairSyncData.localTimeMaps.length; i = i + 1) {
@@ -456,24 +489,24 @@ function onPlayerStateChange(event) {
 
 }
 
-function addVideoTitle(_videoID) {
-    'use strict';
-
-
-    var url = "http://gdata.youtube.com/feeds/api/videos/" + _videoID + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
-    //console.log(url + "      ");
-    $.getJSON(url)
-        .done(function (jsonObj) {
-            //var vidID = jsonObj.entry['media$group']['yt$videoid']['$t']; // it is wrong use 'vid' hier
-            GLVARS.videoTitle[_videoID] = jsonObj.entry.title['$t'];
-            //console.log(_videoID + "       " + GLVARS.videoTitle[_videoID]);
-        })
-        .fail(function(jqxhr, textStatus, error) {
-            GLVARS.videoTitle[_videoID] = "Data not available";
-            //console.log("Fail: " + textStatus + ', ' + error);
-        });
-
-}
+//function addVideoTitle(_videoID) {
+//    'use strict';
+//
+//
+//    var url = "http://gdata.youtube.com/feeds/api/videos/" + _videoID + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
+//    //console.log(url + "      ");
+//    $.getJSON(url)
+//        .done(function (jsonObj) {
+//            //var vidID = jsonObj.entry['media$group']['yt$videoid']['$t']; // it is wrong use 'vid' hier
+//            GLVARS.videoTitle[_videoID] = jsonObj.entry.title['$t'];
+//            //console.log(_videoID + "       " + GLVARS.videoTitle[_videoID]);
+//        })
+//        .fail(function(jqxhr, textStatus, error) {
+//            GLVARS.videoTitle[_videoID] = "Data not available";
+//            //console.log("Fail: " + textStatus + ', ' + error);
+//        });
+//
+//}
 
 /**
  * sorts rectangles according the x coordinate of video id axis file
@@ -567,6 +600,8 @@ function createRectangles(_svg, _rects) {
         //.on("click", updateVideoPositionRect)
         .on("mouseover", enlargeVideoDivRect)
         //.on("mouseout", resetVideoDivRect)
+        .append("svg:title")
+        .text(function (d) {return GLVARS.videoTitle[d.videoID]});
         ;
 }
 
