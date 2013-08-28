@@ -443,7 +443,6 @@ function onPlayerStateChange(event) {
 
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
 
-        //$("#videoTitle").text(GLVARS.videoTitle[GLVARS.currentPlayingYTVideoID]);
 
     } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
         if (deleteInterval) {
@@ -461,7 +460,7 @@ function addVideoTitle(_videoID) {
     'use strict';
 
 
-    var url = "http://gdata.youtube.com/feeds/api/videos/" + _videoID + "?v=2&alt=json-in-script&callback=?";
+    var url = "http://gdata.youtube.com/feeds/api/videos/" + _videoID + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
     //console.log(url + "      ");
     $.getJSON(url)
         .done(function (jsonObj) {
@@ -698,8 +697,10 @@ function rbClickHandler(d) {
         currentRBVideoID = currentRBVideoID + splt[i] + "_";
     }
     currentRBVideoID = currentRBVideoID.substr(0, currentRBVideoID.length - 1);
+
     videoIDToPlay = currentRBVideoID;
     rbToCheckSegmentIndex = currentRBSegmentIndex;
+    rbIDToCheck = d.id;
 
     //console.log("RBClickHandler " + d.id + "   videoID: " + rbVideoID + "     Index: " + rbSegmentIndex);
 
@@ -765,6 +766,8 @@ function rbClickHandler(d) {
         document.getElementById(rbIDToCheck).checked = true;
     }
     document.getElementById(rbIDToCheck).focus();
+
+    $("#videoTitle").text(GLVARS.videoTitle[videoIDToPlay]);
 }
 
 function areRBNeighbours(_firstRBID, _secondRBID) {
