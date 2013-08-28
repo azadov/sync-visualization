@@ -709,10 +709,6 @@ function rbClickHandler(d) {
                 playingVideoTime = GLVARS.ytPlayers[videoID].getCurrentTime();
                 pageTime = getPageAndTimeForVideoTime(playingVideoTime, videoID);
 
-                if (videoID !== currentRBVideoID) {
-                    GLVARS.ytPlayers[videoID].pauseVideo();
-                }
-
                 if (pageTime === undefined) {
                     scoreTime = 0;
                 } else {
@@ -735,10 +731,14 @@ function rbClickHandler(d) {
 //                        }
                     }
 
-                    console.log("\nfound: " + foundSegmentID + "\n");
+                    //console.log("\nfound: " + foundSegmentID + "\n");
                 } else {
                     //console.log("\nare NOT neighbours\n");
                 }
+
+                //if (videoID !== videoIDToPlay) {
+                    GLVARS.ytPlayers[videoID].pauseVideo();
+                //}
             }
         }
     }
@@ -747,7 +747,6 @@ function rbClickHandler(d) {
     if (scoreTime > 0) {
         if (GLVARS.allVideoSegments[rbToCheckSegmentIndex].x1 <= scoreTime && scoreTime <= GLVARS.allVideoSegments[rbToCheckSegmentIndex].x2) {
             videoTime = getSegmentVideoTimeForPagePosition(videoIDToPlay, rbToCheckSegmentIndex, scoreTime);
-            console.log("BLABLABLABLABLA      " + videoTime);
         }
     }
 
@@ -761,6 +760,11 @@ function rbClickHandler(d) {
         GLVARS.videoStartPosition[videoIDToPlay] = videoTime;
         loadVideo(videoIDToPlay, videoIDToPlay);
     }
+
+    if (!document.getElementById(rbIDToCheck).checked) {
+        document.getElementById(rbIDToCheck).checked = true;
+    }
+    document.getElementById(rbIDToCheck).focus();
 }
 
 function areRBNeighbours(_firstRBID, _secondRBID) {
@@ -1210,6 +1214,7 @@ function updatePosition() {
     if (!document.getElementById(rbID).checked) {
         document.getElementById(rbID).checked = true;
     }
+    document.getElementById(rbID).focus();
 }
 
 function getPageAndTimeForVideoTime(time, _videoID) {
