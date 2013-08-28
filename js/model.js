@@ -39,6 +39,8 @@ GLVARS.allVideoSegments = [];
 GLVARS.curves = [];
 GLVARS.radiobuttons = [];
 
+GLVARS.rbIndex = {}; // maps radio button id to index (number from bottom to top)
+
 GLVARS.visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corresponding video
 GLVARS.videoTimeMaps = {};        // maps videoId to localTimeMaps
 GLVARS.videoStatus = {};          // maps videoId to status
