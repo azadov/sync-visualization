@@ -1251,8 +1251,10 @@ function updatePosition() {
     rbID = GLVARS.currentPlayingYTVideoID + "_" + getSegmentIndexFromVideoTime(GLVARS.currentPlayingYTVideoID, videoTime) + "_RB";
     if (!document.getElementById(rbID).checked) {
         document.getElementById(rbID).checked = true;
+        document.getElementById(rbID).focus();
     }
-    document.getElementById(rbID).focus();
+    //document.getElementById(rbID).focus(); <- not here, because if video plays you will have no possibility to select another
+    //                                          IMSLP-ID in the check box
 }
 
 function getPageAndTimeForVideoTime(time, _videoID) {
