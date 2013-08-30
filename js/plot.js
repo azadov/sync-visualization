@@ -1,3 +1,59 @@
+/**
+ * sorts rectangles according the x coordinate of video id axis file
+ * @param _arrayOfRects
+ * @returns {*}
+ */
+function sortRects(_arrayOfRects) {
+    'use strict';
+
+    var sortedArrayOfRects = [], minElem, indexOfMinElem, i;
+
+    while (_arrayOfRects.length > 0) {
+
+        minElem = 1000000;
+        indexOfMinElem = 0;
+        for (i = 0; i < _arrayOfRects.length; i = i + 1) {
+            if (minElem > _arrayOfRects[i].x1_notbasis) {
+                minElem = _arrayOfRects[i].x1_notbasis;
+                indexOfMinElem = i;
+            }
+        }
+
+        sortedArrayOfRects.push(_arrayOfRects[indexOfMinElem]);
+
+        _arrayOfRects.splice(indexOfMinElem, 1);
+    }
+
+    return sortedArrayOfRects;
+}
+
+/**
+ *  calculates the y coordinate of video segments, updates the total number of video segment levels if needed
+ *
+ * @param _arrayOfSortedRects    sorted segments for a video
+ */
+function assignSegmentYCoordinates(_arrayOfSortedRects) {
+    'use strict';
+
+    GLVARS.numberOfVideoSegmentLevels = GLVARS.numberOfVideoSegmentLevels + 1;
+
+    _arrayOfSortedRects[0].y = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+
+    var i;
+    for (i = 1; i < _arrayOfSortedRects.length; i = i + 1) {
+
+        if (_arrayOfSortedRects[i - 1].x2 < _arrayOfSortedRects[i].x1) {
+            _arrayOfSortedRects[i].y = _arrayOfSortedRects[i - 1].y;
+
+        } else {
+            GLVARS.numberOfVideoSegmentLevels = GLVARS.numberOfVideoSegmentLevels + 1;
+
+            _arrayOfSortedRects[i].y = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+
+        }
+    }
+}
+
 function rbClickHandler(d) {
     'use strict';
 
