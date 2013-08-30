@@ -1,3 +1,188 @@
+function rbClickHandler(d) {
+    'use strict';
+
+    var splt = d.id.split("_"), currentRBVideoID = "", currentRBSegmentIndex = splt[splt.length - 2], lastRBVideoID,
+        lastRBSegmentIndex, videoID, videoIDToPlay, videoTime, pageTime, scoreTime = 0,
+        playingVideoTime = 0, i, areNeighbours, foundSegmentID, rbIDToCheck, rbToCheckSegmentIndex;
+
+    if (document.getElementById(d.id).checked) {
+        document.getElementById(d.id).checked = false;
+    }
+
+    for (i = 0; i < splt.length - 2; i = i + 1) {
+        currentRBVideoID = currentRBVideoID + splt[i] + "_";
+    }
+    currentRBVideoID = currentRBVideoID.substr(0, currentRBVideoID.length - 1);
+
+    videoIDToPlay = currentRBVideoID;
+    rbToCheckSegmentIndex = currentRBSegmentIndex;
+    rbIDToCheck = d.id;
+
+    //console.log("RBClickHandler " + d.id + "   videoID: " + rbVideoID + "     Index: " + rbSegmentIndex);
+
+    for (videoID in GLVARS.ytPlayers) {
+        if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
+            if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+                playingVideoTime = GLVARS.ytPlayers[videoID].getCurrentTime();
+                pageTime = getPageAndTimeForVideoTime(playingVideoTime, videoID);
+
+                if (pageTime === undefined) {
+                    scoreTime = 0;
+                } else {
+                    scoreTime = pageTime.pageTime;
+                }
+
+                lastRBVideoID = videoID;
+                lastRBSegmentIndex = getSegmentIndexFromVideoTime(videoID, playingVideoTime);
+
+                areNeighbours = areRBNeighbours(d.id, lastRBVideoID + "_" + lastRBSegmentIndex + "_RB");
+                if (areNeighbours[0] && scoreTime > 0) {
+                    foundSegmentID = getNextSegmentForScoreTime(lastRBSegmentIndex, areNeighbours[1], scoreTime);
+
+                    if (foundSegmentID[0] !== "") {
+                        videoIDToPlay = foundSegmentID[0];
+                        rbToCheckSegmentIndex = foundSegmentID[1];
+                        rbIDToCheck = foundSegmentID[0] + "_" + foundSegmentID[1] + "_RB";
+//                        if (!document.getElementById(rbIDToCheck).checked) {
+//                            document.getElementById(rbIDToCheck).checked = true;
+//                        }
+                    }
+
+                    //console.log("\nfound: " + foundSegmentID + "\n");
+                } else {
+                    //console.log("\nare NOT neighbours\n");
+                }
+
+                //if (videoID !== videoIDToPlay) {
+                GLVARS.ytPlayers[videoID].pauseVideo();
+                //}
+            }
+        }
+    }
+
+    videoTime = GLVARS.allVideoSegments[rbToCheckSegmentIndex].timeMap[1][0];
+    if (scoreTime > 0) {
+        if (GLVARS.allVideoSegments[rbToCheckSegmentIndex].x1 <= scoreTime && scoreTime <= GLVARS.allVideoSegments[rbToCheckSegmentIndex].x2) {
+            videoTime = getSegmentVideoTimeForPagePosition(videoIDToPlay, rbToCheckSegmentIndex, scoreTime);
+        }
+    }
+
+    if (GLVARS.ytPlayers.hasOwnProperty(videoIDToPlay)) {
+
+        GLVARS.ytPlayers[videoIDToPlay].seekTo(Math.max(0, videoTime));
+        GLVARS.ytPlayers[videoIDToPlay].playVideo();
+
+    } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoIDToPlay)) {
+
+        GLVARS.videoStartPosition[videoIDToPlay] = videoTime;
+        loadVideo(videoIDToPlay, videoIDToPlay);
+    }
+
+    if (!document.getElementById(rbIDToCheck).checked) {
+        document.getElementById(rbIDToCheck).checked = true;
+    }
+    document.getElementById(rbIDToCheck).focus();
+
+    $("#videoTitle").text(GLVARS.videoTitle[videoIDToPlay]);
+}
+
+function areRBNeighbours(_firstRBID, _secondRBID) {
+    'use strict';
+
+    var firstAboveTheSecond, areNeighbours;
+
+    if (GLVARS.rbIndex[_firstRBID] > GLVARS.rbIndex[_secondRBID]) {
+        firstAboveTheSecond = true;
+    } else {
+        firstAboveTheSecond = false;
+
+    }
+
+
+    if (modulus(GLVARS.rbIndex[_firstRBID] - GLVARS.rbIndex[_secondRBID]) === 1) {
+        areNeighbours = true;
+    } else {
+        areNeighbours = false;
+    }
+
+    return [areNeighbours, firstAboveTheSecond];
+
+//    var firstRB, secondRB, currentRB, i, firstRBAboveTheSecond, rbAreNeighbours = true;
+//
+//    console.log("firstID:  " + _firstRBVideoID + "      firstIndex: " + _firstRBSegmentIndex);
+//    console.log("secondID:  " + _secondRBVideoID + "      secondIndex: " + _secondRBSegmentIndex);
+//    for (i = 0; i < GLVARS.radiobuttons.length; i = i + 1) {
+//        currentRB = GLVARS.radiobuttons[i];
+//        console.log(currentRB.videoID + "    " + currentRB.segmentIndex);
+////        if (currentRB.videoID === _firstRBVideoID) {
+////            console.log("yepVID");
+////        }
+////        if (currentRB.segmentIndex === _firstRBSegmentIndex) {
+////            console.log("yepIndex");
+////        }
+//        if ((currentRB.videoID === _firstRBVideoID) && (currentRB.segmentIndex === _firstRBSegmentIndex)) {
+//            console.log("firstVideoRB");
+//            firstRB = currentRB;
+//        }
+//
+//        if ((currentRB.videoID === _secondRBVideoID) && (currentRB.segmentIndex === _secondRBSegmentIndex)) {
+//            console.log("secondVideoRB");
+//            secondRB = currentRB;
+//        }
+//    }
+//
+//    if (firstRB.y > secondRB.y) {
+//        firstRBAboveTheSecond = true;
+//    } else {
+//        firstRBAboveTheSecond = false;
+//    }
+//
+//    for (i = 0; i < GLVARS.radiobuttons.length; i++) {
+//        currentRB = GLVARS.radiobuttons[i];
+//        if (firstRBAboveTheSecond) {
+//            if ((firstRB.y > currentRB.y) && (currentRB.y > secondRB.y)) {
+//                rbAreNeighbours = false;
+//            }
+//        } else {
+//            if ((firstRB.y < currentRB.y) && (currentRB.y < secondRB.y)) {
+//                rbAreNeighbours = false;
+//            }
+//        }
+//    }
+}
+
+function getNextSegmentForScoreTime(segmIndex, searchOver, _scoreTime) {
+    'use strict';
+
+    var id, i, curSegm, foundSegmVideoID = "", foundSegmIndex;
+
+    // in this case checking the y coordinate of segments is not necessary,
+    // because segments in GLVARS.allVideoSegments are sorted according y coordinate
+
+    if (searchOver) {
+        for (i = segmIndex + 1; i < GLVARS.allVideoSegments.length; i = i + 1  ) {
+            curSegm = GLVARS.allVideoSegments[i];
+            if (curSegm.x1 <= _scoreTime && _scoreTime <= curSegm.x2) {
+                foundSegmVideoID = curSegm.videoID;
+                foundSegmIndex = i;
+                i = GLVARS.allVideoSegments.length;
+            }
+        }
+    } else {
+        for (i = segmIndex - 1; i >= 0; i = i - 1  ) {
+            curSegm = GLVARS.allVideoSegments[i];
+            if (curSegm.x1 <= _scoreTime && _scoreTime <= curSegm.x2) {
+                foundSegmVideoID = curSegm.videoID;
+                foundSegmIndex = i;
+                i = -1;
+            }
+        }
+    }
+
+    return [foundSegmVideoID, foundSegmIndex];
+}
+
+
 // put page numbers at appropriate times on the score time axis
 function createPageTicks(_svg, _pageTimes) {
     'use strict';
