@@ -177,13 +177,22 @@ function loadDataForScoreID(_sID, _quality) {
                 doneCountCheck1 = doneCountCheck1 + 1
                 //var vidID = jsonObj.entry['media$group']['yt$videoid']['$t']; // it is wrong use 'vid' hier
                 GLVARS.videoTitle[entry[2]] = jsonObj.entry.title['$t'];
+                //console.log(entry[2] + "             " + jsonObj.entry.title['$t']);
 
-//                if (jsonObj.entry.app$control.yt$state['$t'] !== "This video is not available in your region.") {
-//                    noRestrictedVideos.push(entry);
-//                }
+                if (jsonObj.entry.hasOwnProperty("app$control")) {
+                    if (jsonObj.entry.app$control.hasOwnProperty("yt$state")) {
+                        if (jsonObj.entry.app$control.yt$state['$t'] !== "This video is not available in your region.") {
+                            noRestrictedVideos.push(entry);
+                        }
+                    } else {
+                        noRestrictedVideos.push(entry);
+                    }
+                } else {
+                    noRestrictedVideos.push(entry);
+                }
 
                 if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
-                    //GLVARS.scoreSyncFileNames = noRestrictedVideos;
+                    GLVARS.scoreSyncFileNames = noRestrictedVideos;
                     whenChekingAvailabilityOfVidesIsDone();
                 }
             })
@@ -192,7 +201,7 @@ function loadDataForScoreID(_sID, _quality) {
                 GLVARS.videoTitle[entry[2]] = "Data not available";
 
                 if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
-                    //GLVARS.scoreSyncFileNames = noRestrictedVideos;
+                    GLVARS.scoreSyncFileNames = noRestrictedVideos;
                     whenChekingAvailabilityOfVidesIsDone();
                 }
             });
