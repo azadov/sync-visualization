@@ -28,30 +28,27 @@ _pnq.push(['addMeasureClickHandler', measureClickHandler]);
 $('#scoreIDs').change(function () {
     'use strict';
 
-    var scoreId = "";
+    var scoreId = "", quality = $("#qualityFilter").val(), titleSubstr = document.getElementById("videoTitelFilter").value;
 //    $("select option:selected").each(function () {
 //        scoreId = $(this).text();
 //    });
     scoreId = $("#scoreIDs").val();
 
-    var quality = $("#qualityFilter").val();
     //console.log("ScoreID: " + scoreId + "    Qual: " + quality);
     //_pnq.push(['loadScore', scoreId]);
-    loadDataForScoreID(scoreId, quality);
+    filterVideosForScoreID(scoreId, quality, titleSubstr);
 });
 
 $('#qualityFilter').change(function () {
     'use strict';
 
-    var quality = 0;
+    var quality = 0, scoreId = $("#scoreIDs").val(), titleSubstr = document.getElementById("videoTitelFilter").value;
     $("select option:selected").each(function () {
         quality = $(this).text();
     });
 
-    var scoreId = $("#scoreIDs").val();
-
     //_pnq.push(['loadScore', scoreId]);
-    loadDataForScoreID(scoreId, quality);
+    filterVideosForScoreID(scoreId, quality, titleSubstr);
 });
 // populate the dropdown for quality selection
 var ind;
@@ -59,6 +56,17 @@ var qualities = [0, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7];
 for (ind = 0; ind < qualities.length; ind = ind + 1) {
     $('#qualityFilter').append($("<option />").val(qualities[ind]).text(qualities[ind]));
 }
+
+$('#videoTitelFilter').keyup(function(){
+    'use strict';
+
+    var scoreId = $("#scoreIDs").val(), quality = $("#qualityFilter").val(), titleSubstr = $('#videoTitelFilter').val();
+
+    //console.log("FILTER: " + titleSubstr);
+
+    filterVideosForScoreID(scoreId, quality, titleSubstr);
+
+});
 
 
 $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
@@ -89,13 +97,13 @@ $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
     initialScoreId = GLVARS.sIDs[0];
 
     //_pnq.push(['loadScore', initialScoreId]);
-    loadDataForScoreID(initialScoreId, 0);
-    setTimeout(function () {loadDataForScoreID(initialScoreId, 0); }, 1000);
+    filterVideosForScoreID(initialScoreId, 0, "");
+    setTimeout(function () {filterVideosForScoreID(initialScoreId, 0, ""); }, 1000);
 
 });
 
 
-function resetScoreVariables(_sID) {
+function resetScoreVariables() {
     'use strict';
 
     GLVARS.mouseTrackLineExist = false;
@@ -107,8 +115,7 @@ function resetScoreVariables(_sID) {
     GLVARS.visibilityOfVideoIDs = {};
     GLVARS.videoTimeMaps = {};
     GLVARS.videoStatus = {};
-    GLVARS.videoTitle = {};
-    GLVARS.scoreSyncFileNames = GLVARS.allScoreToSyncFileNames[_sID];
+    //GLVARS.videoTitle = {};
     GLVARS.maxPlotX = 0;
     GLVARS.ytPlayers = {};
     GLVARS.ytPlayerThumbnails = {};
@@ -125,27 +132,33 @@ function resetScoreDOM() {
 }
 
 function loadScore(_sID) {
+    'use strict';
+
     _pnq.push(['loadScore', _sID]);
 }
 
-function loadDataForScoreID(_sID, _quality) {
+function loadInterfaceElements(_allScoreToVideoPairsSyncData, _sID) {
     'use strict';
 
-    resetScoreVariables(_sID);
+    resetScoreVariables();
     resetScoreDOM();
-
     loadScore(_sID);
+    computePlotElements(_allScoreToVideoPairsSyncData);
+    computePlotDimensions();
+    drawPlot();
+    initVideos(_allScoreToVideoPairsSyncData);
+}
 
-    var svg = createPlotSVG(), doneCount = 0, doneCountCheck1 = 0, allScoreToVideoPairsSyncData = [], vid, url, noRestrictedVideos = [];
+function filterVideosForScoreID(_sID, _quality, _titleSubstr) {
+    'use strict';
 
-    function whenDone() {
-        computePlotElements(allScoreToVideoPairsSyncData, svg);
-        computePlotDimensions();
-        drawPlot(svg);
-        initVideos(allScoreToVideoPairsSyncData);
-    }
+    GLVARS.scoreSyncFileNames = GLVARS.allScoreToSyncFileNames[_sID];
 
+    var doneCount = 0, doneCountCheck1 = 0, allScoreToVideoPairsSyncData = [], title, url, passedTitleFilter, noRestrictedVideos = [];
+    //console.log("TitleSubstr:  " + _titleSubstr + "   sID: " + _sID)
     function whenChekingAvailabilityOfVidesIsDone() {
+        resetScoreVariables();
+        resetScoreDOM();
 
         $.each(GLVARS.scoreSyncFileNames, function (i, fileQual) {
             if (fileQual[1] >= _quality) {
@@ -155,7 +168,7 @@ function loadDataForScoreID(_sID, _quality) {
 
                         allScoreToVideoPairsSyncData.push(json);
                         if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                            whenDone();
+                            loadInterfaceElements(allScoreToVideoPairsSyncData, _sID);
                         }
                     })
                     .fail(function (jqxhr, textStatus, error) {
@@ -163,38 +176,58 @@ function loadDataForScoreID(_sID, _quality) {
                         var err = textStatus + ', ' + error;
                         console.log("Request Failed: " + err);
                         if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                            whenDone();
+                            loadInterfaceElements(allScoreToVideoPairsSyncData, _sID);
                         }
                     });
             } else {
                 doneCount = doneCount + 1;
                 if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                    whenDone();
+                    loadInterfaceElements(allScoreToVideoPairsSyncData, _sID);
                 }
             }
         });
     }
 
     $.each(GLVARS.scoreSyncFileNames, function (i, entry) {
-        var url = "http://gdata.youtube.com/feeds/api/videos/" + entry[2] + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
-        //console.log(url + "      ");
+        GLVARS.videoTitle = {};
+
+        url = "http://gdata.youtube.com/feeds/api/videos/" + entry[2] + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
+
         $.getJSON(url)
             .done(function (jsonObj) {
                 doneCountCheck1 = doneCountCheck1 + 1
                 //var vidID = jsonObj.entry['media$group']['yt$videoid']['$t']; // it is wrong use 'vid' hier
-                GLVARS.videoTitle[entry[2]] = jsonObj.entry.title['$t'];
-                //console.log(entry[2] + "             " + jsonObj.entry.title['$t']);
-
+                title = jsonObj.entry.title['$t'];
+                GLVARS.videoTitle[entry[2]] = title;
+                //console.log("Title: " + GLVARS.videoTitle[entry[2]] + "      titleSubstr: " + _titleSubstr);
+                if (_titleSubstr !== "") {
+                    //console.log("IndexOF: " + title.indexOf(_titleSubstr));
+                    if (title.toLowerCase().indexOf(_titleSubstr.toLowerCase()) > -1) {
+                        passedTitleFilter = true;
+                    } else {
+                        passedTitleFilter = false;
+                    }
+                } else {
+                    passedTitleFilter = true;
+                }
+                //console.log("if passed: " + passedTitleFilter)
                 if (jsonObj.entry.hasOwnProperty("app$control")) {
                     if (jsonObj.entry.app$control.hasOwnProperty("yt$state")) {
                         if (jsonObj.entry.app$control.yt$state['$t'] !== "This video is not available in your region.") {
-                            noRestrictedVideos.push(entry);
+                            if (passedTitleFilter) {
+                                //console.log();
+                                noRestrictedVideos.push(entry);
+                            }
                         }
                     } else {
-                        noRestrictedVideos.push(entry);
+                        if (passedTitleFilter) {
+                            noRestrictedVideos.push(entry);
+                        }
                     }
                 } else {
-                    noRestrictedVideos.push(entry);
+                    if (passedTitleFilter) {
+                        noRestrictedVideos.push(entry);
+                    }
                 }
 
                 if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
@@ -213,7 +246,6 @@ function loadDataForScoreID(_sID, _quality) {
             });
     });
 }
-
 
 function createVideoSegment(segmentTimeMap, videoId, _conf) {
     'use strict';
@@ -313,9 +345,6 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
         if (!GLVARS.videoStartPosition.hasOwnProperty((videoId))) {
             GLVARS.videoStartPosition[videoId] = 0;
         }
-//        if (!GLVARS.videoTitle.hasOwnProperty(videoId)) {
-//            addVideoTitle(videoId);
-//        }
 
         //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
         for (i = 0; i < pairSyncData.localTimeMaps.length; i = i + 1) {

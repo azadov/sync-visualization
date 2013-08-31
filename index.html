@@ -45,16 +45,6 @@
             width:600px;
         }
 
-        .videoRBDiv {
-            position:absolute;
-            /**left:20px;*/
-            width:40px;
-            border-top:1px solid lightgray;
-            border-bottom:1px solid lightgray;
-            border-left:1px solid lightgray;
-            border-rigth:0px;
-        }
-
         .videoRB {
             position:absolute;
             /**width:2px;
@@ -68,7 +58,7 @@
 
 <body>
 
-<form action="select.htm">
+<form onsubmit="filterVideosAccordingToTitle()">
     IMSLP-ID:&nbsp
     <select id="scoreIDs" name="scoreIDs"></select>
     <select id="qualityFilter"></select>
@@ -76,6 +66,8 @@
     <input type="checkbox" name="hide" id="hideVideoDivs">Hide not suitable videos
     &nbsp
     Quality of segment: <span id="segmQual"></span>
+    <br><br>
+    Search: <input id="videoTitelFilter" type="text">
 </form>
 
 <div>

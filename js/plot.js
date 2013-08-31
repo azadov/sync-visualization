@@ -322,7 +322,7 @@ function createRadioButtons(_svg, _radiobuttons) {
         selectVideoRB.setAttribute('class', 'videoRB');
         selectVideoRB.setAttribute('onclick', 'rbClickHandler(this)');
 
-        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom;
+        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom + 35;
         selectVideoRB.style.top = topForRB + "px";
 
         plotDiv.appendChild(selectVideoRB);
@@ -390,11 +390,13 @@ function createPlotSVG() {
     return svg_basis;
 }
 
-function drawPlot(_svg) {
+function drawPlot() {
     'use strict';
 
-    // add blank rectangle
-    _svg.append("rect")
+    var svg = createPlotSVG();
+
+        // add blank rectangle
+    svg.append("rect")
         .attr("class", "blankrectangle")
         .attr("x", GLVARS.x_scale(0))
         .attr("width", GLVARS.x_scale(GLVARS.maxPlotX))
@@ -406,11 +408,11 @@ function drawPlot(_svg) {
         .on("mousemove", showSuitableVideoDivsForCurrentMousePosition)
     ;
 
-    createPageTicks(_svg, GLVARS.pageTimes);
+    createPageTicks(svg, GLVARS.pageTimes);
 
-    createRectangles(_svg, GLVARS.allVideoSegments);
+    createRectangles(svg, GLVARS.allVideoSegments);
 
-    createCurves(_svg, GLVARS.curves);
+    createCurves(svg, GLVARS.curves);
 
-    createRadioButtons(_svg, GLVARS.radiobuttons);
+    createRadioButtons(svg, GLVARS.radiobuttons);
 }
