@@ -260,8 +260,59 @@ function createPageTicks(_svg, _pageTimes) {
     }
 }
 
+// svg:   the owning <svg> element
+// id:    an id="..." attribute for the gradient
+// stops: an array of objects with <stop> attributes
+function createGradient(svg,id,stops){
+    var svgNS = svg.namespaceURI;
+    var grad  = document.createElementNS(svgNS,'linearGradient');
+    grad.setAttribute('id',id);
+    for (var i=0;i<stops.length;i++){
+        var attrs = stops[i];
+        var stop = document.createElementNS(svgNS,'stop');
+        for (var attr in attrs){
+            if (attrs.hasOwnProperty(attr)) stop.setAttribute(attr,attrs[attr]);
+        }
+        grad.appendChild(stop);
+    }
+
+    var defs = svg.querySelector('defs') ||
+        svg.insertBefore( document.createElementNS(svgNS,'defs'), svg.firstChild);
+    return defs.appendChild(grad);
+}
+
 function createRectangles(_svg, _rects) {
     'use strict';
+
+    var color = d3.scale.category10();
+
+    var gradient = _svg.append("defs").selectAll("linearGradient")
+        .data(_rects)
+        .enter()
+        .append("linearGradient")
+        .attr("id", function(d, i) { return "gradient" + i})
+        .attr("x1", "0%").attr("y1", "0%")
+        .attr("x2", "100%").attr("y2", "100%");
+
+    var testDensities = [
+        {id:1, vals:[0.5, 0.2, 0.4, 0.8, 0.4]},
+        {id:2, vals:[0.6, 0.4, 0.1]},
+        {id:3, vals:[0.9, 0.9, 0.1, 0.9]}
+    ];
+
+    for (var k = 0; k < _rects.length; k = k + 1) {
+        var j = k % testDensities.length;
+        var props = [];
+        for (var i = 0; i < testDensities[j].vals.length; i = i + 1) {
+            props.push({
+                'offset': Math.round(100 * i / testDensities[j].vals.length) + "%",
+                //  'stop-color': color(Math.floor(10 * testDensities[j].vals[i])),
+                'stop-color': 'red',
+                'stop-opacity': testDensities[j].vals[i]
+            });
+        }
+        createGradient(_svg[0][0].ownerSVGElement,'gradient' + k, props);
+    }
 
     _svg.selectAll(".bar")
         .data(_rects)
@@ -271,6 +322,7 @@ function createRectangles(_svg, _rects) {
         .attr("width", function (d) { return GLVARS.x_scale(d.width); })
         .attr("y", function (d) { return GLVARS.y_scale(d.y); })
         .attr("height", GLVARS.plot_height - GLVARS.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT))
+        .style("fill", function(d, i) {return "url(#gradient" + i + ")"})
         //.on("click", updateVideoPositionRect)
         .on("mouseover", enlargeVideoDivRect)
         //.on("mouseout", resetVideoDivRect)
@@ -302,7 +354,7 @@ function createCurves(_svg, _curves) {
         .on("click", updateVideoPositionCurve)
         .on("mouseover", enlargeVideoDivCurve)
     //.on("mouseout", resetVideoDivCurve)
-    //;
+    ;
 }
 
 function createRadioButtons(_svg, _radiobuttons) {
