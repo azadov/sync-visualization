@@ -286,14 +286,6 @@ function createRectangles(_svg, _rects) {
 
     var color = d3.scale.category10();
 
-    var gradient = _svg.append("defs").selectAll("linearGradient")
-        .data(_rects)
-        .enter()
-        .append("linearGradient")
-        .attr("id", function(d, i) { return "gradient" + i})
-        .attr("x1", "0%").attr("y1", "0%")
-        .attr("x2", "100%").attr("y2", "100%");
-
     var testDensities = [
         {id:1, vals:[0.5, 0.2, 0.4, 0.8, 0.4]},
         {id:2, vals:[0.6, 0.4, 0.1]},
@@ -311,7 +303,7 @@ function createRectangles(_svg, _rects) {
                 'stop-opacity': testDensities[j].vals[i]
             });
         }
-        createGradient(_svg[0][0].ownerSVGElement,'gradient' + k, props);
+        createGradient(_svg[0][0].ownerSVGElement, 'gradient' + k, props);
     }
 
     _svg.selectAll(".bar")
@@ -440,6 +432,31 @@ function createPlotSVG() {
     //drawYAxis(svg_basis);
 
     return svg_basis;
+}
+
+
+function updateVideoTrackLine(_scorePos) {
+    'use strict';
+
+    var svgContainer;
+    if (GLVARS.videoTrackLineExist) {
+        d3.select(".videoTrackLine").attr("x1", GLVARS.x_scale(_scorePos))
+            .attr("y1", GLVARS.y_scale(0))
+            .attr("x2", GLVARS.x_scale(_scorePos))
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
+    } else {
+        svgContainer = d3.select("g");
+        svgContainer.append("line")
+            .attr("class", "videoTrackLine")
+            .attr("pointer-events", "none")
+            .attr("x1", GLVARS.x_scale(_scorePos))
+            .attr("y1", GLVARS.y_scale(0))
+            .attr("x2", GLVARS.x_scale(_scorePos))
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
+            .attr("stroke-width", 2)
+            .attr("stroke", "lightblue");
+        GLVARS.videoTrackLineExist = true;
+    }
 }
 
 function drawPlot() {

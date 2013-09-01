@@ -9,8 +9,6 @@ if (!window.console) {window.console = {}; window.console.log = function () {'us
 
 
 (function () {
-    "use strict";
-
     var pnsv = document.createElement('script');
     pnsv.type = 'text/javascript';
     pnsv.async = true;
@@ -23,6 +21,28 @@ _pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
 _pnq.push(['widgetHeight', 590]);
 _pnq.push(['widgetWidth', 450]);
 _pnq.push(['addMeasureClickHandler', measureClickHandler]);
+
+
+// example of loading a viewer in an iframe as an anonymous function call. the fn can be made reusable of course.
+(function(p) {
+    $('<iframe id="' + p.rootElement + '_iframe" src="http://www.peachnote.com/viewer-embedded.html?'
+        + 'scoreId=' + p.scoreId
+        + '&width=' + p.widgetWidth
+        + '&height=' + p.widgetHeight
+        + '" height=' + (p.widgetHeight + 2) + ' width=' + (p.widgetWidth + 4)
+        + ' frameborder=0 />')
+        .appendTo('#' + p.rootElement)
+})({
+    'rootElement':'PeachnoteViewerContainer2',
+    'widgetHeight': 590,
+    'widgetWidth': 450,
+    'scoreId': 'IMSLP03796'
+});
+
+// example of communication with the viewer in the iframe
+document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq = document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq || [];
+document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq.push(['loadPage', 2]);
+
 
 
 $('#scoreIDs').change(function () {
@@ -135,6 +155,7 @@ function loadScore(_sID) {
     'use strict';
 
     _pnq.push(['loadScore', _sID]);
+
 }
 
 function loadInterfaceElements(_allScoreToVideoPairsSyncData, _sID) {
@@ -591,28 +612,6 @@ function removeMouseTrackLine(d) {
     }
 }
 
-function updateVideoTrackLine(_scorePos) {
-    'use strict';
-
-    var svgContainer;
-    if (GLVARS.videoTrackLineExist) {
-        d3.select(".videoTrackLine").attr("x1", GLVARS.x_scale(_scorePos))
-            .attr("y1", GLVARS.y_scale(0))
-            .attr("x2", GLVARS.x_scale(_scorePos))
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
-    } else {
-        svgContainer = d3.select("g");
-        svgContainer.append("line")
-            .attr("class", "videoTrackLine")
-            .attr("x1", GLVARS.x_scale(_scorePos))
-            .attr("y1", GLVARS.y_scale(0))
-            .attr("x2", GLVARS.x_scale(_scorePos))
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
-            .attr("stroke-width", 2)
-            .attr("stroke", "lightblue");
-        GLVARS.videoTrackLineExist = true;
-    }
-}
 
 function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
     'use strict';
