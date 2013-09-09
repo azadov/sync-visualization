@@ -426,14 +426,6 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
         }
 
         appendArrays(GLVARS.allVideoSegments, videoSegments);
-
-//        rbutton.videoID = videoID;
-//        //rbutton.y = videoSegments[0].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
-//        rbutton.y = videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
-//        //rbutton.height = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
-//        rbutton.height = (videoSegments[videoSegments.length - 1].y + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2) - (videoSegments[0].y - CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT)
-//        GLVARS.radiobuttons.push(rbutton);
-//        //console.log("SegmLen: " + videoSegments.length);
     });
 }
 

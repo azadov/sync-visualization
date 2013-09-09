@@ -24,6 +24,9 @@ GLVARS.xAxis = d3.svg.axis()
     .scale(GLVARS.x_scale)
     .orient("bottom");
 
+// don't show the ticks of x-axis
+GLVARS.xAxis.tickFormat(function (d) { return ''; });
+
 GLVARS.maxPlotX = 0;
 GLVARS.minPlotY = 0;
 GLVARS.maxPlotY = 0;

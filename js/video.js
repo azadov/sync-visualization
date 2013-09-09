@@ -28,7 +28,7 @@ function enlargeVideoDiv(_videoID, _coefficient) {
     }
 
     for (vID in GLVARS.ytPlayers) {
-        if (GLVARS.ytPlayers.hasOwnProperty(vID)) {
+        if (GLVARS.ytPlayers.hasOwnProperty(vID) && vID !== _videoID) {
             if (GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.BUFFERING) {
                 someVideoPlaying = true;
             }
@@ -116,6 +116,7 @@ function onPlayerStateChange(event) {
 
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
 
+        $("#videoTitle").text(GLVARS.videoTitle[GLVARS.currentPlayingYTVideoID]);
 
     } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
         if (deleteInterval) {

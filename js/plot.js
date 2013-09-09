@@ -109,9 +109,9 @@ function rbClickHandler(d) {
                     //console.log("\nare NOT neighbours\n");
                 }
 
-                //if (videoID !== videoIDToPlay) {
-                GLVARS.ytPlayers[videoID].pauseVideo();
-                //}
+                if (videoID !== videoIDToPlay) {
+                    GLVARS.ytPlayers[videoID].pauseVideo();
+                }
             }
         }
     }
@@ -435,7 +435,7 @@ function createPlotSVG() {
         .call(GLVARS.xAxis);
 
     // don't show the ticks of x-axis
-    GLVARS.xAxis.tickFormat(function (d) { return ''; });
+    //GLVARS.xAxis.tickFormat(function (d) { return ''; });
 
     //drawYAxis(svg_basis);
 
