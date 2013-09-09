@@ -1,3 +1,74 @@
+function enlargeVideoDiv(_videoID, _coefficient) {
+    'use strict';
+
+    var elementToEnlarge, secondElementToEnlarge, thumbnail, vID, someVideoPlaying = false,
+        newWidth = _coefficient * CONSTANTS.VIDEO_WIDTH,
+        newHeight = _coefficient * CONSTANTS.VIDEO_HEIGHT,
+        pw=Math.ceil(_coefficient * CONSTANTS.VIDEO_WIDTH/2 - 38.5),
+        ph=Math.ceil(_coefficient * CONSTANTS.VIDEO_HEIGHT/2 + 38.5);
+
+    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
+        elementToEnlarge = document.getElementById(_videoID);  //.firstChild.firstChild
+        elementToEnlarge.width = newWidth;
+        elementToEnlarge.height = newHeight;
+    }
+
+    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+        elementToEnlarge = document.getElementById(_videoID).firstChild;
+        elementToEnlarge.style.width = newWidth + "px";
+        elementToEnlarge.style.height = newHeight + "px";
+
+        secondElementToEnlarge = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToEnlarge.style.width = newWidth + "px";
+        secondElementToEnlarge.style.height = newHeight + "px";
+
+        thumbnail = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thumbnail.style.marginLeft = pw + "px";
+        thumbnail.style.marginTop = "-" + ph + "px";
+    }
+
+    for (vID in GLVARS.ytPlayers) {
+        if (GLVARS.ytPlayers.hasOwnProperty(vID)) {
+            if (GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.BUFFERING) {
+                someVideoPlaying = true;
+            }
+        }
+    }
+    if (!someVideoPlaying) {
+        $("#videoTitle").text(GLVARS.videoTitle[_videoID]);
+    }
+}
+
+function resetVideoDiv(_videoID) {
+    'use strict';
+
+    var elementToReset, secondElementToReset, thumbnail,
+        pw=Math.ceil(CONSTANTS.VIDEO_WIDTH/2 - 38.5),
+        ph=Math.ceil(CONSTANTS.VIDEO_HEIGHT/2 + 38.5);
+
+    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
+        if (GLVARS.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING && GLVARS.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
+            elementToReset = document.getElementById(_videoID);
+            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
+            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
+        }
+    }
+
+    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+        elementToReset = document.getElementById(_videoID).firstChild;
+        elementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        elementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+
+        secondElementToReset = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        secondElementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+
+        thumbnail = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thumbnail.style.marginLeft = pw + "px";
+        thumbnail.style.marginTop = "-" + ph + "px";
+    }
+}
+
 function onPlayerReady(event) {
     'use strict';
 

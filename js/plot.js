@@ -207,6 +207,14 @@ function areRBNeighbours(_firstRBID, _secondRBID) {
 //    }
 }
 
+/**
+ * searches the next segment over (searchOver=true) or under the current segment (segmIndex) on the plot, that present
+ * current score time point (_scoreTime)
+ * @param segmIndex
+ * @param searchOver
+ * @param _scoreTime
+ * @returns {Array}
+ */
 function getNextSegmentForScoreTime(segmIndex, searchOver, _scoreTime) {
     'use strict';
 
@@ -456,6 +464,51 @@ function updateVideoTrackLine(_scorePos) {
             .attr("stroke-width", 2)
             .attr("stroke", "lightblue");
         GLVARS.videoTrackLineExist = true;
+    }
+}
+
+function updateMouseTrackLine(d) {
+    'use strict';
+
+    //var mouseTrackLine = document.getElementsByClassName("mouseTrackLine"); //d3.select(".mouseTrackLine");
+    var currentMouseX = d3.mouse(this)[0], svgContainer;
+
+    if (GLVARS.mouseTrackLineExist) {
+        d3.select(".mouseTrackLine").attr("x1", currentMouseX)
+            .attr("y1", GLVARS.y_scale(0))
+            .attr("x2", currentMouseX)
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
+    } else {
+        svgContainer = d3.select("g");
+        svgContainer.append("line")
+            .attr("class", "mouseTrackLine")
+            .attr("x1", currentMouseX)
+            .attr("y1", GLVARS.y_scale(0))
+            .attr("x2", currentMouseX)
+            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
+            .attr("stroke-width", 2)
+            .attr("stroke", "grey")
+            .attr("pointer-events", "none");
+        GLVARS.mouseTrackLineExist = true;
+    }
+
+    //$("#segmQual").text(currentMouseX + "     " + d3.mouse(this)[1]);
+}
+
+function removeMouseTrackLine(d) {
+    'use strict';
+
+    console.log("remove mouseTrackLine");
+    d3.select(".mouseTrackLine").remove();
+    GLVARS.mouseTrackLineExist = false;
+
+    var id;
+    if (!$('#hideVideoDivs').prop('checked')) {
+        for (id in GLVARS.visibilityOfVideoIDs) {
+            if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(id)) {
+                resetVideoDiv(id);
+            }
+        }
     }
 }
 

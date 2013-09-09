@@ -161,8 +161,8 @@ function loadScore(_sID) {
 function loadInterfaceElements(_allScoreToVideoPairsSyncData, _sID) {
     'use strict';
 
-    resetScoreVariables();
-    resetScoreDOM();
+    //resetScoreVariables();
+    //resetScoreDOM();
     loadScore(_sID);
     computePlotElements(_allScoreToVideoPairsSyncData);
     computePlotDimensions();
@@ -491,42 +491,6 @@ function enlargeVideoDivCurve(d) {
     enlargeVideoDiv(d.videoID, 2);
 }
 
-function enlargeVideoDiv(_videoID, _coefficient) {
-    'use strict';
-
-    var elementToEnlarge, secondElementToEnlarge, thirdElementToEnlarge, vID, someVideoPlaying = false;
-    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
-        elementToEnlarge = document.getElementById(_videoID);  //.firstChild.firstChild
-        elementToEnlarge.width = _coefficient * CONSTANTS.VIDEO_WIDTH;
-        elementToEnlarge.height = _coefficient * CONSTANTS.VIDEO_HEIGHT;
-    }
-
-    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToEnlarge = document.getElementById(_videoID).firstChild;
-        elementToEnlarge.style.width = _coefficient * CONSTANTS.VIDEO_WIDTH + "px";
-        elementToEnlarge.style.height = _coefficient * CONSTANTS.VIDEO_HEIGHT + "px";
-
-        secondElementToEnlarge = document.getElementById(_videoID).firstChild.firstChild.firstChild;
-        secondElementToEnlarge.style.width = _coefficient * CONSTANTS.VIDEO_WIDTH + "px";
-        secondElementToEnlarge.style.height = _coefficient * CONSTANTS.VIDEO_HEIGHT + "px";
-
-        thirdElementToEnlarge = document.getElementById(_videoID).firstChild.firstChild.lastChild;
-        thirdElementToEnlarge.style.width = _coefficient * CONSTANTS.VIDEO_WIDTH + "px";
-        thirdElementToEnlarge.style.height = _coefficient * CONSTANTS.VIDEO_HEIGHT + "px";
-    }
-
-    for (vID in GLVARS.ytPlayers) {
-        if (GLVARS.ytPlayers.hasOwnProperty(vID)) {
-            if (GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.BUFFERING) {
-                someVideoPlaying = true;
-            }
-        }
-    }
-    if (!someVideoPlaying) {
-        $("#videoTitle").text(GLVARS.videoTitle[_videoID]);
-    }
-}
-
 function resetVideoDivRect(d) {
     'use strict';
 
@@ -537,79 +501,6 @@ function resetVideoDivCurve(d) {
     'use strict';
 
     resetVideoDiv(d.videoID);
-}
-
-function resetVideoDiv(_videoID) {
-    'use strict';
-
-    var elementToReset, secondElementToReset, thirdElementToReset;
-
-    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
-        if (GLVARS.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING && GLVARS.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
-            elementToReset = document.getElementById(_videoID);
-            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
-            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
-        }
-    }
-
-    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToReset = document.getElementById(_videoID).firstChild;
-        elementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
-        elementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
-
-        secondElementToReset = document.getElementById(_videoID).firstChild.firstChild.firstChild;
-        secondElementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
-        secondElementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
-
-        thirdElementToReset = document.getElementById(_videoID).firstChild.firstChild.lastChild;
-        thirdElementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
-        thirdElementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
-    }
-}
-
-function updateMouseTrackLine(d) {
-    'use strict';
-
-    //var mouseTrackLine = document.getElementsByClassName("mouseTrackLine"); //d3.select(".mouseTrackLine");
-    var currentMouseX = d3.mouse(this)[0], svgContainer;
-
-    if (GLVARS.mouseTrackLineExist) {
-        d3.select(".mouseTrackLine").attr("x1", currentMouseX)
-            .attr("y1", GLVARS.y_scale(0))
-            .attr("x2", currentMouseX)
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
-    } else {
-        svgContainer = d3.select("g");
-        svgContainer.append("line")
-            .attr("class", "mouseTrackLine")
-            .attr("x1", currentMouseX)
-            .attr("y1", GLVARS.y_scale(0))
-            .attr("x2", currentMouseX)
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
-            .attr("stroke-width", 2)
-            .attr("stroke", "grey")
-            .attr("pointer-events", "none");
-        GLVARS.mouseTrackLineExist = true;
-    }
-
-    //$("#segmQual").text(currentMouseX + "     " + d3.mouse(this)[1]);
-}
-
-function removeMouseTrackLine(d) {
-    'use strict';
-
-    console.log("remove mouseTrackLine");
-    d3.select(".mouseTrackLine").remove();
-    GLVARS.mouseTrackLineExist = false;
-
-    var id;
-    if (!$('#hideVideoDivs').prop('checked')) {
-        for (id in GLVARS.visibilityOfVideoIDs) {
-            if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(id)) {
-                resetVideoDiv(id);
-            }
-        }
-    }
 }
 
 
