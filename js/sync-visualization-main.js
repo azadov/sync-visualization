@@ -902,14 +902,16 @@ function showDiv(_videoID) {
 
     //document.getElementById(_videoID).style.display = "";
     //document.getElementById(_videoID).style.visibility = "visible";
-    var faktor = 1, elementToShow, secondElementToShow, thirdElementToShow;
+    var elementToShow, secondElementToShow, thirdElementToShow;
     if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
-        if (GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
-            faktor = 2;
-        }
         elementToShow = document.getElementById(_videoID);
-        elementToShow.width = faktor * CONSTANTS.VIDEO_WIDTH;
-        elementToShow.height = faktor * CONSTANTS.VIDEO_HEIGHT;
+        elementToShow.width = CONSTANTS.VIDEO_WIDTH;
+        elementToShow.height = CONSTANTS.VIDEO_HEIGHT;
+
+        if (GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+            elementToShow.width = CONSTANTS.PLAYING_VIDEO_WIDTH;
+            elementToShow.height = CONSTANTS.PLAYING_VIDEO_HEIGHT;
+        }
     }
 
     if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {

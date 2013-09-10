@@ -2,10 +2,10 @@ function enlargeVideoDiv(_videoID, _coefficient) {
     'use strict';
 
     var elementToEnlarge, secondElementToEnlarge, thumbnail, vID, someVideoPlaying = false,
-        newWidth = _coefficient * CONSTANTS.VIDEO_WIDTH,
-        newHeight = _coefficient * CONSTANTS.VIDEO_HEIGHT,
-        pw=Math.ceil(_coefficient * CONSTANTS.VIDEO_WIDTH/2 - 38.5),
-        ph=Math.ceil(_coefficient * CONSTANTS.VIDEO_HEIGHT/2 + 38.5);
+        newWidth = CONSTANTS.PLAYING_VIDEO_WIDTH,
+        newHeight = CONSTANTS.PLAYING_VIDEO_HEIGHT,
+        pw=Math.ceil(CONSTANTS.PLAYING_VIDEO_WIDTH/2 - 38.5),
+        ph=Math.ceil(CONSTANTS.PLAYING_VIDEO_HEIGHT/2 + 38.5);
 
     if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
         elementToEnlarge = document.getElementById(_videoID);  //.firstChild.firstChild
@@ -108,7 +108,7 @@ var deleteInterval = true;
 function onPlayerStateChange(event) {
     'use strict';
 
-    var newState = event.data, videoID;
+    var newState = event.data, videoID, lastPlayedVideoID;
     //console.log("state: " + event.data + "     target: " + event.target.id);
 //    for (var videoID in GLVARS.ytPlayers) {
 //        if ( GLVARS.ytPlayers[videoID] == event.target ) {
@@ -123,6 +123,8 @@ function onPlayerStateChange(event) {
     console.log("OnPlayerStateChange: " + newState );
 
     if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
+        lastPlayedVideoID = GLVARS.currentPlayingYTVideoID;
+
         GLVARS.currentPlayingYTVideoID = event.target.getVideoData().video_id;
 
         for (videoID in GLVARS.ytPlayers) {
@@ -131,12 +133,15 @@ function onPlayerStateChange(event) {
                     if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
                         GLVARS.ytPlayers[videoID].pauseVideo();
                         deleteInterval = false;
+
                     }
                 }
             }
         }
         clearInterval(GLVARS.loopId);
         GLVARS.loopId = setInterval(updatePosition, 500);
+
+        resetVideoDiv(lastPlayedVideoID); // not in 'else' part because of navigation ov videos directly on videos
 
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
 
@@ -149,7 +154,7 @@ function onPlayerStateChange(event) {
             deleteInterval = true;
         }
 
-        resetVideoDiv(event.target.getVideoData().video_id);
+        //resetVideoDiv(event.target.getVideoData().video_id);
     }
 
 }
