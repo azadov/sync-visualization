@@ -69,6 +69,30 @@ function resetVideoDiv(_videoID) {
     }
 }
 
+function onPlayerError(event) {
+    'use strict';
+
+    //console.log("OnPlayerError: " + event.data + "      VideoID: " + event.target.getVideoData().video_id);
+    var videoID = event.target.getVideoData().video_id, i, rbID;
+
+    d3.selectAll("#" + videoID + "Rect")
+        .style("fill", "lightgrey")
+        .on("mouseover", function () { return; });
+
+    d3.selectAll("#" + videoID + "Curve")
+        .attr("stroke", "lightgrey")
+        .on("mouseover", function () { return; });
+
+    for (i = 0; i < GLVARS.radiobuttons.length; i = i + 1) {
+        if (GLVARS.radiobuttons[i].videoID === videoID) {
+            rbID = GLVARS.radiobuttons[i].videoID + "_" + GLVARS.radiobuttons[i].segmentIndex + "_RB";
+            document.getElementById(rbID).disabled=true;
+        }
+    }
+
+    //rect.style("fill", "grey");
+}
+
 function onPlayerReady(event) {
     'use strict';
 
@@ -143,7 +167,8 @@ function loadVideo(_videoContainerID, _videoID) {
         videoId: _videoID,
         events: {
             'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
+            'onStateChange': onPlayerStateChange,
+            'onError': onPlayerError
         }
     });
 

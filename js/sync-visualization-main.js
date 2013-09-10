@@ -202,7 +202,7 @@ function filterVideosForScoreID(_sID, _quality, _titleSubstr) {
 
     var doneCount = 0, doneCountCheck1 = 0, allScoreToVideoPairsSyncData = [], title, url, passedTitleFilter, noRestrictedVideos = [];
     //console.log("TitleSubstr:  " + _titleSubstr + "   sID: " + _sID)
-    function whenChekingAvailabilityOfVidesIsDone() {
+    function whenChekingAvailabilityOfVideosIsDone() {
         resetScoreVariables();
         resetScoreDOM();
 
@@ -281,7 +281,7 @@ function filterVideosForScoreID(_sID, _quality, _titleSubstr) {
 
                 if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
                     GLVARS.scoreSyncFileNames = noRestrictedVideos;
-                    whenChekingAvailabilityOfVidesIsDone();
+                    whenChekingAvailabilityOfVideosIsDone();
                 }
             })
             .fail(function(jqxhr, textStatus, error) {
@@ -290,7 +290,7 @@ function filterVideosForScoreID(_sID, _quality, _titleSubstr) {
 
                 if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
                     GLVARS.scoreSyncFileNames = noRestrictedVideos;
-                    whenChekingAvailabilityOfVidesIsDone();
+                    whenChekingAvailabilityOfVideosIsDone();
                 }
             });
     });

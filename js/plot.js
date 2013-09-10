@@ -318,6 +318,7 @@ function createRectangles(_svg, _rects) {
         .data(_rects)
         .enter().append("rect")
         .attr("class", "rectangle")
+        .attr("id", function (d) { return d.videoID + "Rect"; })
         .attr("x", function (d) { return GLVARS.x_scale(d.x1); })
         .attr("width", function (d) { return GLVARS.x_scale(d.width); })
         .attr("y", function (d) { return GLVARS.y_scale(d.y); })
@@ -346,12 +347,13 @@ function createCurves(_svg, _curves) {
         .data(_curves)
         .enter().append("path")
         .attr("d", function (d) {return lineFunction(d.points); })
+        .attr("id", function (d) { return d.videoID + "Curve"; })
         .attr("stroke", "blue")
         .attr("stroke-width", 3)
         .attr("stroke-dasharray", function (d) {return d.strokeDash; })
         //.attr("stroke-dasharray", "0,0")
         .attr("fill", "none")
-        .on("click", updateVideoPositionCurve)
+        //.on("click", updateVideoPositionCurve)
         .on("mouseover", enlargeVideoDivCurve)
     //.on("mouseout", resetVideoDivCurve)
     ;
@@ -360,7 +362,7 @@ function createCurves(_svg, _curves) {
 function createRadioButtons(_svg, _radiobuttons) {
     'use strict';
 
-    var i, plotDiv = document.getElementById("plotContainer"), selectVideoRB, topForRB, rbID;
+    var i, plotDiv = document.getElementById("plotContainer"), selectVideoRB, topForRB, rbID, h;
     // if loop starts from 0 then rb will be added from bottom to top and this affects control from keyboard
     for (i = _radiobuttons.length - 1; i >= 0; i = i - 1) {
 
@@ -374,7 +376,9 @@ function createRadioButtons(_svg, _radiobuttons) {
         selectVideoRB.setAttribute('class', 'videoRB');
         selectVideoRB.setAttribute('onclick', 'rbClickHandler(this)');
 
-        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom + 35;
+        //console.log("Height: " + $("#videoTitelFilter").height());
+        //h = $("#videoTitelFilter").height() + 10;
+        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom + 36;//35;
         selectVideoRB.style.top = topForRB + "px";
 
         plotDiv.appendChild(selectVideoRB);
