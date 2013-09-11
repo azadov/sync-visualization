@@ -135,11 +135,12 @@ function resetScoreVariables() {
     GLVARS.visibilityOfVideoIDs = {};
     GLVARS.videoTimeMaps = {};
     GLVARS.videoStatus = {};
-    //GLVARS.videoTitle = {};
+    //GLVARS.videoTitle = {};  not here
     GLVARS.maxPlotX = 0;
     GLVARS.ytPlayers = {};
     GLVARS.ytPlayerThumbnails = {};
-
+    GLVARS.videoReadiness = {};
+    GLVARS.videoNumOfLoadingAttempts = {};
 }
 
 function resetScoreDOM() {
@@ -391,8 +392,14 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
         if (!GLVARS.videoStatus.hasOwnProperty(videoID)) {
             GLVARS.videoStatus[videoID] = YT.PlayerState.PAUSED;
         }
-        if (!GLVARS.videoStartPosition.hasOwnProperty((videoID))) {
+        if (!GLVARS.videoStartPosition.hasOwnProperty(videoID)) {
             GLVARS.videoStartPosition[videoID] = 0;
+        }
+        if (!GLVARS.videoReadiness.hasOwnProperty(videoID)) {
+            GLVARS.videoReadiness[videoID] = 0;
+        }
+        if (!GLVARS.videoNumOfLoadingAttempts.hasOwnProperty(videoID)) {
+            GLVARS.videoNumOfLoadingAttempts[videoID] = 0;
         }
 
         //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {

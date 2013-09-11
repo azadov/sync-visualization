@@ -46,11 +46,14 @@ GLVARS.radiobuttons = [];
 
 GLVARS.rbIndex = {}; // maps radio button id to index (number from bottom to top)
 
-GLVARS.visibilityOfVideoIDs = {}; // maps videoId to the visibility of the corresponding video
-GLVARS.videoTimeMaps = {};        // maps videoId to localTimeMaps
-GLVARS.videoStatus = {};          // maps videoId to status
-GLVARS.videoStartPosition = {};   // maps videoId to start position
-GLVARS.videoTitle = {};           // maps videoId to video title
+GLVARS.visibilityOfVideoIDs = {};        // maps videoId to the visibility of the corresponding video
+GLVARS.videoTimeMaps = {};               // maps videoId to localTimeMaps
+GLVARS.videoStatus = {};                 // maps videoId to status
+GLVARS.videoStartPosition = {};          // maps videoId to start position
+GLVARS.videoTitle = {};                  // maps videoId to video title
+GLVARS.videoReadiness = {};              // maps videoId to 1 (if video loaded) or 0 (if video not loaded)
+GLVARS.videoNumOfLoadingAttempts = {};   // maps videoId to number of loading attempts
+GLVARS.videoLoadingInterval = {};        // maps videoId to interval
 
 GLVARS.ytPlayers = {};
 GLVARS.ytPlayerThumbnails = {};

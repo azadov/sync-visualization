@@ -69,28 +69,64 @@ function resetVideoDiv(_videoID) {
     }
 }
 
-function onPlayerError(event) {
+function deactivateVideo(_videoID) {
     'use strict';
 
-    //console.log("OnPlayerError: " + event.data + "      VideoID: " + event.target.getVideoData().video_id);
-    var videoID = event.target.getVideoData().video_id, i, rbID;
+    var i, rbID;
 
-    d3.selectAll("#" + videoID + "Rect")
+    d3.selectAll("#" + _videoID + "Rect")
         .style("fill", "lightgrey")
         .on("mouseover", function () { return; });
 
-    d3.selectAll("#" + videoID + "Curve")
+    d3.selectAll("#" + _videoID + "Curve")
         .attr("stroke", "lightgrey")
         .on("mouseover", function () { return; });
 
     for (i = 0; i < GLVARS.radiobuttons.length; i = i + 1) {
-        if (GLVARS.radiobuttons[i].videoID === videoID) {
+        if (GLVARS.radiobuttons[i].videoID === _videoID) {
             rbID = GLVARS.radiobuttons[i].videoID + "_" + GLVARS.radiobuttons[i].segmentIndex + "_RB";
             document.getElementById(rbID).disabled=true;
         }
     }
+}
 
-    //rect.style("fill", "grey");
+function tryToLoad(_videoContainerID, _videoID) {
+    'use strict';
+
+    var ytplayer;
+    if (GLVARS.videoReadiness[_videoID] === 0 && GLVARS.videoNumOfLoadingAttempts[_videoID] === 3) {
+        deactivateVideo(_videoID);
+        clearInterval(GLVARS.videoLoadingInterval[_videoID]);
+        console.log("VideoID: " + _videoID + "   deactivate");
+    } else if (GLVARS.videoReadiness[_videoID] === 0 && GLVARS.videoNumOfLoadingAttempts[_videoID] < 3) {
+
+        console.log("VideoID: " + _videoID + "    Attempt: " + GLVARS.videoNumOfLoadingAttempts[_videoID]);
+
+        ytplayer = new YT.Player(_videoContainerID, {
+            height: CONSTANTS.VIDEO_HEIGHT,
+            width: CONSTANTS.VIDEO_WIDTH,
+            videoId: _videoID,
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+
+        GLVARS.ytPlayers[_videoID] = ytplayer;
+
+        GLVARS.videoNumOfLoadingAttempts[_videoID] = GLVARS.videoNumOfLoadingAttempts[_videoID] + 1;
+    }
+}
+
+function onPlayerError(event) {
+    'use strict';
+
+    //console.log("OnPlayerError: " + event.data + "      VideoID: " + event.target.getVideoData().video_id);
+    var videoID = event.target.getVideoData().video_id;
+
+    deactivateVideo(videoID);
+    clearInterval(GLVARS.videoLoadingInterval[_videoID]);
 }
 
 function onPlayerReady(event) {
@@ -99,8 +135,14 @@ function onPlayerReady(event) {
     var videoID = event.target.getVideoData().video_id;
     event.target.seekTo(Math.max(0, GLVARS.videoStartPosition[videoID]));
     event.target.playVideo();
+
     enlargeVideoDiv(videoID, 2);
-    //console.log("OnPlayerReady: " + videoID);
+
+    GLVARS.videoReadiness[videoID] = 1;
+
+    clearInterval(GLVARS.videoLoadingInterval[videoID]);
+
+    console.log("OnPlayerReady: " + videoID);
     //GLVARS.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
 }
 
@@ -166,19 +208,9 @@ function loadVideo(_videoContainerID, _videoID) {
     //console.log("Video clicked: " + _videoContainerID + "   " + _videoID);
     //$('#' + _videoContainerID).empty();
 
-    var ytplayer = new YT.Player(_videoContainerID, {
-        height: CONSTANTS.VIDEO_HEIGHT,
-        width: CONSTANTS.VIDEO_WIDTH,
-        videoId: _videoID,
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange,
-            'onError': onPlayerError
-        }
-    });
-
-    GLVARS.ytPlayers[_videoID] = ytplayer;
     delete GLVARS.ytPlayerThumbnails[_videoID];
+
+    GLVARS.videoLoadingInterval[_videoID] = setInterval( function() { tryToLoad(_videoContainerID, _videoID); }, 2000 );
 }
 
 function initVideo(_videoContainerID, _videoID) {
