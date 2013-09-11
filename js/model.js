@@ -62,6 +62,7 @@ GLVARS.mouseTrackLineExist = false;
 GLVARS.videoTrackLineExist = false;
 
 GLVARS.currentPlayingYTVideoID = "";
+GLVARS.lastPlayedYTVideoID = "";
 GLVARS.videoIDNextToCursor = "";
 GLVARS.segmentNextToCursor = {};
 GLVARS.loopId = 0;

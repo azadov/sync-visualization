@@ -97,10 +97,10 @@ function tryToLoad(_videoContainerID, _videoID) {
     if (GLVARS.videoReadiness[_videoID] === 0 && GLVARS.videoNumOfLoadingAttempts[_videoID] === 3) {
         deactivateVideo(_videoID);
         clearInterval(GLVARS.videoLoadingInterval[_videoID]);
-        console.log("VideoID: " + _videoID + "   deactivate");
+        //console.log("VideoID: " + _videoID + "   deactivate");
     } else if (GLVARS.videoReadiness[_videoID] === 0 && GLVARS.videoNumOfLoadingAttempts[_videoID] < 3) {
 
-        console.log("VideoID: " + _videoID + "    Attempt: " + GLVARS.videoNumOfLoadingAttempts[_videoID]);
+        //console.log("VideoID: " + _videoID + "    Attempt: " + GLVARS.videoNumOfLoadingAttempts[_videoID]);
 
         ytplayer = new YT.Player(_videoContainerID, {
             height: CONSTANTS.VIDEO_HEIGHT,
@@ -142,7 +142,7 @@ function onPlayerReady(event) {
 
     clearInterval(GLVARS.videoLoadingInterval[videoID]);
 
-    console.log("OnPlayerReady: " + videoID);
+    //console.log("OnPlayerReady: " + videoID);
     //GLVARS.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
 }
 
@@ -150,7 +150,7 @@ var deleteInterval = true;
 function onPlayerStateChange(event) {
     'use strict';
 
-    var newState = event.data, videoID, lastPlayedVideoID;
+    var newState = event.data, videoID;
     //console.log("state: " + event.data + "     target: " + event.target.id);
 //    for (var videoID in GLVARS.ytPlayers) {
 //        if ( GLVARS.ytPlayers[videoID] == event.target ) {
@@ -165,9 +165,10 @@ function onPlayerStateChange(event) {
     console.log("OnPlayerStateChange: " + newState );
 
     if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
-        lastPlayedVideoID = GLVARS.currentPlayingYTVideoID;
-
-        GLVARS.currentPlayingYTVideoID = event.target.getVideoData().video_id;
+        if (GLVARS.currentPlayingYTVideoID !== event.target.getVideoData().video_id) {
+            GLVARS.lastPlayedYTVideoID = GLVARS.currentPlayingYTVideoID;
+            GLVARS.currentPlayingYTVideoID = event.target.getVideoData().video_id;
+        }
 
         for (videoID in GLVARS.ytPlayers) {
             if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
@@ -183,7 +184,9 @@ function onPlayerStateChange(event) {
         clearInterval(GLVARS.loopId);
         GLVARS.loopId = setInterval(updatePosition, 500);
 
-        resetVideoDiv(lastPlayedVideoID); // not in 'else' part because of navigation ov videos directly on videos
+        console.log("LastPlayedVideo: " + GLVARS.lastPlayedYTVideoID + "     current: " + GLVARS.currentPlayingYTVideoID);
+
+        resetVideoDiv(GLVARS.lastPlayedYTVideoID);
 
         enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
 
@@ -196,7 +199,7 @@ function onPlayerStateChange(event) {
             deleteInterval = true;
         }
 
-        //resetVideoDiv(event.target.getVideoData().video_id);
+        resetVideoDiv(GLVARS.lastPlayedYTVideoID);
     }
 
 }
