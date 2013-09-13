@@ -184,7 +184,7 @@ function onPlayerStateChange(event) {
         clearInterval(GLVARS.loopId);
         GLVARS.loopId = setInterval(updatePosition, 500);
 
-        console.log("LastPlayedVideo: " + GLVARS.lastPlayedYTVideoID + "     current: " + GLVARS.currentPlayingYTVideoID);
+        //console.log("LastPlayedVideo: " + GLVARS.lastPlayedYTVideoID + "     current: " + GLVARS.currentPlayingYTVideoID);
 
         resetVideoDiv(GLVARS.lastPlayedYTVideoID);
 

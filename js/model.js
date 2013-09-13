@@ -68,3 +68,6 @@ GLVARS.segmentNextToCursor = {};
 GLVARS.loopId = 0;
 GLVARS.prevPage = 0;
 GLVARS.foreRunningTime = 2.0;
+
+GLVARS.velocityWindow = 300;
+GLVARS.averageVelocity = [];

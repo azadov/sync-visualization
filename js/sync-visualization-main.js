@@ -141,6 +141,7 @@ function resetScoreVariables() {
     GLVARS.ytPlayerThumbnails = {};
     GLVARS.videoReadiness = {};
     GLVARS.videoNumOfLoadingAttempts = {};
+    GLVARS.averageVelocity = [];
 }
 
 function resetScoreDOM() {
@@ -353,6 +354,49 @@ function createCurve(currSegment, nextSegment, videoID) {
     return curve;
 }
 
+function calculateAverageVelocity(_allScoreToVideoPairsSyncData) {
+    'use strict';
+
+    //GLVARS.velocityWindow = 500;
+    //GLVARS.averageVelocity = [];
+    console.log("Math.floor(100.125/500) = " + Math.floor(100.125/500) +
+                "      Math.floor(500.125/500) = " + Math.floor(500.125/500) +
+                "      Math.floor(1000.125/500) = " + Math.floor(1000.125/500));
+
+    var pairInd, segmInd, i, segmTimeMap, tpInd, avgVelInd, velocity, velArray = [];
+    for (pairInd = 0; pairInd < _allScoreToVideoPairsSyncData.length; pairInd = pairInd + 1) {
+        for (segmInd = 0; segmInd < _allScoreToVideoPairsSyncData[pairInd].localTimeMaps.length; segmInd = segmInd + 1) {
+            segmTimeMap = _allScoreToVideoPairsSyncData[pairInd].localTimeMaps[segmInd];
+            for (tpInd = 1; tpInd < segmTimeMap[0].length; tpInd = tpInd + 1) {
+                avgVelInd = Math.floor(segmTimeMap[0][tpInd] / GLVARS.velocityWindow);
+                velocity = (segmTimeMap[0][tpInd] - segmTimeMap[0][tpInd - 1]) / (segmTimeMap[1][tpInd] - segmTimeMap[1][tpInd - 1]);
+                if (velArray[avgVelInd]) {
+                    velArray[avgVelInd].push(velocity);
+                } else {
+                    velArray[avgVelInd] = [velocity];
+                }
+            }
+        }
+    }
+
+    var str = "";
+    for (var j = 0; j < velArray[0].length; j = j + 1) {
+        str = str + velArray[0][j] + "   ";
+    }
+    console.log("0: " + str);
+    str = "";
+    for (j = 0; j < velArray[1].length; j = j + 1) {
+        str = str + velArray[1][j] + "   ";
+    }
+    console.log("1: " + str);
+    str = "";
+    for (j = 0; j < velArray[2].length; j = j + 1) {
+        str = str + velArray[2][j] + "   ";
+    }
+    console.log("1: " + str);
+
+}
+
 function computePlotDimensions() {
     'use strict';
 
@@ -377,6 +421,8 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
     var videoSegments = [], currSegment, nextSegment, curve;
 
     GLVARS.pageTimes = _allScoreToVideoPairsSyncData[0].streamTimes0;
+
+    calculateAverageVelocity(_allScoreToVideoPairsSyncData);
 
     _allScoreToVideoPairsSyncData.forEach(function (pairSyncData) {
 
