@@ -379,21 +379,21 @@ function calculateAverageVelocity(_allScoreToVideoPairsSyncData) {
         }
     }
 
-    var str = "";
-    for (var j = 0; j < velArray[0].length; j = j + 1) {
-        str = str + velArray[0][j] + "   ";
-    }
-    console.log("0: " + str);
-    str = "";
-    for (j = 0; j < velArray[1].length; j = j + 1) {
-        str = str + velArray[1][j] + "   ";
-    }
-    console.log("1: " + str);
-    str = "";
-    for (j = 0; j < velArray[2].length; j = j + 1) {
-        str = str + velArray[2][j] + "   ";
-    }
-    console.log("1: " + str);
+//    var str = "";
+//    for (var j = 0; j < velArray[0].length; j = j + 1) {
+//        str = str + velArray[0][j] + "   ";
+//    }
+//    console.log("0: " + str);
+//    str = "";
+//    for (j = 0; j < velArray[1].length; j = j + 1) {
+//        str = str + velArray[1][j] + "   ";
+//    }
+//    console.log("1: " + str);
+//    str = "";
+//    for (j = 0; j < velArray[2].length; j = j + 1) {
+//        str = str + velArray[2][j] + "   ";
+//    }
+//    console.log("1: " + str);
 
 }
 
