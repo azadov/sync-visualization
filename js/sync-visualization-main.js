@@ -142,6 +142,7 @@ function resetScoreVariables() {
     GLVARS.videoReadiness = {};
     GLVARS.videoNumOfLoadingAttempts = {};
     GLVARS.averageVelocity = [];
+    GLVARS.velocities = [];
 }
 
 function resetScoreDOM() {
@@ -301,7 +302,8 @@ function filterVideosForScoreID(_sID, _quality, _titleSubstr) {
 function createVideoSegment(segmentTimeMap, videoID, _conf) {
     'use strict';
 
-    var scoreTimeAxis = segmentTimeMap[0], videoSegmentAxis = segmentTimeMap[1], newRectangle = {};
+    var scoreTimeAxis = segmentTimeMap[0], videoSegmentAxis = segmentTimeMap[1], newRectangle = {},
+        currentAvgVelInd, firstInd, secondInd, tpInd, velocity, indVel = [], sectionLength;
 
     if (GLVARS.maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1]) {
         GLVARS.maxPlotX = scoreTimeAxis[scoreTimeAxis.length - 1];
@@ -315,6 +317,35 @@ function createVideoSegment(segmentTimeMap, videoID, _conf) {
     newRectangle.videoID = videoID;
     newRectangle.timeMap = segmentTimeMap;
 
+    currentAvgVelInd = Math.floor(scoreTimeAxis[0] / GLVARS.velocityWindow);
+    firstInd = 0;
+    for (tpInd = 1; tpInd < scoreTimeAxis.length; tpInd = tpInd + 1) {
+        if (Math.floor(scoreTimeAxis[tpInd] / GLVARS.velocityWindow) > currentAvgVelInd) {
+            secondInd = tpInd - 1;
+
+            if (scoreTimeAxis[secondInd] !== scoreTimeAxis[firstInd] && videoSegmentAxis[secondInd] !== videoSegmentAxis[firstInd]) {
+                velocity = (scoreTimeAxis[secondInd] - scoreTimeAxis[firstInd]) / (videoSegmentAxis[secondInd] - videoSegmentAxis[firstInd]);
+//                if (velocity === Infinity) {
+//                    console.log("Numerator: " + segmTimeMap[0][tpInd] + "      " + segmTimeMap[0][tpInd - 1] +
+//                                "\nDenominator: " + segmTimeMap[1][tpInd] + "      " + segmTimeMap[1][tpInd - 1]);
+//                }
+                sectionLength = scoreTimeAxis[secondInd] - scoreTimeAxis[firstInd];
+                //console.log(velocity + "      " + sectionLength);
+                if (GLVARS.velocities[currentAvgVelInd]) {
+                    GLVARS.velocities[currentAvgVelInd].push([velocity, sectionLength]);
+                } else {
+                    GLVARS.velocities[currentAvgVelInd] = [velocity, sectionLength];
+                }
+
+                indVel.push([currentAvgVelInd, velocity]);
+            }
+
+            currentAvgVelInd = Math.floor(scoreTimeAxis[tpInd] / GLVARS.velocityWindow);
+            firstInd = tpInd;
+        }
+    }
+
+    newRectangle.indVel = indVel;
 
     return newRectangle;
 }
@@ -354,30 +385,46 @@ function createCurve(currSegment, nextSegment, videoID) {
     return curve;
 }
 
-function calculateAverageVelocity(_allScoreToVideoPairsSyncData) {
+function calculateAverageVelocity() {
     'use strict';
 
     //GLVARS.velocityWindow = 500;
     //GLVARS.averageVelocity = [];
-    console.log("Math.floor(100.125/500) = " + Math.floor(100.125/500) +
-                "      Math.floor(500.125/500) = " + Math.floor(500.125/500) +
-                "      Math.floor(1000.125/500) = " + Math.floor(1000.125/500));
+//    console.log("Math.floor(100.125/500) = " + Math.floor(100.125/500) +
+//                "      Math.floor(500.125/500) = " + Math.floor(500.125/500) +
+//                "      Math.floor(1000.125/500) = " + Math.floor(1000.125/500));
 
-    var pairInd, segmInd, i, segmTimeMap, tpInd, avgVelInd, velocity, velArray = [];
-    for (pairInd = 0; pairInd < _allScoreToVideoPairsSyncData.length; pairInd = pairInd + 1) {
-        for (segmInd = 0; segmInd < _allScoreToVideoPairsSyncData[pairInd].localTimeMaps.length; segmInd = segmInd + 1) {
-            segmTimeMap = _allScoreToVideoPairsSyncData[pairInd].localTimeMaps[segmInd];
-            for (tpInd = 1; tpInd < segmTimeMap[0].length; tpInd = tpInd + 1) {
-                avgVelInd = Math.floor(segmTimeMap[0][tpInd] / GLVARS.velocityWindow);
-                velocity = (segmTimeMap[0][tpInd] - segmTimeMap[0][tpInd - 1]) / (segmTimeMap[1][tpInd] - segmTimeMap[1][tpInd - 1]);
-                if (velArray[avgVelInd]) {
-                    velArray[avgVelInd].push(velocity);
-                } else {
-                    velArray[avgVelInd] = [velocity];
-                }
-            }
-        }
-    }
+    var pairInd, segmInd, i, j, segmTimeMap, tpInd, currentAvgVelInd, velocity = 0, velArray = [], firstInd, secondInd,
+        numerator = 0, denominator = 0, sectionLength;
+
+//    for (pairInd = 0; pairInd < _allScoreToVideoPairsSyncData.length; pairInd = pairInd + 1) {
+//        for (segmInd = 0; segmInd < _allScoreToVideoPairsSyncData[pairInd].localTimeMaps.length; segmInd = segmInd + 1) {
+//            segmTimeMap = _allScoreToVideoPairsSyncData[pairInd].localTimeMaps[segmInd];
+//            currentAvgVelInd = Math.floor(segmTimeMap[0][0] / GLVARS.velocityWindow);
+//            firstInd = 0;
+//            for (tpInd = 1; tpInd < segmTimeMap[0].length; tpInd = tpInd + 1) {
+//                if (Math.floor(segmTimeMap[0][tpInd] / GLVARS.velocityWindow) > currentAvgVelInd) {
+//                    secondInd = tpInd - 1;
+//
+//                    if (segmTimeMap[0][secondInd] !== segmTimeMap[0][firstInd] && segmTimeMap[1][secondInd] !== segmTimeMap[1][firstInd]) {
+//                        velocity = (segmTimeMap[0][secondInd] - segmTimeMap[0][firstInd]) / (segmTimeMap[1][secondInd] - segmTimeMap[1][firstInd]);
+////                if (velocity === Infinity) {
+////                    console.log("Numerator: " + segmTimeMap[0][tpInd] + "      " + segmTimeMap[0][tpInd - 1] +
+////                                "\nDenominator: " + segmTimeMap[1][tpInd] + "      " + segmTimeMap[1][tpInd - 1]);
+////                }
+//                        if (velArray[currentAvgVelInd]) {
+//                            velArray[currentAvgVelInd].push(velocity);
+//                        } else {
+//                            velArray[currentAvgVelInd] = [velocity];
+//                        }
+//                    }
+//
+//                    currentAvgVelInd = Math.floor(segmTimeMap[0][tpInd] / GLVARS.velocityWindow);
+//                    firstInd = tpInd;
+//                }
+//            }
+//        }
+//    }
 
 //    var str = "";
 //    for (var j = 0; j < velArray[0].length; j = j + 1) {
@@ -393,7 +440,30 @@ function calculateAverageVelocity(_allScoreToVideoPairsSyncData) {
 //    for (j = 0; j < velArray[2].length; j = j + 1) {
 //        str = str + velArray[2][j] + "   ";
 //    }
-//    console.log("1: " + str);
+//    console.log("2: " + str);
+    //GLVARS.velocities[currentAvgVelInd] = [velocity, sectionLength];
+    GLVARS.averageVelocity = [];
+    for (i = 0; i < GLVARS.velocities.length; i = i + 1) {
+        numerator = 0;
+        denominator = 0;
+        if (GLVARS.velocities[i] !== undefined) {
+            for (j = 0; j < GLVARS.velocities[i].length; j = j + 1) {
+                velocity = GLVARS.velocities[i][j][0];
+                sectionLength = GLVARS.velocities[i][j][1];
+                //console.log(velocity + "     " + sectionLength);
+                if (velocity !== undefined && sectionLength !== undefined) {
+                    numerator = numerator + velocity * sectionLength;
+                    denominator = denominator + sectionLength;
+                }
+            }
+            velocity = numerator / denominator;
+        } else {
+            velocity = 0;
+        }
+
+        //console.log(velocity);
+        GLVARS.averageVelocity.push(velocity);
+    }
 
 }
 
@@ -422,12 +492,11 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
 
     GLVARS.pageTimes = _allScoreToVideoPairsSyncData[0].streamTimes0;
 
-    calculateAverageVelocity(_allScoreToVideoPairsSyncData);
 
     _allScoreToVideoPairsSyncData.forEach(function (pairSyncData) {
 
         videoSegments = [];
-        var videoID = pairSyncData.uri1, i, videoSegment, conf, rbutton;
+        var videoID = pairSyncData.uri1, segm, videoSegment, conf, rbutton;
 
         if (!GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
             GLVARS.visibilityOfVideoIDs[videoID] = false;
@@ -449,9 +518,9 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
         }
 
         //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
-        for (i = 0; i < pairSyncData.localTimeMaps.length; i = i + 1) {
-            conf = getMin(pairSyncData.confidences[i][0], pairSyncData.confidences[i][1]);
-            videoSegment = createVideoSegment(pairSyncData.localTimeMaps[i], videoID, conf);
+        for (segm = 0; segm < pairSyncData.localTimeMaps.length; segm = segm + 1) {
+            conf = getMin(pairSyncData.confidences[segm][0], pairSyncData.confidences[segm][1]);
+            videoSegment = createVideoSegment(pairSyncData.localTimeMaps[segm], videoID, conf);
 
             videoSegments.push(videoSegment);
 
@@ -462,24 +531,26 @@ function computePlotElements(_allScoreToVideoPairsSyncData) {
         assignSegmentYCoordinates(videoSegments);
 
 
-        for (i = 0; i < videoSegments.length - 1; i = i + 1) {
-            currSegment = videoSegments[i];
-            nextSegment = videoSegments[i + 1];
+        for (segm = 0; segm < videoSegments.length - 1; segm = segm + 1) {
+            currSegment = videoSegments[segm];
+            nextSegment = videoSegments[segm + 1];
             curve = createCurve(currSegment, nextSegment, videoID);
             GLVARS.curves.push(curve);
         }
 
-        for (i = 0; i < videoSegments.length; i = i + 1) {
+        for (segm = 0; segm < videoSegments.length; segm = segm + 1) {
             rbutton = {};
             rbutton.videoID = videoID;
-            rbutton.segmentIndex = GLVARS.allVideoSegments.length + i; // index in GLVARS.allVideoSegments array
-            rbutton.y = videoSegments[i].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+            rbutton.segmentIndex = GLVARS.allVideoSegments.length + segm; // index in GLVARS.allVideoSegments array
+            rbutton.y = videoSegments[segm].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
             GLVARS.radiobuttons.push(rbutton);
             //console.log("Length: " + GLVARS.allVideoSegments.length + "    i: " + "     index: " + rbutton.index);
         }
 
         appendArrays(GLVARS.allVideoSegments, videoSegments);
     });
+
+    calculateAverageVelocity();
 }
 
 

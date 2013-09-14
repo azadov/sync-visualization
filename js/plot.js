@@ -272,6 +272,8 @@ function createPageTicks(_svg, _pageTimes) {
 // id:    an id="..." attribute for the gradient
 // stops: an array of objects with <stop> attributes
 function createGradient(svg,id,stops){
+    'use strict';
+
     var svgNS = svg.namespaceURI;
     var grad  = document.createElementNS(svgNS,'linearGradient');
     grad.setAttribute('id',id);
@@ -289,26 +291,79 @@ function createGradient(svg,id,stops){
     return defs.appendChild(grad);
 }
 
+function getGradientValues(_indVelLength) {
+    'use strict';
+
+    var tpInd, currentAvgVelInd, velocity, gradientValues = [], value, velArray = [], avgVel, j;
+
+    for (j = 0; j < _indVelLength.length; j++) {
+        currentAvgVelInd = _indVelLength[j][0];
+        velocity = _indVelLength[j][1];
+        //console.log(currentAvgVelInd + "     " + velocity + "     " + GLVARS.averageVelocity[currentAvgVelInd]);
+
+        value = (Math.tan(velocity - GLVARS.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
+        //console.log(value);
+        gradientValues.push(0.5 + value);
+    }
+    //console.log(_segmTimeMap[0].length);
+
+    // (Math.tan(avgVel - GLVARS.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
+    // gradientValues.push(0.5 + value);
+
+//    currentAvgVelInd = Math.floor(_segmTimeMap[0][0] / GLVARS.velocityWindow);
+//    for (tpInd = 1; tpInd < _segmTimeMap[0].length; tpInd = tpInd + 1) {
+//        if (Math.floor(_segmTimeMap[0][tpInd] / GLVARS.velocityWindow) > currentAvgVelInd) {
+//            if (velArray.length !== 0) {
+//                for (j = 0; j < velArray.length; j = j + 1) {
+//                    avgVel = avgVel + velArray[j];
+//                }
+//                avgVel = avgVel / velArray.length;
+//
+//                value = (Math.tan(avgVel - GLVARS.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
+//                gradientValues.push(0.5 + value);
+//            } else {
+//                gradientValues.push(0.5);
+//            }
+//
+//            currentAvgVelInd = Math.floor(_segmTimeMap[0][tpInd] / GLVARS.velocityWindow);
+//            velArray = [];
+//        }
+//
+//        if (_segmTimeMap[0][tpInd] !== _segmTimeMap[0][tpInd - 1] && _segmTimeMap[1][tpInd] !== _segmTimeMap[1][tpInd - 1]) {
+//            velocity = (_segmTimeMap[0][tpInd] - _segmTimeMap[0][tpInd - 1]) / (_segmTimeMap[1][tpInd] - _segmTimeMap[1][tpInd - 1]);
+//
+//            velArray.push(velocity);
+//            //value = (Math.tan(velocity - GLVARS.averageVelocity[avgVelInd])/(Math.PI/2)) * 0.5;
+//            //gradientValues.push(0.5 + value);
+//            //console.log(value + "       " + _segmTimeMap[0].length);
+//        }
+//    }
+
+    return gradientValues;
+}
+
 function createRectangles(_svg, _rects) {
     'use strict';
 
-    var color = d3.scale.category10();
+    var color = d3.scale.category10(), gradientValues;
 
-    var testDensities = [
-        {id:1, vals:[0.5, 0.2, 0.4, 0.8, 0.4]},
-        {id:2, vals:[0.6, 0.4, 0.1]},
-        {id:3, vals:[0.9, 0.9, 0.1, 0.9]}
-    ];
+//    var testDensities = [
+//        {id:1, vals:[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]},
+//        {id:2, vals:[1, 2, 3]},
+//        {id:3, vals:[0.9, 0.9, 0.1, 0.9]}
+//    ];
 
     for (var k = 0; k < _rects.length; k = k + 1) {
-        var j = k % testDensities.length;
+        console.log("Rect n" + k);
+        //var j = k % testDensities.length;
         var props = [];
-        for (var i = 0; i < testDensities[j].vals.length; i = i + 1) {
+        gradientValues = getGradientValues(_rects[k].indVel);
+        for (var i = 0; i < gradientValues.length; i = i + 1) {
             props.push({
-                'offset': Math.round(100 * i / testDensities[j].vals.length) + "%",
+                'offset': Math.round(100 * i / gradientValues.length) + "%",
                 //  'stop-color': color(Math.floor(10 * testDensities[j].vals[i])),
                 'stop-color': 'red',
-                'stop-opacity': testDensities[j].vals[i]
+                'stop-opacity': gradientValues[i]
             });
         }
         createGradient(_svg[0][0].ownerSVGElement, 'gradient' + k, props);

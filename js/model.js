@@ -27,7 +27,7 @@ GLVARS.xAxis = d3.svg.axis()
     .orient("bottom");
 
 // don't show the ticks of x-axis
-GLVARS.xAxis.tickFormat(function (d) { return ''; });
+//GLVARS.xAxis.tickFormat(function (d) { return ''; });
 
 GLVARS.maxPlotX = 0;
 GLVARS.minPlotY = 0;
@@ -69,5 +69,6 @@ GLVARS.loopId = 0;
 GLVARS.prevPage = 0;
 GLVARS.foreRunningTime = 2.0;
 
-GLVARS.velocityWindow = 300;
-GLVARS.averageVelocity = [];
+GLVARS.velocityWindow = 1;
+GLVARS.velocities = []; // array of arrays with velosities for time windows
+GLVARS.averageVelocity = []; // array with one average velocity for each time window
