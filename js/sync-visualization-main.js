@@ -456,12 +456,16 @@ function calculateAverageVelocity() {
                     denominator = denominator + sectionLength;
                 }
             }
-            velocity = numerator / denominator;
+            if (denominator != 0) {
+                velocity = numerator / denominator;
+            } else {
+                velocity = 0;
+            }
         } else {
             velocity = 0;
         }
 
-        //console.log(velocity);
+        console.log(velocity);
         GLVARS.averageVelocity.push(velocity);
     }
 

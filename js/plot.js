@@ -291,14 +291,14 @@ function createGradient(svg,id,stops){
     return defs.appendChild(grad);
 }
 
-function getGradientValues(_indVelLength) {
+function getGradientValues(_indVel) {
     'use strict';
 
     var tpInd, currentAvgVelInd, velocity, gradientValues = [], value, velArray = [], avgVel, j;
 
-    for (j = 0; j < _indVelLength.length; j++) {
-        currentAvgVelInd = _indVelLength[j][0];
-        velocity = _indVelLength[j][1];
+    for (j = 0; j < _indVel.length; j++) {
+        currentAvgVelInd = _indVel[j][0];
+        velocity = _indVel[j][1];
         //console.log(currentAvgVelInd + "     " + velocity + "     " + GLVARS.averageVelocity[currentAvgVelInd]);
 
         value = (Math.tan(velocity - GLVARS.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;

@@ -69,6 +69,6 @@ GLVARS.loopId = 0;
 GLVARS.prevPage = 0;
 GLVARS.foreRunningTime = 2.0;
 
-GLVARS.velocityWindow = 1;
+GLVARS.velocityWindow = 10;
 GLVARS.velocities = []; // array of arrays with velosities for time windows
 GLVARS.averageVelocity = []; // array with one average velocity for each time window
