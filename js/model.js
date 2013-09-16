@@ -6,69 +6,73 @@ CONSTANTS.VIDEO_HEIGHT = 100;
 CONSTANTS.PLAYING_VIDEO_WIDTH = 280;
 CONSTANTS.PLAYING_VIDEO_HEIGHT = 225;
 
-var GLVARS = {};
-GLVARS.numberOfVideoSegmentLevels = 1;
-GLVARS.labelShift = 4;
+var G = {};
 
-GLVARS.plot_margin = {top: 20, right: 20, bottom: 30, left: 40};
-GLVARS.plot_width = 600 - GLVARS.plot_margin.left - GLVARS.plot_margin.right;
-GLVARS.plot_height = 320 - GLVARS.plot_margin.top - GLVARS.plot_margin.bottom;
+G.gui = new GUI();
+
+G.numberOfVideoSegmentLevels = 1;
+G.labelShift = 4;
+
+G.plot_margin = {top: 20, right: 20, bottom: 30, left: 40};
+G.plot_width = 600 - G.plot_margin.left - G.plot_margin.right;
+G.plot_height = 320 - G.plot_margin.top - G.plot_margin.bottom;
 
 /*global d3, $, document, window*/
 
-GLVARS.x_scale = d3.scale.linear()
-    .range([0, GLVARS.plot_width]);
+G.x_scale = d3.scale.linear()
+    .range([0, G.plot_width]);
 
-GLVARS.y_scale = d3.scale.linear()
-    .range([GLVARS.plot_height, 0]);
+G.y_scale = d3.scale.linear()
+    .range([G.plot_height, 0]);
 
-GLVARS.xAxis = d3.svg.axis()
-    .scale(GLVARS.x_scale)
+G.xAxis = d3.svg.axis()
+    .scale(G.x_scale)
     .orient("bottom");
 
 // don't show the ticks of x-axis
-//GLVARS.xAxis.tickFormat(function (d) { return ''; });
+//G.xAxis.tickFormat(function (d) { return ''; });
 
-GLVARS.maxPlotX = 0;
-GLVARS.minPlotY = 0;
-GLVARS.maxPlotY = 0;
+G.maxPlotX = 0;
+G.minPlotY = 0;
+G.maxPlotY = 0;
 
-GLVARS.allScoreToSyncFileNames = {};          // list of file names of video syncs for a scoreId
-GLVARS.sIDs = [];
-GLVARS.pageTimes = [];
+G.syncPairs = {};          // list of file names of video syncs for a scoreId
+G.pageTimes = [];
 
+G.defaultScoreID = "IMSLP00001";
+G.scoreSyncFileNames = [];
 
-GLVARS.scoreSyncFileNames = [];
+G.allVideoSegments = [];
+G.curves = [];
+G.radiobuttons = [];
 
-GLVARS.allVideoSegments = [];
-GLVARS.curves = [];
-GLVARS.radiobuttons = [];
+G.rbIndex = {}; // maps radio button id to index (number from bottom to top)
 
-GLVARS.rbIndex = {}; // maps radio button id to index (number from bottom to top)
+G.visibilityOfVideoIDs = {};        // maps videoId to the visibility of the corresponding video
+G.videoTimeMaps = {};               // maps videoId to localTimeMaps
+G.videoStatus = {};                 // maps videoId to status
+G.videoStartPosition = {};          // maps videoId to start position
+G.videoReadiness = {};              // maps videoId to 1 (if video loaded) or 0 (if video not loaded)
+G.videoNumOfLoadingAttempts = {};   // maps videoId to number of loading attempts
+G.videoLoadingInterval = {};        // maps videoId to interval
 
-GLVARS.visibilityOfVideoIDs = {};        // maps videoId to the visibility of the corresponding video
-GLVARS.videoTimeMaps = {};               // maps videoId to localTimeMaps
-GLVARS.videoStatus = {};                 // maps videoId to status
-GLVARS.videoStartPosition = {};          // maps videoId to start position
-GLVARS.videoTitle = {};                  // maps videoId to video title
-GLVARS.videoReadiness = {};              // maps videoId to 1 (if video loaded) or 0 (if video not loaded)
-GLVARS.videoNumOfLoadingAttempts = {};   // maps videoId to number of loading attempts
-GLVARS.videoLoadingInterval = {};        // maps videoId to interval
+G.videos = {};
+G.alignments = new Alignments();
 
-GLVARS.ytPlayers = {};
-GLVARS.ytPlayerThumbnails = {};
+G.ytPlayers = {};
+G.ytPlayerThumbnails = {};
 
-GLVARS.mouseTrackLineExist = false;
-GLVARS.videoTrackLineExist = false;
+G.mouseTrackLineExist = false;
+G.videoTrackLineExist = false;
 
-GLVARS.currentPlayingYTVideoID = "";
-GLVARS.lastPlayedYTVideoID = "";
-GLVARS.videoIDNextToCursor = "";
-GLVARS.segmentNextToCursor = {};
-GLVARS.loopId = 0;
-GLVARS.prevPage = 0;
-GLVARS.foreRunningTime = 2.0;
+G.currentPlayingYTVideoID = "";
+G.lastPlayedYTVideoID = "";
+G.videoIDNextToCursor = "";
+G.segmentNextToCursor = {};
+G.loopId = 0;
+G.prevPage = 0;
+G.foreRunningTime = 2.0;
 
-GLVARS.velocityWindow = 10;
-GLVARS.velocities = []; // array of arrays with velosities for time windows
-GLVARS.averageVelocity = []; // array with one average velocity for each time window
+G.velocityWindow = 10;
+G.velocities = []; // array of arrays with velosities for time windows
+G.averageVelocity = []; // array with one average velocity for each time window

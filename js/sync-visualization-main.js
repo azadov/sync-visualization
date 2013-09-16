@@ -1,303 +1,300 @@
-var tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-var firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+var gui;
 
-// needed for IE to have browser console.log
-if (!window.console) {window.console = {}; window.console.log = function () {'use strict'; }; }
+function main() {
 
+    // needed for IE to have browser console.log
+    if (!window.console) {window.console = {}; window.console.log = function () {}; }
 
+    gui = G.gui;
 
-(function () {
+    initYouTubeAPI();
+    initScoreViewer();
+
+    configureScoreViewer();
+
+    bindScoreFilterInputWithFilteringAction();
+
+    initQualityFilterDropdown();
+
+    loadAlignmentList(function onSuccess() {
+
+        console.log("alignment list loaded");
+
+        populateScoreSelectionDropdown();
+
+        prepareVideosForScore(G.defaultScoreID);
+
+    }, function onFailure() {
+        console.log("couldn't load alignment json file!");
+    });
+}
+
+main();
+
+function prepareVideosForScore(scoreId) {
+    console.log("preparing videos for score " + scoreId);
+    checkVideoAvailability(scoreId, function() {onVideoAvailabilityChecked(scoreId);});
+}
+
+function onVideoAvailabilityChecked(scoreId) {
+    console.log("video availability checked for score " + scoreId);
+    console.log(G.videos);
+    getAlignments(scoreId, function() {onAlignmentsFetched(scoreId)();});
+}
+
+function onAlignmentsFetched(scoreId) {
+    return function() {
+        initializeVisualization(scoreId);
+    };
+}
+
+function initializeVisualization(scoreId) {
+    console.log("interface for " + scoreId);
+
+    clearVideoAndPlotState();
+    gui.resetScoreDOM();
+
+    loadScoreInViewer(scoreId);
+
+    computePlotElements(scoreId, G.syncPairs[scoreId]);
+    computePlotDimensions();
+    drawPlot();
+    initVideos(scoreId, G.syncPairs[scoreId]);
+}
+
+function videoIsFilteredOut(scoreId, videoId) {
+    return G.videos[videoId].getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
+        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter();
+}
+
+function populateScoreSelectionDropdown() {
+    for (var scoreId in G.syncPairs) {
+        if (G.syncPairs.hasOwnProperty(scoreId)) {
+            gui.addScoreToDropdown(scoreId);
+        }
+    }
+}
+
+function initYouTubeAPI() {
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
+
+function initScoreViewer() {
     var pnsv = document.createElement('script');
     pnsv.type = 'text/javascript';
     pnsv.async = true;
     pnsv.src = 'http://pchnote.appspot.com/scoreviewer/scoreviewer.nocache.js';
     (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(pnsv);
-})();
+}
 
-var _pnq = _pnq || [];
-_pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
-_pnq.push(['widgetHeight', 590]);
-_pnq.push(['widgetWidth', 450]);
-_pnq.push(['addMeasureClickHandler', measureClickHandler]);
+function configureScoreViewer() {
+    window._pnq = window._pnq || [];
+    _pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
+    _pnq.push(['widgetHeight', 590]);
+    _pnq.push(['widgetWidth', 450]);
+    _pnq.push(['addMeasureClickHandler', measureClickHandler]);
+}
+
+
 
 
 // example of loading a viewer in an iframe as an anonymous function call. the fn can be made reusable of course.
-(function(p) {
-    $('<iframe id="' + p.rootElement + '_iframe" src="http://www.peachnote.com/viewer-embedded.html?'
-        + 'scoreId=' + p.scoreId
-        + '&width=' + p.widgetWidth
-        + '&height=' + p.widgetHeight
-        + '" height=' + (p.widgetHeight + 2) + ' width=' + (p.widgetWidth + 4)
-        + ' frameborder=0 />')
-        .appendTo('#' + p.rootElement)
-})({
-    'rootElement':'PeachnoteViewerContainer2',
-    'widgetHeight': 590,
-    'widgetWidth': 450,
-    'scoreId': 'IMSLP03796'
-});
+
+function newViewerAPIExperiment() {
+    (function(p) {
+        $('<iframe id="' + p.rootElement + '_iframe" src="http://www.peachnote.com/viewer-embedded.html?'
+            + 'scoreId=' + p.scoreId
+            + '&width=' + p.widgetWidth
+            + '&height=' + p.widgetHeight
+            + '" height=' + (p.widgetHeight + 2) + ' width=' + (p.widgetWidth + 4)
+            + ' frameborder=0 />')
+            .appendTo('#' + p.rootElement)
+    })({
+        'rootElement':'PeachnoteViewerContainer2',
+        'widgetHeight': 590,
+        'widgetWidth': 450,
+        'scoreId': 'IMSLP03796'
+    });
 
 // example of communication with the viewer in the iframe
-document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq = document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq || [];
-document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq.push(['loadPage', 2]);
+    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq =
+        document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq || [];
+    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq.push(['loadPage', 2]);
+}
 
 
+function bindScoreFilterInputWithFilteringAction() {
 
-$('#scoreIDs').change(function () {
-    'use strict';
-
-    var scoreID = "", quality = $("#qualityFilter").val(), titleSubstr = document.getElementById("videoTitelFilter").value;
-//    $("select option:selected").each(function () {
-//        scoreID = $(this).text();
-//    });
-    scoreID = $("#scoreIDs").val();
-
-    //console.log("ScoreID: " + scoreID + "    Qual: " + quality);
-    //_pnq.push(['loadScore', scoreID]);
-    filterVideosForScoreID(scoreID, quality, titleSubstr);
-});
-
-$('#qualityFilter').change(function () {
-    'use strict';
-
-    var quality = 0, scoreID = $("#scoreIDs").val(), titleSubstr = document.getElementById("videoTitelFilter").value;
-    $("select option:selected").each(function () {
-        quality = $(this).text();
+    gui.addScoreDropdownChangeCallback(function() {
+        prepareVideosForScore(gui.getSelectedScoreId())
     });
 
-    //_pnq.push(['loadScore', scoreID]);
-    filterVideosForScoreID(scoreID, quality, titleSubstr);
-});
-// populate the dropdown for quality selection
-var ind;
-var qualities = [0, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7];
-for (ind = 0; ind < qualities.length; ind = ind + 1) {
-    $('#qualityFilter').append($("<option />").val(qualities[ind]).text(qualities[ind]));
+    gui.addAlignmentQualityChangeCallback(function() {
+        initializeVisualization(gui.getSelectedScoreId());
+    });
+
+    gui.addVideoTitleChangeCallback(function() {
+        initializeVisualization(gui.getSelectedScoreId());
+    });
 }
 
-$('#videoTitelFilter').keyup(function(){
-    'use strict';
-
-    var scoreID = $("#scoreIDs").val(), quality = $("#qualityFilter").val(), titleSubstr = $('#videoTitelFilter').val();
-
-    //console.log("FILTER: " + titleSubstr);
-
-    filterVideosForScoreID(scoreID, quality, titleSubstr);
-
-});
+function initQualityFilterDropdown() {
+    var qualities = [0, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7];
+    gui.populateQualityFilter(qualities)
+}
 
 
-$.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
-    'use strict';
+function loadAlignmentList(onSuccess, onFailure) {
 
-    var i, sid, id1, fname, select = $("#scoreIDs"), initialScoreID, confidence;
+    $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
+        'use strict';
 
-    for (i = 0; i < json.length; i = i + 1) {
-        sid = json[i].id0;
-        id1 = json[i].id1;
-        fname = "alignments/" + sid + '_' + id1 + '.json';
-        confidence = json[i].minConfidence;
+        var i, scoreId, videoId,
+            alignmentFileName,
+            confidence;
 
-        //console.log(sid + "      " + fname);
-        if (GLVARS.allScoreToSyncFileNames[sid]) {
-            GLVARS.allScoreToSyncFileNames[sid].push([fname, confidence, id1]);
-        } else {
-            GLVARS.allScoreToSyncFileNames[sid] = [[fname, confidence, id1]];
-            GLVARS.sIDs.push(sid);
+        for (i = 0; i < json.length; i = i + 1) {
+            scoreId = json[i].id0;
+            videoId = json[i].id1;
+            alignmentFileName = "alignments/" + scoreId + '_' + videoId + '.json';
+            confidence = json[i].minConfidence;
+
+            var video = new Video(videoId);
+
+            G.videos[videoId] = video;
+
+            G.syncPairs[scoreId] = G.syncPairs[scoreId] ? G.syncPairs[scoreId] : {};
+            G.syncPairs[scoreId][videoId] = {alignmentFileName: alignmentFileName, confidence: confidence};
         }
-    }
-
-    // populate the dropdown for score selection
-    for (i = 0; i < GLVARS.sIDs.length; i = i + 1) {
-        select.append($("<option />").val(GLVARS.sIDs[i]).text(GLVARS.sIDs[i]));
-    }
-
-    initialScoreID = GLVARS.sIDs[0];
-
-    //_pnq.push(['loadScore', initialScoreID]);
-    filterVideosForScoreID(initialScoreID, 0, "");
-    setTimeout(function () {filterVideosForScoreID(initialScoreID, 0, ""); }, 1000);
-
-});
-
-
-function resetScoreVariables() {
-    'use strict';
-
-    GLVARS.mouseTrackLineExist = false;
-    GLVARS.videoTrackLineExist = false;
-    GLVARS.numberOfVideoSegmentLevels = 1;
-    GLVARS.allVideoSegments = [];
-    GLVARS.curves = [];
-    GLVARS.radiobuttons = [];
-    GLVARS.visibilityOfVideoIDs = {};
-    GLVARS.videoTimeMaps = {};
-    GLVARS.videoStatus = {};
-    //GLVARS.videoTitle = {};  not here
-    GLVARS.maxPlotX = 0;
-    GLVARS.ytPlayers = {};
-    GLVARS.ytPlayerThumbnails = {};
-    GLVARS.videoReadiness = {};
-    GLVARS.videoNumOfLoadingAttempts = {};
-    GLVARS.averageVelocity = [];
-    GLVARS.velocities = [];
+    })
+        .done(function() { onSuccess();})
+        .fail(function() { onFailure();})
+    ;
 }
 
-function resetScoreDOM() {
+
+function clearVideoAndPlotState() {
     'use strict';
 
-    d3.select('svg').remove();
-    d3.select(".mouseTrackLine").remove();
-    $('#videos').empty();
-    $('#plotContainer').empty();
+    G.mouseTrackLineExist = false;
+    G.videoTrackLineExist = false;
+    G.numberOfVideoSegmentLevels = 1;
+    G.allVideoSegments = [];
+    G.curves = [];
+    G.radiobuttons = [];
+    G.visibilityOfVideoIDs = {};
+    G.videoTimeMaps = {};
+    G.videoStatus = {};
+    G.maxPlotX = 0;
+    G.ytPlayers = {};
+    G.ytPlayerThumbnails = {};
+    G.videoReadiness = {};
+    G.videoNumOfLoadingAttempts = {};
+    G.averageVelocity = [];
+    G.velocities = [];
 }
 
-function loadScore(_sID) {
-    'use strict';
 
-    _pnq.push(['loadScore', _sID]);
-
+function loadScoreInViewer(scoreId) {
+    _pnq.push(['loadScore', scoreId]);
 }
 
-function loadInterfaceElements(_allScoreToVideoPairsSyncData, _sID) {
-    'use strict';
 
-    //resetScoreVariables();
-    //resetScoreDOM();
-    loadScore(_sID);
-    computePlotElements(_allScoreToVideoPairsSyncData);
-    computePlotDimensions();
-    drawPlot();
-    initVideos(_allScoreToVideoPairsSyncData);
-}
-
-/**
- * sorts videoIDs on _allScoreToVideoPairsSyncData, so that videoIDs occure
- * in the order they occure in alignment file (this order is stored in GLVARS.scoreSyncFileNames)
- * @param _allScoreToVideoPairsSyncData
- */
-function sortVideoIDs(_allScoreToVideoPairsSyncData, _sID) {
-    'use strict';
-
-    var sortedArray = [], i, j, vidID;
-
-    for (i = 0; i < GLVARS.allScoreToSyncFileNames[_sID].length; i = i + 1) {
-        vidID = GLVARS.allScoreToSyncFileNames[_sID][i][2];
-        for (j = 0; j < _allScoreToVideoPairsSyncData.length; j = j + 1) {
-            if (_allScoreToVideoPairsSyncData[j].uri1 === vidID) {
-                console.log("VideoID: " + vidID);
-                sortedArray.push(_allScoreToVideoPairsSyncData[j]);
-                j = _allScoreToVideoPairsSyncData.length; // break this loop
-            }
-        }
-    }
-
-    return sortedArray;
-    //var videoId = pairSyncData.uri1;
-}
-
-function filterVideosForScoreID(_sID, _quality, _titleSubstr) {
-    'use strict';
-
-    GLVARS.scoreSyncFileNames = GLVARS.allScoreToSyncFileNames[_sID];
-
-    var doneCount = 0, doneCountCheck1 = 0, allScoreToVideoPairsSyncData = [], title, url, passedTitleFilter, noRestrictedVideos = [];
-    //console.log("TitleSubstr:  " + _titleSubstr + "   sID: " + _sID)
-    function whenChekingAvailabilityOfVideosIsDone() {
-        resetScoreVariables();
-        resetScoreDOM();
-
-        $.each(GLVARS.scoreSyncFileNames, function (i, fileQual) {
-            if (fileQual[1] >= _quality) {
-                $.getJSON(fileQual[0])
-                    .done(function (json) {
-                        doneCount = doneCount + 1;
-
-                        allScoreToVideoPairsSyncData.push(json);
-                        if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                            allScoreToVideoPairsSyncData = sortVideoIDs(allScoreToVideoPairsSyncData, _sID);
-                            loadInterfaceElements(allScoreToVideoPairsSyncData, _sID);
-                        }
-                    })
-                    .fail(function (jqxhr, textStatus, error) {
-                        doneCount = doneCount + 1;
-                        var err = textStatus + ', ' + error;
-                        console.log("Request Failed: " + err);
-                        if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                            allScoreToVideoPairsSyncData = sortVideoIDs(allScoreToVideoPairsSyncData, _sID);
-                            loadInterfaceElements(allScoreToVideoPairsSyncData, _sID);
-                        }
-                    });
-            } else {
-                doneCount = doneCount + 1;
-                if (doneCount === GLVARS.scoreSyncFileNames.length) {
-                    allScoreToVideoPairsSyncData = sortVideoIDs(allScoreToVideoPairsSyncData, _sID);
-                    loadInterfaceElements(allScoreToVideoPairsSyncData, _sID);
-                }
-            }
+function fetchAlignmentData(scoreId, videoId, jsonPath, counter) {
+    $.getJSON(jsonPath)
+        .done(function (json) {
+            G.alignments.add(scoreId, videoId, json);
+            counter.increment();
+        })
+        .fail(function (jqxhr, textStatus, error) {
+            counter.increment();
         });
+}
+
+
+function getAlignments(scoreId, onAlignmentsFetched) {
+    var syncedVideos = G.syncPairs[scoreId];
+    var counter = new FiringCounter(Object.keys(syncedVideos).length, onAlignmentsFetched);
+
+    for (var videoId in syncedVideos) {
+        if (syncedVideos.hasOwnProperty(videoId)) {
+
+            console.log(G.videos[videoId]);
+
+            if (!G.videos[videoId].getAvailability() ||
+                G.videos[videoId].getTitle().indexOf(gui.getVideoTitleFilterString()) == -1 ||
+                syncedVideos[videoId].quality < gui.getAlignmentQualityFilter() ||
+                G.alignments.get(scoreId, videoId)
+                ) {
+                counter.increment();
+                continue;
+            }
+
+            var jsonPath = syncedVideos[videoId].alignmentFileName;
+            fetchAlignmentData(scoreId, videoId, jsonPath, counter);
+        }
+    }
+}
+
+function checkVideoAvailability(scoreId, onDone) {
+    var videoProperties = G.syncPairs[scoreId];
+
+    var counter = new FiringCounter(Object.keys(videoProperties).length, onDone);
+
+    for (var videoId in videoProperties) {
+        if (videoProperties.hasOwnProperty(videoId)) {
+            checkYouTubeVideoAvailability(videoId, counter);
+        }
+    }
+}
+
+
+function checkYouTubeVideoAvailability(videoId, counter) {
+
+    if (typeof G.videos[videoId].getAvailability() !== 'undefined') {
+        counter.increment();
+        return;
     }
 
-    $.each(GLVARS.scoreSyncFileNames, function (i, entry) {
-        GLVARS.videoTitle = {};
+    var url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
+    $.getJSON(url)
+        .done(function (data) {
+            G.videos[videoId].setAvailability(true);
 
-        url = "http://gdata.youtube.com/feeds/api/videos/" + entry[2] + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
+            if (data['entry'].hasOwnProperty("app$control") &&
+                data['entry']['app$control'].hasOwnProperty("yt$state") &&
+                data['entry']['app$control']['yt$state']['$t'] === "This video is not available in your region.") {
+                console.log("video " + videoId + " is not available");
+                G.videos[videoId].setAvailability(false);
+            } else {
+                console.log("video " + videoId + " is available");
+            }
 
-        $.getJSON(url)
-            .done(function (jsonObj) {
-                doneCountCheck1 = doneCountCheck1 + 1
-                //var vidID = jsonObj.entry['media$group']['yt$videoid']['$t']; // it is wrong use 'vid' hier
-                title = jsonObj.entry.title['$t'];
-                GLVARS.videoTitle[entry[2]] = title;
-                //console.log("Title: " + GLVARS.videoTitle[entry[2]] + "      titleSubstr: " + _titleSubstr);
-                if (_titleSubstr !== "") {
-                    //console.log("IndexOF: " + title.indexOf(_titleSubstr));
-                    if (title.toLowerCase().indexOf(_titleSubstr.toLowerCase()) > -1) {
-                        passedTitleFilter = true;
-                    } else {
-                        passedTitleFilter = false;
-                    }
-                } else {
-                    passedTitleFilter = true;
-                }
-                //console.log("if passed: " + passedTitleFilter)
-                if (jsonObj.entry.hasOwnProperty("app$control")) {
-                    if (jsonObj.entry.app$control.hasOwnProperty("yt$state")) {
-                        if (jsonObj.entry.app$control.yt$state['$t'] !== "This video is not available in your region.") {
-                            if (passedTitleFilter) {
-                                //console.log();
-                                noRestrictedVideos.push(entry);
-                            }
-                        }
-                    } else {
-                        if (passedTitleFilter) {
-                            noRestrictedVideos.push(entry);
-                        }
-                    }
-                } else {
-                    if (passedTitleFilter) {
-                        noRestrictedVideos.push(entry);
-                    }
-                }
-
-                if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
-                    GLVARS.scoreSyncFileNames = noRestrictedVideos;
-                    whenChekingAvailabilityOfVideosIsDone();
-                }
-            })
-            .fail(function(jqxhr, textStatus, error) {
-                doneCountCheck1 = doneCountCheck1 + 1
-                GLVARS.videoTitle[entry[2]] = "Data not available";
-
-                if (doneCountCheck1 === GLVARS.scoreSyncFileNames.length) {
-                    GLVARS.scoreSyncFileNames = noRestrictedVideos;
-                    whenChekingAvailabilityOfVideosIsDone();
-                }
-            });
-    });
+            G.videos[videoId].setTitle(data['entry']['title']['$t']);
+            counter.increment();
+        })
+        .fail(function(jqxhr, textStatus, error) {
+            G.videos[videoId].setTitle("Data not available");
+            G.videos[videoId].setAvailability(true);
+            counter.increment();
+        });
 }
+
+function getPageTimes(scoreId) {
+    var videoId;
+    for (videoId in G.syncPairs[scoreId]) {
+        if (G.videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability()) {
+            break;
+        }
+    }
+    console.log(videoId);
+    console.log(G.alignments.get(scoreId, videoId));
+    return G.alignments.get(scoreId, videoId).streamTimes0;
+}
+
 
 function createVideoSegment(segmentTimeMap, videoID, _conf) {
     'use strict';
@@ -305,8 +302,8 @@ function createVideoSegment(segmentTimeMap, videoID, _conf) {
     var scoreTimeAxis = segmentTimeMap[0], videoSegmentAxis = segmentTimeMap[1], newRectangle = {},
         currentAvgVelInd, firstInd, secondInd, tpInd, velocity, indVel = [], sectionLength;
 
-    if (GLVARS.maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1]) {
-        GLVARS.maxPlotX = scoreTimeAxis[scoreTimeAxis.length - 1];
+    if (G.maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1]) {
+        G.maxPlotX = scoreTimeAxis[scoreTimeAxis.length - 1];
     }
 
     newRectangle.x1 = scoreTimeAxis[0];
@@ -317,10 +314,10 @@ function createVideoSegment(segmentTimeMap, videoID, _conf) {
     newRectangle.videoID = videoID;
     newRectangle.timeMap = segmentTimeMap;
 
-    currentAvgVelInd = Math.floor(scoreTimeAxis[0] / GLVARS.velocityWindow);
+    currentAvgVelInd = Math.floor(scoreTimeAxis[0] / G.velocityWindow);
     firstInd = 0;
     for (tpInd = 1; tpInd < scoreTimeAxis.length; tpInd = tpInd + 1) {
-        if (Math.floor(scoreTimeAxis[tpInd] / GLVARS.velocityWindow) > currentAvgVelInd) {
+        if (Math.floor(scoreTimeAxis[tpInd] / G.velocityWindow) > currentAvgVelInd) {
             secondInd = tpInd - 1;
 
             if (scoreTimeAxis[secondInd] !== scoreTimeAxis[firstInd] && videoSegmentAxis[secondInd] !== videoSegmentAxis[firstInd]) {
@@ -331,16 +328,16 @@ function createVideoSegment(segmentTimeMap, videoID, _conf) {
 //                }
                 sectionLength = scoreTimeAxis[secondInd] - scoreTimeAxis[firstInd];
                 //console.log(velocity + "      " + sectionLength);
-                if (GLVARS.velocities[currentAvgVelInd]) {
-                    GLVARS.velocities[currentAvgVelInd].push([velocity, sectionLength]);
+                if (G.velocities[currentAvgVelInd]) {
+                    G.velocities[currentAvgVelInd].push([velocity, sectionLength]);
                 } else {
-                    GLVARS.velocities[currentAvgVelInd] = [velocity, sectionLength];
+                    G.velocities[currentAvgVelInd] = [velocity, sectionLength];
                 }
 
                 indVel.push([currentAvgVelInd, velocity]);
             }
 
-            currentAvgVelInd = Math.floor(scoreTimeAxis[tpInd] / GLVARS.velocityWindow);
+            currentAvgVelInd = Math.floor(scoreTimeAxis[tpInd] / G.velocityWindow);
             firstInd = tpInd;
         }
     }
@@ -356,9 +353,9 @@ function createCurve(currSegment, nextSegment, videoID) {
     var firstPoint = {x: currSegment.x2, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         secondPoint = {x: currSegment.x2 + 10, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT  / 2},
         thirdPoint = {x: currSegment.x2 + 10,
-                      y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+            y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         fourthPoint = {x: nextSegment.x1 - 10,
-                       y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+            y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         fifthPoint = {x: nextSegment.x1 - 10, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         sixthPoint = {x: nextSegment.x1, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         points = [],
@@ -388,68 +385,17 @@ function createCurve(currSegment, nextSegment, videoID) {
 function calculateAverageVelocity() {
     'use strict';
 
-    //GLVARS.velocityWindow = 500;
-    //GLVARS.averageVelocity = [];
-//    console.log("Math.floor(100.125/500) = " + Math.floor(100.125/500) +
-//                "      Math.floor(500.125/500) = " + Math.floor(500.125/500) +
-//                "      Math.floor(1000.125/500) = " + Math.floor(1000.125/500));
-
     var pairInd, segmInd, i, j, segmTimeMap, tpInd, currentAvgVelInd, velocity = 0, velArray = [], firstInd, secondInd,
         numerator = 0, denominator = 0, sectionLength;
 
-//    for (pairInd = 0; pairInd < _allScoreToVideoPairsSyncData.length; pairInd = pairInd + 1) {
-//        for (segmInd = 0; segmInd < _allScoreToVideoPairsSyncData[pairInd].localTimeMaps.length; segmInd = segmInd + 1) {
-//            segmTimeMap = _allScoreToVideoPairsSyncData[pairInd].localTimeMaps[segmInd];
-//            currentAvgVelInd = Math.floor(segmTimeMap[0][0] / GLVARS.velocityWindow);
-//            firstInd = 0;
-//            for (tpInd = 1; tpInd < segmTimeMap[0].length; tpInd = tpInd + 1) {
-//                if (Math.floor(segmTimeMap[0][tpInd] / GLVARS.velocityWindow) > currentAvgVelInd) {
-//                    secondInd = tpInd - 1;
-//
-//                    if (segmTimeMap[0][secondInd] !== segmTimeMap[0][firstInd] && segmTimeMap[1][secondInd] !== segmTimeMap[1][firstInd]) {
-//                        velocity = (segmTimeMap[0][secondInd] - segmTimeMap[0][firstInd]) / (segmTimeMap[1][secondInd] - segmTimeMap[1][firstInd]);
-////                if (velocity === Infinity) {
-////                    console.log("Numerator: " + segmTimeMap[0][tpInd] + "      " + segmTimeMap[0][tpInd - 1] +
-////                                "\nDenominator: " + segmTimeMap[1][tpInd] + "      " + segmTimeMap[1][tpInd - 1]);
-////                }
-//                        if (velArray[currentAvgVelInd]) {
-//                            velArray[currentAvgVelInd].push(velocity);
-//                        } else {
-//                            velArray[currentAvgVelInd] = [velocity];
-//                        }
-//                    }
-//
-//                    currentAvgVelInd = Math.floor(segmTimeMap[0][tpInd] / GLVARS.velocityWindow);
-//                    firstInd = tpInd;
-//                }
-//            }
-//        }
-//    }
-
-//    var str = "";
-//    for (var j = 0; j < velArray[0].length; j = j + 1) {
-//        str = str + velArray[0][j] + "   ";
-//    }
-//    console.log("0: " + str);
-//    str = "";
-//    for (j = 0; j < velArray[1].length; j = j + 1) {
-//        str = str + velArray[1][j] + "   ";
-//    }
-//    console.log("1: " + str);
-//    str = "";
-//    for (j = 0; j < velArray[2].length; j = j + 1) {
-//        str = str + velArray[2][j] + "   ";
-//    }
-//    console.log("2: " + str);
-    //GLVARS.velocities[currentAvgVelInd] = [velocity, sectionLength];
-    GLVARS.averageVelocity = [];
-    for (i = 0; i < GLVARS.velocities.length; i = i + 1) {
+    G.averageVelocity = [];
+    for (i = 0; i < G.velocities.length; i = i + 1) {
         numerator = 0;
         denominator = 0;
-        if (GLVARS.velocities[i] !== undefined) {
-            for (j = 0; j < GLVARS.velocities[i].length; j = j + 1) {
-                velocity = GLVARS.velocities[i][j][0];
-                sectionLength = GLVARS.velocities[i][j][1];
+        if (G.velocities[i] !== undefined) {
+            for (j = 0; j < G.velocities[i].length; j = j + 1) {
+                velocity = G.velocities[i][j][0];
+                sectionLength = G.velocities[i][j][1];
                 //console.log(velocity + "     " + sectionLength);
                 if (velocity !== undefined && sectionLength !== undefined) {
                     numerator = numerator + velocity * sectionLength;
@@ -466,7 +412,7 @@ function calculateAverageVelocity() {
         }
 
         console.log(velocity);
-        GLVARS.averageVelocity.push(velocity);
+        G.averageVelocity.push(velocity);
     }
 
 }
@@ -475,84 +421,92 @@ function computePlotDimensions() {
     'use strict';
 
     var pt;
-    for (pt in GLVARS.pageTimes) {
-        if (GLVARS.pageTimes.hasOwnProperty(pt)) {
-            if (GLVARS.maxPlotX < GLVARS.pageTimes[pt]) {
-                GLVARS.maxPlotX = GLVARS.pageTimes[pt];
+    for (pt in G.pageTimes) {
+        if (G.pageTimes.hasOwnProperty(pt)) {
+            if (G.maxPlotX < G.pageTimes[pt]) {
+                G.maxPlotX = G.pageTimes[pt];
             }
         }
     }
-    GLVARS.x_scale.domain([0, GLVARS.maxPlotX]);
-    GLVARS.minPlotY = 0;
-    GLVARS.maxPlotY = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS) + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
-    GLVARS.y_scale.domain([GLVARS.minPlotY, GLVARS.maxPlotY]);
-    //console.log("extremes: " + GLVARS.maxPlotX_basis + "     " + GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT+CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS));
+    G.x_scale.domain([0, G.maxPlotX]);
+    G.minPlotY = 0;
+    G.maxPlotY = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS) + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
+    G.y_scale.domain([G.minPlotY, G.maxPlotY]);
+    //console.log("extremes: " + G.maxPlotX_basis + "     " + G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT+CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS));
 }
 
-function computePlotElements(_allScoreToVideoPairsSyncData) {
+function computePlotElements(scoreId, syncPairs) {
     'use strict';
 
     var videoSegments = [], currSegment, nextSegment, curve;
 
-    GLVARS.pageTimes = _allScoreToVideoPairsSyncData[0].streamTimes0;
+    G.pageTimes = getPageTimes(scoreId);
+
+    for (var videoId in syncPairs) {
+        if (syncPairs.hasOwnProperty(videoId)) {
+
+            videoSegments = [];
+            var alignment = G.alignments.get(scoreId, videoId),
+                segm, videoSegment, conf, rbutton;
+
+            if (!G.videos.hasOwnProperty(videoId) ||
+                !G.videos[videoId].getAvailability() ||
+                videoIsFilteredOut(scoreId, videoId)) {
+                continue;
+            }
+
+            if (!G.visibilityOfVideoIDs.hasOwnProperty(videoId)) {
+                G.visibilityOfVideoIDs[videoId] = false;
+            }
+            if (!G.videoTimeMaps.hasOwnProperty(videoId)) {
+                G.videoTimeMaps[videoId] =  alignment.localTimeMaps;
+            }
+            if (!G.videoStatus.hasOwnProperty(videoId)) {
+                G.videoStatus[videoId] = YT.PlayerState.PAUSED;
+            }
+            if (!G.videoStartPosition.hasOwnProperty(videoId)) {
+                G.videoStartPosition[videoId] = 0;
+            }
+            if (!G.videoReadiness.hasOwnProperty(videoId)) {
+                G.videoReadiness[videoId] = 0;
+            }
+            if (!G.videoNumOfLoadingAttempts.hasOwnProperty(videoId)) {
+                G.videoNumOfLoadingAttempts[videoId] = 0;
+            }
+
+            //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
+            for (segm = 0; segm < alignment.localTimeMaps.length; segm = segm + 1) {
+                conf = getMin(alignment.confidences[segm][0], alignment.confidences[segm][1]);
+                videoSegment = createVideoSegment(alignment.localTimeMaps[segm], videoId, conf);
+
+                videoSegments.push(videoSegment);
+
+            }
+
+            videoSegments = sortRects(videoSegments);
+
+            assignSegmentYCoordinates(videoSegments);
 
 
-    _allScoreToVideoPairsSyncData.forEach(function (pairSyncData) {
+            for (segm = 0; segm < videoSegments.length - 1; segm = segm + 1) {
+                currSegment = videoSegments[segm];
+                nextSegment = videoSegments[segm + 1];
+                curve = createCurve(currSegment, nextSegment, videoId);
+                G.curves.push(curve);
+            }
 
-        videoSegments = [];
-        var videoID = pairSyncData.uri1, segm, videoSegment, conf, rbutton;
+            for (segm = 0; segm < videoSegments.length; segm = segm + 1) {
+                rbutton = {};
+                rbutton.videoID = videoId;
+                rbutton.segmentIndex = G.allVideoSegments.length + segm; // index in G.allVideoSegments array
+                rbutton.y = videoSegments[segm].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+                G.radiobuttons.push(rbutton);
+                //console.log("Length: " + G.allVideoSegments.length + "    i: " + "     index: " + rbutton.index);
+            }
 
-        if (!GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            GLVARS.visibilityOfVideoIDs[videoID] = false;
+            appendArrays(G.allVideoSegments, videoSegments);
         }
-        if (!GLVARS.videoTimeMaps.hasOwnProperty(videoID)) {
-            GLVARS.videoTimeMaps[videoID] =  pairSyncData.localTimeMaps;
-        }
-        if (!GLVARS.videoStatus.hasOwnProperty(videoID)) {
-            GLVARS.videoStatus[videoID] = YT.PlayerState.PAUSED;
-        }
-        if (!GLVARS.videoStartPosition.hasOwnProperty(videoID)) {
-            GLVARS.videoStartPosition[videoID] = 0;
-        }
-        if (!GLVARS.videoReadiness.hasOwnProperty(videoID)) {
-            GLVARS.videoReadiness[videoID] = 0;
-        }
-        if (!GLVARS.videoNumOfLoadingAttempts.hasOwnProperty(videoID)) {
-            GLVARS.videoNumOfLoadingAttempts[videoID] = 0;
-        }
-
-        //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
-        for (segm = 0; segm < pairSyncData.localTimeMaps.length; segm = segm + 1) {
-            conf = getMin(pairSyncData.confidences[segm][0], pairSyncData.confidences[segm][1]);
-            videoSegment = createVideoSegment(pairSyncData.localTimeMaps[segm], videoID, conf);
-
-            videoSegments.push(videoSegment);
-
-        }
-
-        videoSegments = sortRects(videoSegments);
-
-        assignSegmentYCoordinates(videoSegments);
-
-
-        for (segm = 0; segm < videoSegments.length - 1; segm = segm + 1) {
-            currSegment = videoSegments[segm];
-            nextSegment = videoSegments[segm + 1];
-            curve = createCurve(currSegment, nextSegment, videoID);
-            GLVARS.curves.push(curve);
-        }
-
-        for (segm = 0; segm < videoSegments.length; segm = segm + 1) {
-            rbutton = {};
-            rbutton.videoID = videoID;
-            rbutton.segmentIndex = GLVARS.allVideoSegments.length + segm; // index in GLVARS.allVideoSegments array
-            rbutton.y = videoSegments[segm].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
-            GLVARS.radiobuttons.push(rbutton);
-            //console.log("Length: " + GLVARS.allVideoSegments.length + "    i: " + "     index: " + rbutton.index);
-        }
-
-        appendArrays(GLVARS.allVideoSegments, videoSegments);
-    });
+    }
 
     calculateAverageVelocity();
 }
@@ -563,7 +517,7 @@ function updateScorePosition(d) {
     'use strict';
 
     console.log("update score position");
-    var pageAndTime = getPageAndTime(GLVARS.x_scale.invert(d3.mouse(this)[0])),
+    var pageAndTime = getPageAndTime(G.x_scale.invert(d3.mouse(this)[0])),
         page = pageAndTime.page,
         pageTime = pageAndTime.pageTime,
         normalizedPageTime = getNormalizedTime(page, pageTime),
@@ -573,18 +527,18 @@ function updateScorePosition(d) {
     _pnq.push(["clearMeasureHighlightings"]);
     _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
 
-    if (GLVARS.videoIDNextToCursor !== "") {
-        timeInScore = GLVARS.x_scale.invert(d3.mouse(this)[0]),
-        timeInVideo = getVideoTimeFromScoreTime(timeInScore, GLVARS.segmentNextToCursor.timeMap); //GLVARS.videoTimeMaps[GLVARS.videoIDNextToCursor]
-        if (GLVARS.ytPlayers.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
+    if (G.videoIDNextToCursor !== "") {
+        timeInScore = G.x_scale.invert(d3.mouse(this)[0]),
+            timeInVideo = getVideoTimeFromScoreTime(timeInScore, G.segmentNextToCursor.timeMap); //G.videoTimeMaps[G.videoIDNextToCursor]
+        if (G.ytPlayers.hasOwnProperty(G.videoIDNextToCursor)) {
 
-            GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
-            GLVARS.ytPlayers[GLVARS.videoIDNextToCursor].playVideo();
+            G.ytPlayers[G.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
+            G.ytPlayers[G.videoIDNextToCursor].playVideo();
 
-        } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(GLVARS.videoIDNextToCursor)) {
+        } else if (G.ytPlayerThumbnails.hasOwnProperty(G.videoIDNextToCursor)) {
 
-            GLVARS.videoStartPosition[GLVARS.videoIDNextToCursor] = timeInVideo;
-            loadVideo(GLVARS.videoIDNextToCursor, GLVARS.videoIDNextToCursor);
+            G.videoStartPosition[G.videoIDNextToCursor] = timeInVideo;
+            loadVideo(G.videoIDNextToCursor, G.videoIDNextToCursor);
         }
     }
 }
@@ -600,15 +554,15 @@ function enlargeVideoDivRect(d) {
     'use strict';
 
     //console.log("videoID rect: " + d.videoID);
-    enlargeVideoDiv(d.videoID, 2);
-    $("#segmQual").text(d.segmentConfidence);
+    enlargeVideoDiv(d.videoID);
+    gui.setSegmentQuality(d.segmentConfidence);
 }
 
 function enlargeVideoDivCurve(d) {
     'use strict';
 
     //console.log("videoID rect: " + d[0].videoID);
-    enlargeVideoDiv(d.videoID, 2);
+    enlargeVideoDiv(d.videoID);
 }
 
 function resetVideoDivRect(d) {
@@ -633,17 +587,6 @@ function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
             return _timeMap[1][i];
         }
     }
-    //return _timeMap[1][indexOfLastSynchronizedTimePointInScore];
-
-//    for (segm = 0; segm < _timeMap.length; segm = segm + 1) {
-//        if ((_timeMap[segm][0][0] <= _timeInScore) && (_timeInScore <= _timeMap[segm][0][_timeMap[segm][0].length - 1])) {
-//            for (i = 0; i < _timeMap[segm][0].length - 1; i = i + 1) {
-//                if ((_timeMap[segm][0][i] <= _timeInScore) && (_timeInScore < _timeMap[segm][0][i + 1])) {
-//                     return _timeMap[segm][1][i];
-//                }
-//            }
-//        }
-//    }
 }
 
 
@@ -651,10 +594,10 @@ function getPageAndTime(_scoreTime) {
     'use strict';
     var page = 0, pageTime = 0, i;
     //console.log("score time: " + _scoreTime);
-    for (i in GLVARS.pageTimes) {
-        if (GLVARS.pageTimes.hasOwnProperty(i)) {
+    for (i in G.pageTimes) {
+        if (G.pageTimes.hasOwnProperty(i)) {
             page = i;
-            pageTime = GLVARS.pageTimes[i];
+            pageTime = G.pageTimes[i];
             if (pageTime >= _scoreTime) {
                 console.log("page: " + (page - 1));
                 return {"page": (page - 1), "pageTime": _scoreTime};
@@ -668,32 +611,32 @@ function getPageAndTime(_scoreTime) {
 function pageDuration(page) {
     'use strict';
 
-    if (GLVARS.pageTimes[page + 1]) {
-        return GLVARS.pageTimes[page + 1] - GLVARS.pageTimes[page];
+    if (G.pageTimes[page + 1]) {
+        return G.pageTimes[page + 1] - G.pageTimes[page];
     } else {
         var maxTime = 0, i, s, timeMap;
-        for (i in GLVARS.videoTimeMaps) {
-            if (GLVARS.videoTimeMaps.hasOwnProperty(i)) {
-                timeMap = GLVARS.videoTimeMaps[i];
+        for (i in G.videoTimeMaps) {
+            if (G.videoTimeMaps.hasOwnProperty(i)) {
+                timeMap = G.videoTimeMaps[i];
                 for (s = 0; s < timeMap.length; s = s + 1) {
                     maxTime = Math.max(maxTime, Math.max.apply(null, timeMap[s][0]));
                 }
             }
         }
-        return maxTime - GLVARS.pageTimes[page];
+        return maxTime - G.pageTimes[page];
     }
 }
 
 function getNormalizedTime(page, pageTime) {
     'use strict';
 
-    return (pageTime - GLVARS.pageTimes[page]) / pageDuration(page);
+    return (pageTime - G.pageTimes[page]) / pageDuration(page);
 }
 
 function getYtOffsetByScoreTime(videoID, time) {
     'use strict';
 
-    var timeMap = GLVARS.videoTimeMaps[videoID], s, i;
+    var timeMap = G.videoTimeMaps[videoID], s, i;
     for (s = 0; s < timeMap.length; s = s + 1) {
         if (timeMap[s][0][0] > time) {continue; }
         for (i in timeMap[s][0]) {
@@ -708,16 +651,16 @@ function getVideoTimeForPagePosition(videoID, pt) {
     'use strict';
 
     //console.log("getting time for page position " + page + " " + relPos);
-    //var pt = GLVARS.pageTimes[page] + pageDuration(page) * relPos;
+    //var pt = G.pageTimes[page] + pageDuration(page) * relPos;
     var segmentScoreTime = getYtOffsetByScoreTime(videoID, pt),
-        timeMap = GLVARS.videoTimeMaps[videoID];
+        timeMap = G.videoTimeMaps[videoID];
     return timeMap[segmentScoreTime[0]][1][segmentScoreTime[1]];
 }
 
 function getSegmentVideoTimeForPagePosition(_videoID, _segmentIndex, _pt) {
     'use strict';
 
-    var segmTimeMap = GLVARS.allVideoSegments[_segmentIndex].timeMap, i, videoTime = 0;
+    var segmTimeMap = G.allVideoSegments[_segmentIndex].timeMap, i, videoTime = 0;
 
     for (i = 0; i < segmTimeMap[0].length - 1; i = i + 1) {
         if ((segmTimeMap[0][i] <= _pt) && (_pt < segmTimeMap[0][i + 1])) {
@@ -732,8 +675,8 @@ function getSegmentIndexFromVideoTime(_videoID, _vtime) {
     'use strict';
 
     var i, segm;
-    for (i = 0; i < GLVARS.allVideoSegments.length; i = i + 1) {
-        segm = GLVARS.allVideoSegments[i];
+    for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
+        segm = G.allVideoSegments[i];
         if (segm.videoID === _videoID) {
             if ((segm.timeMap[1][0] <= _vtime) && (_vtime <= segm.timeMap[1][segm.timeMap[1].length - 1])) {
                 return i;
@@ -745,10 +688,10 @@ function getSegmentIndexFromVideoTime(_videoID, _vtime) {
 function updatePosition() {
     'use strict';
 
-    //console.log("updatePosition: videoID: " + GLVARS.currentPlayingYTVideoID + "");
-    var videoTime = GLVARS.ytPlayers[GLVARS.currentPlayingYTVideoID].getCurrentTime(),
-        pageAndTime = getPageAndTimeForVideoTime(videoTime, GLVARS.currentPlayingYTVideoID),
-        pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + GLVARS.foreRunningTime, GLVARS.currentPlayingYTVideoID),
+    //console.log("updatePosition: videoID: " + G.currentPlayingYTVideoID + "");
+    var videoTime = G.ytPlayers[G.currentPlayingYTVideoID].getCurrentTime(),
+        pageAndTime = getPageAndTimeForVideoTime(videoTime, G.currentPlayingYTVideoID),
+        pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + G.foreRunningTime, G.currentPlayingYTVideoID),
         page,
         pageTime,
         normalizedPageTime,
@@ -765,9 +708,9 @@ function updatePosition() {
 
     //console.log("page: " + page + " pageTime: " + pageTime);
 
-    if (pagePlus !== GLVARS.prevPage) {
+    if (pagePlus !== G.prevPage) {
         _pnq.push(['loadPage', pagePlus - 1]);
-        GLVARS.prevPage = pagePlus;
+        G.prevPage = pagePlus;
     }
 
     updateVideoTrackLine(pageTime);
@@ -775,7 +718,7 @@ function updatePosition() {
     _pnq.push(["clearMeasureHighlightings"]);
     _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
 
-    rbID = GLVARS.currentPlayingYTVideoID + "_" + getSegmentIndexFromVideoTime(GLVARS.currentPlayingYTVideoID, videoTime) + "_RB";
+    rbID = G.currentPlayingYTVideoID + "_" + getSegmentIndexFromVideoTime(G.currentPlayingYTVideoID, videoTime) + "_RB";
     if (!document.getElementById(rbID).checked) {
         document.getElementById(rbID).checked = true;
         document.getElementById(rbID).focus();
@@ -788,7 +731,7 @@ function getPageAndTimeForVideoTime(time, _videoID) {
     'use strict';
 
     var page = 0, pageTime = 0,
-        timeMap = GLVARS.videoTimeMaps[_videoID],
+        timeMap = G.videoTimeMaps[_videoID],
         segmentScoreTime = getSegmentScoreTime(time, _videoID),
         segment, scoreTime,
         i;
@@ -800,10 +743,10 @@ function getPageAndTimeForVideoTime(time, _videoID) {
 //console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
     if (time < timeMap[segment][1][0]) {return {"page": 0, "pageTime": 0}; }
 
-    for (i in GLVARS.pageTimes) {
-        if (GLVARS.pageTimes.hasOwnProperty(i)) {
+    for (i in G.pageTimes) {
+        if (G.pageTimes.hasOwnProperty(i)) {
             page = i;
-            pageTime = GLVARS.pageTimes[i];
+            pageTime = G.pageTimes[i];
             if (pageTime >= scoreTime) {
                 return {"page": (page - 1), "pageTime": scoreTime};
             }
@@ -815,7 +758,7 @@ function getPageAndTimeForVideoTime(time, _videoID) {
 function getSegmentScoreTime(ytTime, _videoID) {
     'use strict';
 
-    var timeMap = GLVARS.videoTimeMaps[_videoID],
+    var timeMap = G.videoTimeMaps[_videoID],
         s, i, out;
 
     for (s = 0; s < timeMap.length; s = s + 1) {
@@ -847,9 +790,9 @@ function showSuitableVideoDivsForTimePoint(_tp) {
 function showSuitableVideoDivsForCurrentMousePosition() {
     'use strict';
 
-    var currentMouseXPoint = GLVARS.x_scale.invert(d3.mouse(this)[0]),
-        currentMouseYPoint = GLVARS.y_scale.invert(d3.mouse(this)[1]),
-        yAboveMousePoint = GLVARS.maxPlotY,
+    var currentMouseXPoint = G.x_scale.invert(d3.mouse(this)[0]),
+        currentMouseYPoint = G.y_scale.invert(d3.mouse(this)[1]),
+        yAboveMousePoint = G.maxPlotY,
         yUnderMousePoint = 0,
         videoIDAbove = "",
         videoIDUnder = "",
@@ -866,13 +809,13 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     //console.log("hide video ID " + currentMouseXPoint);
     calculateVisibilityOfVideoIDs(currentMouseXPoint);
 
-    if ($('#hideVideoDivs').prop('checked')) {
+    if (gui.shouldHideVideos()) {
         showAndHideVideoDivs();
     }
 
 
-    for (i = 0; i < GLVARS.allVideoSegments.length; i = i + 1) {
-        currentSegment = GLVARS.allVideoSegments[i];
+    for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
+        currentSegment = G.allVideoSegments[i];
         if (currentMouseXPoint >= currentSegment.x1 && currentMouseXPoint <= currentSegment.x2) {
             yUn = currentSegment.y;// - CONSTANTS.SEGMENT_RECT_HEIGHT;
             if (currentMouseYPoint > yUn && yUn > yUnderMousePoint) {
@@ -890,7 +833,7 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     }
 
     if (videoIDUnder === "" && videoIDAbove === "")  {
-        GLVARS.videoIDNextToCursor = "";
+        G.videoIDNextToCursor = "";
         return;
     }
     //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
@@ -898,43 +841,43 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     if (videoIDUnder === "") {
         //factor = currentMouseYPoint / yAboveMousePoint;
         videoToEnlarge = videoIDAbove;
-        GLVARS.segmentNextToCursor = videoSegmentAbove;
+        G.segmentNextToCursor = videoSegmentAbove;
     } else if (videoIDAbove === "") {
-        //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / (GLVARS.maxPlotY - yUnderMousePoint);
+        //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / (G.maxPlotY - yUnderMousePoint);
         videoToEnlarge = videoIDUnder;
-        GLVARS.segmentNextToCursor = videoSegmentUnder;
+        G.segmentNextToCursor = videoSegmentUnder;
     } else if (videoIDUnder === videoIDAbove) {
         factor = 1;
         videoToEnlarge = videoIDUnder;
         if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
-            GLVARS.segmentNextToCursor = videoSegmentUnder;
+            G.segmentNextToCursor = videoSegmentUnder;
         } else {
-            GLVARS.segmentNextToCursor = videoSegmentAbove;
+            G.segmentNextToCursor = videoSegmentAbove;
         }
     } else {
         if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
             // point under is the next to mouse point
             //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2);
             videoToEnlarge = videoIDUnder;
-            GLVARS.segmentNextToCursor = videoSegmentUnder;
+            G.segmentNextToCursor = videoSegmentUnder;
         } else {
             // point above is the next to mouse point
             //factor = (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2) - 1;
             videoToEnlarge = videoIDAbove;
-            GLVARS.segmentNextToCursor = videoSegmentAbove;
+            G.segmentNextToCursor = videoSegmentAbove;
         }
     }
-    if (GLVARS.ytPlayers.hasOwnProperty(videoToEnlarge)) {
-        if (GLVARS.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.PLAYING && GLVARS.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.BUFFERING) {
-            enlargeVideoDiv(videoToEnlarge, 1 + factor);
+    if (G.ytPlayers.hasOwnProperty(videoToEnlarge)) {
+        if (G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.BUFFERING) {
+            enlargeVideoDiv(videoToEnlarge);
         }
-    } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoToEnlarge)) {
-        enlargeVideoDiv(videoToEnlarge, 1 + factor);
+    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoToEnlarge)) {
+        enlargeVideoDiv(videoToEnlarge);
     }
 
-    if (!$('#hideVideoDivs').prop('checked')) {
-        for (id in GLVARS.visibilityOfVideoIDs) {
-            if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(id)) {
+    if (!gui.shouldHideVideos()) {
+        for (id in G.visibilityOfVideoIDs) {
+            if (G.visibilityOfVideoIDs.hasOwnProperty(id)) {
                 //if (id !== videoIDAbove && id !== videoIDUnder) {
                 if (id !== videoToEnlarge) {
                     resetVideoDiv(id);
@@ -943,32 +886,32 @@ function showSuitableVideoDivsForCurrentMousePosition() {
         }
     }
 
-    GLVARS.videoIDNextToCursor = videoToEnlarge;
+    G.videoIDNextToCursor = videoToEnlarge;
 }
 
 function calculateVisibilityOfVideoIDs(_scoreTime) {
     'use strict';
 
     var videoID, i, minX, maxX;
-    for (videoID in GLVARS.visibilityOfVideoIDs) {
-        //console.log(videoID + "                   " + GLVARS.visibilityOfVideoIDs[videoID]);
-        if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            GLVARS.visibilityOfVideoIDs[videoID] = false;
+    for (videoID in G.visibilityOfVideoIDs) {
+        //console.log(videoID + "                   " + G.visibilityOfVideoIDs[videoID]);
+        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
+            G.visibilityOfVideoIDs[videoID] = false;
         }
     }
 
-    for (i = 0; i < GLVARS.allVideoSegments.length; i = i + 1) {
-        if (_scoreTime >= GLVARS.allVideoSegments[i].x1 && _scoreTime <= GLVARS.allVideoSegments[i].x2) {
-            GLVARS.visibilityOfVideoIDs[GLVARS.allVideoSegments[i].videoID] = true;
+    for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
+        if (_scoreTime >= G.allVideoSegments[i].x1 && _scoreTime <= G.allVideoSegments[i].x2) {
+            G.visibilityOfVideoIDs[G.allVideoSegments[i].videoID] = true;
         }
     }
 
-    for (i = 0; i < GLVARS.curves.length; i = i + 1) {
-        minX = getMin(GLVARS.curves[i].points[0].x, GLVARS.curves[i].points[5].x);
-        maxX = getMax(GLVARS.curves[i].points[0].x, GLVARS.curves[i].points[5].x);
+    for (i = 0; i < G.curves.length; i = i + 1) {
+        minX = getMin(G.curves[i].points[0].x, G.curves[i].points[5].x);
+        maxX = getMax(G.curves[i].points[0].x, G.curves[i].points[5].x);
 
         if (_scoreTime >= minX && _scoreTime <= maxX) {
-            GLVARS.visibilityOfVideoIDs[GLVARS.curves[i].videoID] = true;
+            G.visibilityOfVideoIDs[G.curves[i].videoID] = true;
         }
     }
 }
@@ -977,20 +920,20 @@ function showAndHideVideoDivs() {
     'use strict';
 
     var videoID;
-    for (videoID in GLVARS.visibilityOfVideoIDs) {
-        if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            if (GLVARS.visibilityOfVideoIDs[videoID]) {
+    for (videoID in G.visibilityOfVideoIDs) {
+        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
+            if (G.visibilityOfVideoIDs[videoID]) {
                 //console.log("SHOW");
                 showDiv(videoID);
             } else {
-                if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
+                if (G.ytPlayers.hasOwnProperty(videoID)) {
                     //console.log("Video in ytPlayer: " + videoID);
-                    if (GLVARS.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.PLAYING && GLVARS.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
-                        //console.log("HideVideoID: " + videoID + "    state: " + GLVARS.ytPlayers[videoID].getPlayerState());
+                    if (G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
+                        //console.log("HideVideoID: " + videoID + "    state: " + G.ytPlayers[videoID].getPlayerState());
                         hideDiv(videoID);
                     }
                 }
-                if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+                if (G.ytPlayerThumbnails.hasOwnProperty(videoID)) {
                     hideDiv(videoID);
                 }
             }
@@ -1004,13 +947,13 @@ function hideDiv(_videoID) {
     //document.getElementById(_videoID).style.display = "none";
     //document.getElementById(_videoID).style.visibility = "hidden";
     var elementToHide, secondElementToHide, thirdElementToHide;
-    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
+    if (G.ytPlayers.hasOwnProperty(_videoID)) {
         elementToHide = document.getElementById(_videoID);
         elementToHide.width = 0;
         elementToHide.height = 0;
     }
 
-    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
         elementToHide = document.getElementById(_videoID).firstChild;
         elementToHide.style.width = 0 + "px";
         elementToHide.style.height = 0 + "px";
@@ -1031,18 +974,18 @@ function showDiv(_videoID) {
     //document.getElementById(_videoID).style.display = "";
     //document.getElementById(_videoID).style.visibility = "visible";
     var elementToShow, secondElementToShow, thirdElementToShow;
-    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
+    if (G.ytPlayers.hasOwnProperty(_videoID)) {
         elementToShow = document.getElementById(_videoID);
         elementToShow.width = CONSTANTS.VIDEO_WIDTH;
         elementToShow.height = CONSTANTS.VIDEO_HEIGHT;
 
-        if (GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+        if (G.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
             elementToShow.width = CONSTANTS.PLAYING_VIDEO_WIDTH;
             elementToShow.height = CONSTANTS.PLAYING_VIDEO_HEIGHT;
         }
     }
 
-    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
         elementToShow = document.getElementById(_videoID).firstChild;
         elementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
         elementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
@@ -1060,15 +1003,15 @@ function showDiv(_videoID) {
 function pause() {
     'use strict';
 
-//    for (var videoID in GLVARS.visibilityOfVideoIDs) {
-//        if ( GLVARS.visibilityOfVideoIDs[videoID] ) {
-//            GLVARS.ytPlayers[videoID].pauseVideo();}
+//    for (var videoID in G.visibilityOfVideoIDs) {
+//        if ( G.visibilityOfVideoIDs[videoID] ) {
+//            G.ytPlayers[videoID].pauseVideo();}
 //    }
     var vID;
-    for (vID in GLVARS.ytPlayers) {
-        if (GLVARS.ytPlayers.hasOwnProperty(vID)) {
-            if (GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING){
-                GLVARS.ytPlayers[vID].pauseVideo();
+    for (vID in G.ytPlayers) {
+        if (G.ytPlayers.hasOwnProperty(vID)) {
+            if (G.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING){
+                G.ytPlayers[vID].pauseVideo();
             }
         }
     }
@@ -1082,19 +1025,19 @@ function measureClickHandler(scoreID, viewerPage, measureNumber, totalMeasures) 
     _pnq.push(["highlightMeasure", measureNumber, page - 1]);
 
     console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
-    var scoreTime = GLVARS.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures,
+    var scoreTime = G.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures,
         videoID,
         videoTime;
     //console.log("hier");
-    if ($('#hideVideoDivs').prop('checked')) {
+    if (gui.shouldHideVideos()) {
         showSuitableVideoDivsForTimePoint(scoreTime);
     } else {
         calculateVisibilityOfVideoIDs(scoreTime);
     }
     //console.log("da");
-    for (videoID in GLVARS.visibilityOfVideoIDs) {
-        if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            if (GLVARS.visibilityOfVideoIDs[videoID]) {
+    for (videoID in G.visibilityOfVideoIDs) {
+        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
+            if (G.visibilityOfVideoIDs[videoID]) {
                 videosToPlay.push(videoID);
             }
         }
@@ -1105,14 +1048,14 @@ function measureClickHandler(scoreID, viewerPage, measureNumber, totalMeasures) 
 
     videoID = videosToPlay[randomIndex];
     videoTime = getVideoTimeForPagePosition(videoID, scoreTime);
-    if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
+    if (G.ytPlayers.hasOwnProperty(videoID)) {
 
-        GLVARS.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
-        GLVARS.ytPlayers[videoID].playVideo();
+        G.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
+        G.ytPlayers[videoID].playVideo();
 
-    } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoID)) {
 
-        GLVARS.videoStartPosition[videoID] = videoTime;
+        G.videoStartPosition[videoID] = videoTime;
         loadVideo(videoID, videoID);
     }
 }

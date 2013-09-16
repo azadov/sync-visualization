@@ -1,259 +1,27 @@
-function enlargeVideoDiv(_videoID, _coefficient) {
-    'use strict';
 
-    var elementToEnlarge, secondElementToEnlarge, thumbnail, vID, someVideoPlaying = false,
-        newWidth = CONSTANTS.PLAYING_VIDEO_WIDTH,
-        newHeight = CONSTANTS.PLAYING_VIDEO_HEIGHT,
-        pw=Math.ceil(CONSTANTS.PLAYING_VIDEO_WIDTH/2 - 38.5),
-        ph=Math.ceil(CONSTANTS.PLAYING_VIDEO_HEIGHT/2 + 38.5);
 
-    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
-        elementToEnlarge = document.getElementById(_videoID);  //.firstChild.firstChild
-        elementToEnlarge.width = newWidth;
-        elementToEnlarge.height = newHeight;
-    }
-
-    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToEnlarge = document.getElementById(_videoID).firstChild;
-        elementToEnlarge.style.width = newWidth + "px";
-        elementToEnlarge.style.height = newHeight + "px";
-
-        secondElementToEnlarge = document.getElementById(_videoID).firstChild.firstChild.firstChild;
-        secondElementToEnlarge.style.width = newWidth + "px";
-        secondElementToEnlarge.style.height = newHeight + "px";
-
-        thumbnail = document.getElementById(_videoID).firstChild.firstChild.lastChild;
-        thumbnail.style.marginLeft = pw + "px";
-        thumbnail.style.marginTop = "-" + ph + "px";
-    }
-
-    for (vID in GLVARS.ytPlayers) {
-        if (GLVARS.ytPlayers.hasOwnProperty(vID) && vID !== _videoID) {
-            if (GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[vID].getPlayerState() === YT.PlayerState.BUFFERING) {
-                someVideoPlaying = true;
-            }
-        }
-    }
-    if (!someVideoPlaying) {
-        $("#videoTitle").text(GLVARS.videoTitle[_videoID]);
-    }
+function Video(id) {
+    this.id = id;
+    this.title = "";
+    this.availability = undefined;
 }
 
-function resetVideoDiv(_videoID) {
-    'use strict';
-
-    var elementToReset, secondElementToReset, thumbnail,
-        pw=Math.ceil(CONSTANTS.VIDEO_WIDTH/2 - 38.5),
-        ph=Math.ceil(CONSTANTS.VIDEO_HEIGHT/2 + 38.5);
-
-    if (GLVARS.ytPlayers.hasOwnProperty(_videoID)) {
-        if (GLVARS.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING && GLVARS.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
-            elementToReset = document.getElementById(_videoID);
-            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
-            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
-        }
-    }
-
-    if (GLVARS.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToReset = document.getElementById(_videoID).firstChild;
-        elementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
-        elementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
-
-        secondElementToReset = document.getElementById(_videoID).firstChild.firstChild.firstChild;
-        secondElementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
-        secondElementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
-
-        thumbnail = document.getElementById(_videoID).firstChild.firstChild.lastChild;
-        thumbnail.style.marginLeft = pw + "px";
-        thumbnail.style.marginTop = "-" + ph + "px";
-    }
+Video.prototype.getId = function() {
+    return this.id;
 }
 
-function deactivateVideo(_videoID) {
-    'use strict';
-
-    var i, rbID;
-
-    d3.selectAll("#" + _videoID + "Rect")
-        .style("fill", "lightgrey")
-        .on("mouseover", function () { return; });
-
-    d3.selectAll("#" + _videoID + "Curve")
-        .attr("stroke", "lightgrey")
-        .on("mouseover", function () { return; });
-
-    for (i = 0; i < GLVARS.radiobuttons.length; i = i + 1) {
-        if (GLVARS.radiobuttons[i].videoID === _videoID) {
-            rbID = GLVARS.radiobuttons[i].videoID + "_" + GLVARS.radiobuttons[i].segmentIndex + "_RB";
-            document.getElementById(rbID).disabled=true;
-        }
-    }
+Video.prototype.getTitle = function() {
+    return this.title;
 }
 
-function tryToLoad(_videoContainerID, _videoID) {
-    'use strict';
-
-    var ytplayer;
-    if (GLVARS.videoReadiness[_videoID] === 0 && GLVARS.videoNumOfLoadingAttempts[_videoID] === 3) {
-        deactivateVideo(_videoID);
-        clearInterval(GLVARS.videoLoadingInterval[_videoID]);
-        //console.log("VideoID: " + _videoID + "   deactivate");
-    } else if (GLVARS.videoReadiness[_videoID] === 0 && GLVARS.videoNumOfLoadingAttempts[_videoID] < 3) {
-
-        //console.log("VideoID: " + _videoID + "    Attempt: " + GLVARS.videoNumOfLoadingAttempts[_videoID]);
-
-        ytplayer = new YT.Player(_videoContainerID, {
-            height: CONSTANTS.VIDEO_HEIGHT,
-            width: CONSTANTS.VIDEO_WIDTH,
-            videoId: _videoID,
-            events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange,
-                'onError': onPlayerError
-            }
-        });
-
-        GLVARS.ytPlayers[_videoID] = ytplayer;
-
-        GLVARS.videoNumOfLoadingAttempts[_videoID] = GLVARS.videoNumOfLoadingAttempts[_videoID] + 1;
-    }
+Video.prototype.setTitle = function (title) {
+    this.title = title;
 }
 
-function onPlayerError(event) {
-    'use strict';
-
-    //console.log("OnPlayerError: " + event.data + "      VideoID: " + event.target.getVideoData().video_id);
-    var videoID = event.target.getVideoData().video_id;
-
-    deactivateVideo(videoID);
-    clearInterval(GLVARS.videoLoadingInterval[_videoID]);
+Video.prototype.setAvailability = function(availability) {
+    this.availability = availability;
 }
 
-function onPlayerReady(event) {
-    'use strict';
-
-    var videoID = event.target.getVideoData().video_id;
-    event.target.seekTo(Math.max(0, GLVARS.videoStartPosition[videoID]));
-    event.target.playVideo();
-
-    enlargeVideoDiv(videoID, 2);
-
-    GLVARS.videoReadiness[videoID] = 1;
-
-    clearInterval(GLVARS.videoLoadingInterval[videoID]);
-
-    //console.log("OnPlayerReady: " + videoID);
-    //GLVARS.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
+Video.prototype.getAvailability = function() {
+    return this.availability;
 }
-
-var deleteInterval = true;
-function onPlayerStateChange(event) {
-    'use strict';
-
-    var newState = event.data, videoID;
-    //console.log("state: " + event.data + "     target: " + event.target.id);
-//    for (var videoID in GLVARS.ytPlayers) {
-//        if ( GLVARS.ytPlayers[videoID] == event.target ) {
-//            console.log("videoId: " + videoID);
-//        }
-//    }
-//    console.log("videoID: " + event.target.getVideoData().video_id);
-//    for (var key in event.target.getVideoData().video_id) {
-//        console.log("key: " + key);
-//    }
-
-    console.log("OnPlayerStateChange: " + newState );
-
-    if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
-        if (GLVARS.currentPlayingYTVideoID !== event.target.getVideoData().video_id) {
-            GLVARS.lastPlayedYTVideoID = GLVARS.currentPlayingYTVideoID;
-            GLVARS.currentPlayingYTVideoID = event.target.getVideoData().video_id;
-        }
-
-        for (videoID in GLVARS.ytPlayers) {
-            if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
-                if (videoID !== GLVARS.currentPlayingYTVideoID) {
-                    if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
-                        GLVARS.ytPlayers[videoID].pauseVideo();
-                        deleteInterval = false;
-
-                    }
-                }
-            }
-        }
-        clearInterval(GLVARS.loopId);
-        GLVARS.loopId = setInterval(updatePosition, 500);
-
-        //console.log("LastPlayedVideo: " + GLVARS.lastPlayedYTVideoID + "     current: " + GLVARS.currentPlayingYTVideoID);
-
-        resetVideoDiv(GLVARS.lastPlayedYTVideoID);
-
-        enlargeVideoDiv(GLVARS.currentPlayingYTVideoID, 2);
-
-        $("#videoTitle").text(GLVARS.videoTitle[GLVARS.currentPlayingYTVideoID]);
-
-    } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
-        if (deleteInterval) {
-            clearInterval(GLVARS.loopId);
-        } else {
-            deleteInterval = true;
-        }
-
-        resetVideoDiv(GLVARS.lastPlayedYTVideoID);
-    }
-
-}
-
-
-function loadVideo(_videoContainerID, _videoID) {
-    'use strict';
-
-    //console.log("Video clicked: " + _videoContainerID + "   " + _videoID);
-    //$('#' + _videoContainerID).empty();
-
-    delete GLVARS.ytPlayerThumbnails[_videoID];
-
-    GLVARS.videoLoadingInterval[_videoID] = setInterval( function() { tryToLoad(_videoContainerID, _videoID); }, 2000 );
-}
-
-function initVideo(_videoContainerID, _videoID) {
-    'use strict';
-
-    // Thease are to position the play button centrally.
-    var pw=Math.ceil(CONSTANTS.VIDEO_WIDTH/2-38.5),
-        ph=Math.ceil(CONSTANTS.VIDEO_HEIGHT/2+38.5);
-
-    // The image+button overlay code.
-    var code='<div style="width:'
-        + CONSTANTS.VIDEO_WIDTH + 'px; height:' + CONSTANTS.VIDEO_HEIGHT
-        + 'px; margin:0 auto"><a href="#"  onclick="loadVideo(\'' + _videoContainerID + '\', \'' + _videoID
-        + '\');return false;" id="skipser-youtubevid-' + _videoID + '"><img src="http://i.ytimg.com/vi/'+ _videoID
-        + '/hqdefault.jpg" style="width:' + CONSTANTS.VIDEO_WIDTH + 'px; height:'+ CONSTANTS.VIDEO_HEIGHT
-        +'px;" /><div class="yt-thumbnail-playbutton" style="margin-left:'
-        + pw + 'px; margin-top:-' + ph + 'px;"></div></a></div>';
-
-    // Replace the iframe with a the image+button code.
-    var div = document.createElement('div');
-    div.innerHTML=code;
-    div=div.firstChild;
-
-    document.getElementById(_videoContainerID).appendChild(div);
-
-    GLVARS.ytPlayerThumbnails[_videoID] = div;
-}
-
-function initVideos(_allScoreToVideoPairsSyncData) {
-    'use strict';
-
-    _allScoreToVideoPairsSyncData.forEach(function (pairSyncData) {
-        var videoId = pairSyncData.uri1;
-
-        $('<div>').attr('class', 'yt-videos').attr('id', videoId).appendTo($('#videos'));
-
-        initVideo(videoId, videoId);
-    });
-
-    //optimizeYouTubeEmbeds();
-}
-
-

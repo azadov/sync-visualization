@@ -35,9 +35,9 @@ function sortRects(_arrayOfRects) {
 function assignSegmentYCoordinates(_arrayOfSortedRects) {
     'use strict';
 
-    GLVARS.numberOfVideoSegmentLevels = GLVARS.numberOfVideoSegmentLevels + 1;
+    G.numberOfVideoSegmentLevels = G.numberOfVideoSegmentLevels + 1;
 
-    _arrayOfSortedRects[0].y = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+    _arrayOfSortedRects[0].y = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
 
     var i;
     for (i = 1; i < _arrayOfSortedRects.length; i = i + 1) {
@@ -46,9 +46,9 @@ function assignSegmentYCoordinates(_arrayOfSortedRects) {
             _arrayOfSortedRects[i].y = _arrayOfSortedRects[i - 1].y;
 
         } else {
-            GLVARS.numberOfVideoSegmentLevels = GLVARS.numberOfVideoSegmentLevels + 1;
+            G.numberOfVideoSegmentLevels = G.numberOfVideoSegmentLevels + 1;
 
-            _arrayOfSortedRects[i].y = GLVARS.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+            _arrayOfSortedRects[i].y = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
 
         }
     }
@@ -76,10 +76,10 @@ function rbClickHandler(d) {
 
     //console.log("RBClickHandler " + d.id + "   videoID: " + rbVideoID + "     Index: " + rbSegmentIndex);
 
-    for (videoID in GLVARS.ytPlayers) {
-        if (GLVARS.ytPlayers.hasOwnProperty(videoID)) {
-            if (GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || GLVARS.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
-                playingVideoTime = GLVARS.ytPlayers[videoID].getCurrentTime();
+    for (videoID in G.ytPlayers) {
+        if (G.ytPlayers.hasOwnProperty(videoID)) {
+            if (G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+                playingVideoTime = G.ytPlayers[videoID].getCurrentTime();
                 pageTime = getPageAndTimeForVideoTime(playingVideoTime, videoID);
 
                 if (pageTime === undefined) {
@@ -110,27 +110,27 @@ function rbClickHandler(d) {
                 }
 
                 if (videoID !== videoIDToPlay) {
-                    GLVARS.ytPlayers[videoID].pauseVideo();
+                    G.ytPlayers[videoID].pauseVideo();
                 }
             }
         }
     }
 
-    videoTime = GLVARS.allVideoSegments[rbToCheckSegmentIndex].timeMap[1][0];
+    videoTime = G.allVideoSegments[rbToCheckSegmentIndex].timeMap[1][0];
     if (scoreTime > 0) {
-        if (GLVARS.allVideoSegments[rbToCheckSegmentIndex].x1 <= scoreTime && scoreTime <= GLVARS.allVideoSegments[rbToCheckSegmentIndex].x2) {
+        if (G.allVideoSegments[rbToCheckSegmentIndex].x1 <= scoreTime && scoreTime <= G.allVideoSegments[rbToCheckSegmentIndex].x2) {
             videoTime = getSegmentVideoTimeForPagePosition(videoIDToPlay, rbToCheckSegmentIndex, scoreTime);
         }
     }
 
-    if (GLVARS.ytPlayers.hasOwnProperty(videoIDToPlay)) {
+    if (G.ytPlayers.hasOwnProperty(videoIDToPlay)) {
 
-        GLVARS.ytPlayers[videoIDToPlay].seekTo(Math.max(0, videoTime));
-        GLVARS.ytPlayers[videoIDToPlay].playVideo();
+        G.ytPlayers[videoIDToPlay].seekTo(Math.max(0, videoTime));
+        G.ytPlayers[videoIDToPlay].playVideo();
 
-    } else if (GLVARS.ytPlayerThumbnails.hasOwnProperty(videoIDToPlay)) {
+    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoIDToPlay)) {
 
-        GLVARS.videoStartPosition[videoIDToPlay] = videoTime;
+        G.videoStartPosition[videoIDToPlay] = videoTime;
         loadVideo(videoIDToPlay, videoIDToPlay);
     }
 
@@ -139,7 +139,7 @@ function rbClickHandler(d) {
     }
     document.getElementById(rbIDToCheck).focus();
 
-    $("#videoTitle").text(GLVARS.videoTitle[videoIDToPlay]);
+    $("#videoTitle").text(G.videos[videoIDToPlay].getTitle());
 }
 
 function areRBNeighbours(_firstRBID, _secondRBID) {
@@ -147,7 +147,7 @@ function areRBNeighbours(_firstRBID, _secondRBID) {
 
     var firstAboveTheSecond, areNeighbours;
 
-    if (GLVARS.rbIndex[_firstRBID] > GLVARS.rbIndex[_secondRBID]) {
+    if (G.rbIndex[_firstRBID] > G.rbIndex[_secondRBID]) {
         firstAboveTheSecond = true;
     } else {
         firstAboveTheSecond = false;
@@ -155,7 +155,7 @@ function areRBNeighbours(_firstRBID, _secondRBID) {
     }
 
 
-    if (modulus(GLVARS.rbIndex[_firstRBID] - GLVARS.rbIndex[_secondRBID]) === 1) {
+    if (modulus(G.rbIndex[_firstRBID] - G.rbIndex[_secondRBID]) === 1) {
         areNeighbours = true;
     } else {
         areNeighbours = false;
@@ -167,8 +167,8 @@ function areRBNeighbours(_firstRBID, _secondRBID) {
 //
 //    console.log("firstID:  " + _firstRBVideoID + "      firstIndex: " + _firstRBSegmentIndex);
 //    console.log("secondID:  " + _secondRBVideoID + "      secondIndex: " + _secondRBSegmentIndex);
-//    for (i = 0; i < GLVARS.radiobuttons.length; i = i + 1) {
-//        currentRB = GLVARS.radiobuttons[i];
+//    for (i = 0; i < G.radiobuttons.length; i = i + 1) {
+//        currentRB = G.radiobuttons[i];
 //        console.log(currentRB.videoID + "    " + currentRB.segmentIndex);
 ////        if (currentRB.videoID === _firstRBVideoID) {
 ////            console.log("yepVID");
@@ -193,8 +193,8 @@ function areRBNeighbours(_firstRBID, _secondRBID) {
 //        firstRBAboveTheSecond = false;
 //    }
 //
-//    for (i = 0; i < GLVARS.radiobuttons.length; i++) {
-//        currentRB = GLVARS.radiobuttons[i];
+//    for (i = 0; i < G.radiobuttons.length; i++) {
+//        currentRB = G.radiobuttons[i];
 //        if (firstRBAboveTheSecond) {
 //            if ((firstRB.y > currentRB.y) && (currentRB.y > secondRB.y)) {
 //                rbAreNeighbours = false;
@@ -221,20 +221,20 @@ function getNextSegmentForScoreTime(segmIndex, searchOver, _scoreTime) {
     var id, i, curSegm, foundSegmVideoID = "", foundSegmIndex;
 
     // in this case checking the y coordinate of segments is not necessary,
-    // because segments in GLVARS.allVideoSegments are sorted according y coordinate
+    // because segments in G.allVideoSegments are sorted according y coordinate
 
     if (searchOver) {
-        for (i = segmIndex + 1; i < GLVARS.allVideoSegments.length; i = i + 1  ) {
-            curSegm = GLVARS.allVideoSegments[i];
+        for (i = segmIndex + 1; i < G.allVideoSegments.length; i = i + 1  ) {
+            curSegm = G.allVideoSegments[i];
             if (curSegm.x1 <= _scoreTime && _scoreTime <= curSegm.x2) {
                 foundSegmVideoID = curSegm.videoID;
                 foundSegmIndex = i;
-                i = GLVARS.allVideoSegments.length;
+                i = G.allVideoSegments.length;
             }
         }
     } else {
         for (i = segmIndex - 1; i >= 0; i = i - 1  ) {
-            curSegm = GLVARS.allVideoSegments[i];
+            curSegm = G.allVideoSegments[i];
             if (curSegm.x1 <= _scoreTime && _scoreTime <= curSegm.x2) {
                 foundSegmVideoID = curSegm.videoID;
                 foundSegmIndex = i;
@@ -255,10 +255,10 @@ function createPageTicks(_svg, _pageTimes) {
     for (key in _pageTimes) {
         //console.log("page: " + key);
         if (_pageTimes.hasOwnProperty(key)) {
-            betterLabelShift = (0 - - key) > 9 ? GLVARS.labelShift : GLVARS.labelShift / 2;
+            betterLabelShift = (0 - - key) > 9 ? G.labelShift : G.labelShift / 2;
             _svg.append("text")
-                .attr("x", GLVARS.x_scale(_pageTimes[key]) - betterLabelShift)
-                .attr("y", GLVARS.y_scale(0))
+                .attr("x", G.x_scale(_pageTimes[key]) - betterLabelShift)
+                .attr("y", G.y_scale(0))
                 .attr("font-family", "sans-serif")
                 .attr("font-size", "12px")
                 .attr("fill", "grey")
@@ -299,33 +299,33 @@ function getGradientValues(_indVel) {
     for (j = 0; j < _indVel.length; j++) {
         currentAvgVelInd = _indVel[j][0];
         velocity = _indVel[j][1];
-        //console.log(currentAvgVelInd + "     " + velocity + "     " + GLVARS.averageVelocity[currentAvgVelInd]);
+        //console.log(currentAvgVelInd + "     " + velocity + "     " + G.averageVelocity[currentAvgVelInd]);
 
-        value = (Math.tan(velocity - GLVARS.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
+        value = (Math.tan(velocity - G.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
         //console.log(value);
         gradientValues.push(0.5 + value);
     }
     //console.log(_segmTimeMap[0].length);
 
-    // (Math.tan(avgVel - GLVARS.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
+    // (Math.tan(avgVel - G.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
     // gradientValues.push(0.5 + value);
 
-//    currentAvgVelInd = Math.floor(_segmTimeMap[0][0] / GLVARS.velocityWindow);
+//    currentAvgVelInd = Math.floor(_segmTimeMap[0][0] / G.velocityWindow);
 //    for (tpInd = 1; tpInd < _segmTimeMap[0].length; tpInd = tpInd + 1) {
-//        if (Math.floor(_segmTimeMap[0][tpInd] / GLVARS.velocityWindow) > currentAvgVelInd) {
+//        if (Math.floor(_segmTimeMap[0][tpInd] / G.velocityWindow) > currentAvgVelInd) {
 //            if (velArray.length !== 0) {
 //                for (j = 0; j < velArray.length; j = j + 1) {
 //                    avgVel = avgVel + velArray[j];
 //                }
 //                avgVel = avgVel / velArray.length;
 //
-//                value = (Math.tan(avgVel - GLVARS.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
+//                value = (Math.tan(avgVel - G.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
 //                gradientValues.push(0.5 + value);
 //            } else {
 //                gradientValues.push(0.5);
 //            }
 //
-//            currentAvgVelInd = Math.floor(_segmTimeMap[0][tpInd] / GLVARS.velocityWindow);
+//            currentAvgVelInd = Math.floor(_segmTimeMap[0][tpInd] / G.velocityWindow);
 //            velArray = [];
 //        }
 //
@@ -333,7 +333,7 @@ function getGradientValues(_indVel) {
 //            velocity = (_segmTimeMap[0][tpInd] - _segmTimeMap[0][tpInd - 1]) / (_segmTimeMap[1][tpInd] - _segmTimeMap[1][tpInd - 1]);
 //
 //            velArray.push(velocity);
-//            //value = (Math.tan(velocity - GLVARS.averageVelocity[avgVelInd])/(Math.PI/2)) * 0.5;
+//            //value = (Math.tan(velocity - G.averageVelocity[avgVelInd])/(Math.PI/2)) * 0.5;
 //            //gradientValues.push(0.5 + value);
 //            //console.log(value + "       " + _segmTimeMap[0].length);
 //        }
@@ -374,16 +374,16 @@ function createRectangles(_svg, _rects) {
         .enter().append("rect")
         .attr("class", "rectangle")
         .attr("id", function (d) { return d.videoID + "Rect"; })
-        .attr("x", function (d) { return GLVARS.x_scale(d.x1); })
-        .attr("width", function (d) { return GLVARS.x_scale(d.width); })
-        .attr("y", function (d) { return GLVARS.y_scale(d.y); })
-        .attr("height", GLVARS.plot_height - GLVARS.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT))
+        .attr("x", function (d) { return G.x_scale(d.x1); })
+        .attr("width", function (d) { return G.x_scale(d.width); })
+        .attr("y", function (d) { return G.y_scale(d.y); })
+        .attr("height", G.plot_height - G.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT))
         .style("fill", function(d, i) {return "url(#gradient" + i + ")"})
         //.on("click", updateVideoPositionRect)
         .on("mouseover", enlargeVideoDivRect)
         //.on("mouseout", resetVideoDivRect)
         .append("svg:title")
-        .text(function (d) {return GLVARS.videoTitle[d.videoID]});
+        .text(function (d) {return G.videos[d.videoID].getTitle()});
     ;
 }
 
@@ -394,8 +394,8 @@ function createCurves(_svg, _curves) {
     // var lineData = [ { "x": 61,  "y": 0.75}, { "x": 80,  "y": 0.75},
     //                  { "x": 55,  "y": 2.75}, { "x": 61,  "y": 2.75}];
     var lineFunction = d3.svg.line()
-        .x(function (d) { return GLVARS.x_scale(d.x); })
-        .y(function (d) { return GLVARS.y_scale(d.y); })
+        .x(function (d) { return G.x_scale(d.x); })
+        .y(function (d) { return G.y_scale(d.y); })
         .interpolate("basis");
 
     _svg.selectAll(".curve")
@@ -433,21 +433,21 @@ function createRadioButtons(_svg, _radiobuttons) {
 
         //console.log("Height: " + $("#videoTitelFilter").height());
         //h = $("#videoTitelFilter").height() + 10;
-        topForRB = GLVARS.y_scale(_radiobuttons[i].y) + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom + 36;//35;
+        topForRB = G.y_scale(_radiobuttons[i].y) + G.plot_margin.top + G.plot_margin.bottom + 36;//35;
         selectVideoRB.style.top = topForRB + "px";
 
         plotDiv.appendChild(selectVideoRB);
 
-        if (!GLVARS.rbIndex.hasOwnProperty((rbID))) {
-            GLVARS.rbIndex[rbID] = i;
+        if (!G.rbIndex.hasOwnProperty((rbID))) {
+            G.rbIndex[rbID] = i;
         }
 
 //        d3.select("g").append("line")
 //            .attr("class", "videoTopLine")
-//            .attr("x1", GLVARS.x_scale(0))
-//            .attr("y1", GLVARS.y_scale(_radiobuttons[i].y))
-//            .attr("x2", GLVARS.x_scale(GLVARS.maxPlotX))
-//            .attr("y2", GLVARS.y_scale(_radiobuttons[i].y))
+//            .attr("x1", G.x_scale(0))
+//            .attr("y1", G.y_scale(_radiobuttons[i].y))
+//            .attr("x2", G.x_scale(G.maxPlotX))
+//            .attr("y2", G.y_scale(_radiobuttons[i].y))
 //            .attr("stroke-width", 1)
 //            .attr("stroke", "lightgrey")
 //            .attr("pointer-events", "none");
@@ -459,7 +459,7 @@ function drawYAxis(svg_basis) {
     'use strict';
 
     var yAxis = d3.svg.axis()
-        .scale(GLVARS.y_scale)
+        .scale(G.y_scale)
         .orient("left");
     svg_basis.append("g")
         .attr("class", "y axis")
@@ -476,10 +476,10 @@ function createPlotSVG() {
     'use strict';
 
     var svg_basis = d3.select("#plotContainer").append("svg")
-            .attr("width", GLVARS.plot_width + GLVARS.plot_margin.left + GLVARS.plot_margin.right)
-            .attr("height", GLVARS.plot_height + GLVARS.plot_margin.top + GLVARS.plot_margin.bottom)
+            .attr("width", G.plot_width + G.plot_margin.left + G.plot_margin.right)
+            .attr("height", G.plot_height + G.plot_margin.top + G.plot_margin.bottom)
             .append("g")
-            .attr("transform", "translate(" + GLVARS.plot_margin.left + "," + GLVARS.plot_margin.top + ")")
+            .attr("transform", "translate(" + G.plot_margin.left + "," + G.plot_margin.top + ")")
 
             .on("click", updateScorePosition)
             .on("mousemove", updateMouseTrackLine)
@@ -490,11 +490,11 @@ function createPlotSVG() {
 
     svg_basis.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + GLVARS.plot_height + ")")
-        .call(GLVARS.xAxis);
+        .attr("transform", "translate(0," + G.plot_height + ")")
+        .call(G.xAxis);
 
     // don't show the ticks of x-axis
-    //GLVARS.xAxis.tickFormat(function (d) { return ''; });
+    //G.xAxis.tickFormat(function (d) { return ''; });
 
     //drawYAxis(svg_basis);
 
@@ -506,23 +506,23 @@ function updateVideoTrackLine(_scorePos) {
     'use strict';
 
     var svgContainer;
-    if (GLVARS.videoTrackLineExist) {
-        d3.select(".videoTrackLine").attr("x1", GLVARS.x_scale(_scorePos))
-            .attr("y1", GLVARS.y_scale(0))
-            .attr("x2", GLVARS.x_scale(_scorePos))
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
+    if (G.videoTrackLineExist) {
+        d3.select(".videoTrackLine").attr("x1", G.x_scale(_scorePos))
+            .attr("y1", G.y_scale(0))
+            .attr("x2", G.x_scale(_scorePos))
+            .attr("y2", G.y_scale(G.maxPlotY));
     } else {
         svgContainer = d3.select("g");
         svgContainer.append("line")
             .attr("class", "videoTrackLine")
             .attr("pointer-events", "none")
-            .attr("x1", GLVARS.x_scale(_scorePos))
-            .attr("y1", GLVARS.y_scale(0))
-            .attr("x2", GLVARS.x_scale(_scorePos))
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
+            .attr("x1", G.x_scale(_scorePos))
+            .attr("y1", G.y_scale(0))
+            .attr("x2", G.x_scale(_scorePos))
+            .attr("y2", G.y_scale(G.maxPlotY))
             .attr("stroke-width", 2)
             .attr("stroke", "lightblue");
-        GLVARS.videoTrackLineExist = true;
+        G.videoTrackLineExist = true;
     }
 }
 
@@ -532,23 +532,23 @@ function updateMouseTrackLine(d) {
     //var mouseTrackLine = document.getElementsByClassName("mouseTrackLine"); //d3.select(".mouseTrackLine");
     var currentMouseX = d3.mouse(this)[0], svgContainer;
 
-    if (GLVARS.mouseTrackLineExist) {
+    if (G.mouseTrackLineExist) {
         d3.select(".mouseTrackLine").attr("x1", currentMouseX)
-            .attr("y1", GLVARS.y_scale(0))
+            .attr("y1", G.y_scale(0))
             .attr("x2", currentMouseX)
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY));
+            .attr("y2", G.y_scale(G.maxPlotY));
     } else {
         svgContainer = d3.select("g");
         svgContainer.append("line")
             .attr("class", "mouseTrackLine")
             .attr("x1", currentMouseX)
-            .attr("y1", GLVARS.y_scale(0))
+            .attr("y1", G.y_scale(0))
             .attr("x2", currentMouseX)
-            .attr("y2", GLVARS.y_scale(GLVARS.maxPlotY))
+            .attr("y2", G.y_scale(G.maxPlotY))
             .attr("stroke-width", 2)
             .attr("stroke", "grey")
             .attr("pointer-events", "none");
-        GLVARS.mouseTrackLineExist = true;
+        G.mouseTrackLineExist = true;
     }
 
     //$("#segmQual").text(currentMouseX + "     " + d3.mouse(this)[1]);
@@ -559,12 +559,12 @@ function removeMouseTrackLine(d) {
 
     console.log("remove mouseTrackLine");
     d3.select(".mouseTrackLine").remove();
-    GLVARS.mouseTrackLineExist = false;
+    G.mouseTrackLineExist = false;
 
     var id;
     if (!$('#hideVideoDivs').prop('checked')) {
-        for (id in GLVARS.visibilityOfVideoIDs) {
-            if (GLVARS.visibilityOfVideoIDs.hasOwnProperty(id)) {
+        for (id in G.visibilityOfVideoIDs) {
+            if (G.visibilityOfVideoIDs.hasOwnProperty(id)) {
                 resetVideoDiv(id);
             }
         }
@@ -579,21 +579,21 @@ function drawPlot() {
         // add blank rectangle
     svg.append("rect")
         .attr("class", "blankrectangle")
-        .attr("x", GLVARS.x_scale(0))
-        .attr("width", GLVARS.x_scale(GLVARS.maxPlotX))
-        .attr("y", GLVARS.y_scale(GLVARS.maxPlotY))
-        .attr("height", GLVARS.plot_height - GLVARS.y_scale(GLVARS.maxPlotY))
+        .attr("x", G.x_scale(0))
+        .attr("width", G.x_scale(G.maxPlotX))
+        .attr("y", G.y_scale(G.maxPlotY))
+        .attr("height", G.plot_height - G.y_scale(G.maxPlotY))
         //.on("click", updateScorePosition)
         //.on("mousemove", updateMouseTrackLine)
         //.on("mouseout", removeMouseTrackLine)
         .on("mousemove", showSuitableVideoDivsForCurrentMousePosition)
     ;
 
-    createPageTicks(svg, GLVARS.pageTimes);
+    createPageTicks(svg, G.pageTimes);
 
-    createRectangles(svg, GLVARS.allVideoSegments);
+    createRectangles(svg, G.allVideoSegments);
 
-    createCurves(svg, GLVARS.curves);
+    createCurves(svg, G.curves);
 
-    createRadioButtons(svg, GLVARS.radiobuttons);
+    createRadioButtons(svg, G.radiobuttons);
 }
