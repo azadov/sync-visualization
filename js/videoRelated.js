@@ -236,7 +236,7 @@ function initVideos(scoreId, alignedVideos) {
     'use strict';
 
     if (!YT) {
-        setTimeout(function() {
+        setTimeout(function () {
             initVideos(scoreId, alignedVideos);
         }, 250);
         console.log("waiting for YT API to load, retrying in 250ms");
@@ -255,4 +255,268 @@ function initVideos(scoreId, alignedVideos) {
     //optimizeYouTubeEmbeds();
 }
 
+function showAndHideVideos() {
+    'use strict';
 
+    var videoID;
+    for (videoID in G.visibilityOfVideoIDs) {
+        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
+            if (G.visibilityOfVideoIDs[videoID]) {
+                //console.log("SHOW");
+                showVideo(videoID);
+            } else {
+                if (G.ytPlayers.hasOwnProperty(videoID)) {
+                    //console.log("Video in ytPlayer: " + videoID);
+                    if (G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
+                        //console.log("HideVideoID: " + videoID + "    state: " + G.ytPlayers[videoID].getPlayerState());
+                        hideVideo(videoID);
+                    }
+                }
+                if (G.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+                    hideVideo(videoID);
+                }
+            }
+        }
+    }
+}
+
+function hideVideo(_videoID) {
+    'use strict';
+
+    //document.getElementById(_videoID).style.display = "none";
+    //document.getElementById(_videoID).style.visibility = "hidden";
+    var elementToHide, secondElementToHide, thirdElementToHide;
+    if (G.ytPlayers.hasOwnProperty(_videoID)) {
+        elementToHide = document.getElementById(_videoID);
+        elementToHide.width = 0;
+        elementToHide.height = 0;
+    }
+
+    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+        elementToHide = document.getElementById(_videoID).firstChild;
+        elementToHide.style.width = 0 + "px";
+        elementToHide.style.height = 0 + "px";
+
+        secondElementToHide = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToHide.style.width = 0 + "px";
+        secondElementToHide.style.height = 0 + "px";
+
+        thirdElementToHide = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thirdElementToHide.style.width = 0 + "px";
+        thirdElementToHide.style.height = 0 + "px";
+    }
+}
+
+function showVideo(_videoID) {
+    'use strict';
+
+    //document.getElementById(_videoID).style.display = "";
+    //document.getElementById(_videoID).style.visibility = "visible";
+    var elementToShow, secondElementToShow, thirdElementToShow;
+    if (G.ytPlayers.hasOwnProperty(_videoID)) {
+        elementToShow = document.getElementById(_videoID);
+        elementToShow.width = CONSTANTS.VIDEO_WIDTH;
+        elementToShow.height = CONSTANTS.VIDEO_HEIGHT;
+
+        if (G.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+            elementToShow.width = CONSTANTS.PLAYING_VIDEO_WIDTH;
+            elementToShow.height = CONSTANTS.PLAYING_VIDEO_HEIGHT;
+        }
+    }
+
+    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
+        elementToShow = document.getElementById(_videoID).firstChild;
+        elementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        elementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+
+        secondElementToShow = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        secondElementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+
+        thirdElementToShow = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thirdElementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
+        thirdElementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+    }
+}
+
+function pausePlayback() {
+    'use strict';
+
+//    for (var videoID in G.visibilityOfVideoIDs) {
+//        if ( G.visibilityOfVideoIDs[videoID] ) {
+//            G.ytPlayers[videoID].pauseVideo();}
+//    }
+    var vID;
+    for (vID in G.ytPlayers) {
+        if (G.ytPlayers.hasOwnProperty(vID)) {
+            if (G.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING) {
+                G.ytPlayers[vID].pauseVideo();
+            }
+        }
+    }
+}
+
+
+function showSuitableVideoDivsForCurrentMousePosition() {
+    'use strict';
+
+    var currentMouseXPoint = G.x_scale.invert(d3.mouse(this)[0]),
+        currentMouseYPoint = G.y_scale.invert(d3.mouse(this)[1]),
+        yAboveMousePoint = G.maxPlotY,
+        yUnderMousePoint = 0,
+        videoIDAbove = "",
+        videoIDUnder = "",
+        videoSegmentAbove,
+        videoSegmentUnder,
+        i,
+        id,
+        currentSegment,
+        yAb,
+        yUn,
+        factor = 0,
+        videoToEnlarge = "";
+
+    //console.log("hide video ID " + currentMouseXPoint);
+    calculateVisibilityOfVideoIDs(currentMouseXPoint);
+
+    if (gui.shouldHideVideos()) {
+        showAndHideVideos();
+    }
+
+
+    for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
+        currentSegment = G.allVideoSegments[i];
+        if (currentMouseXPoint >= currentSegment.x1 && currentMouseXPoint <= currentSegment.x2) {
+            yUn = currentSegment.y;// - CONSTANTS.SEGMENT_RECT_HEIGHT;
+            if (currentMouseYPoint > yUn && yUn > yUnderMousePoint) {
+                yUnderMousePoint = yUn;
+                videoIDUnder = currentSegment.videoID;
+                videoSegmentUnder = currentSegment;
+            }
+            yAb = currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT;
+            if (currentMouseYPoint < yAb && yAb < yAboveMousePoint) {
+                yAboveMousePoint = yAb;
+                videoIDAbove = currentSegment.videoID;
+                videoSegmentAbove = currentSegment;
+            }
+        }
+    }
+
+    if (videoIDUnder === "" && videoIDAbove === "")  {
+        G.videoIDNextToCursor = "";
+        return;
+    }
+    //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
+    factor = 1;
+    if (videoIDUnder === "") {
+        //factor = currentMouseYPoint / yAboveMousePoint;
+        videoToEnlarge = videoIDAbove;
+        G.segmentNextToCursor = videoSegmentAbove;
+    } else if (videoIDAbove === "") {
+        //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / (G.maxPlotY - yUnderMousePoint);
+        videoToEnlarge = videoIDUnder;
+        G.segmentNextToCursor = videoSegmentUnder;
+    } else if (videoIDUnder === videoIDAbove) {
+        factor = 1;
+        videoToEnlarge = videoIDUnder;
+        if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
+            G.segmentNextToCursor = videoSegmentUnder;
+        } else {
+            G.segmentNextToCursor = videoSegmentAbove;
+        }
+    } else {
+        if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
+            // point under is the next to mouse point
+            //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2);
+            videoToEnlarge = videoIDUnder;
+            G.segmentNextToCursor = videoSegmentUnder;
+        } else {
+            // point above is the next to mouse point
+            //factor = (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2) - 1;
+            videoToEnlarge = videoIDAbove;
+            G.segmentNextToCursor = videoSegmentAbove;
+        }
+    }
+    if (G.ytPlayers.hasOwnProperty(videoToEnlarge)) {
+        if (G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.BUFFERING) {
+            enlargeVideoDiv(videoToEnlarge);
+        }
+    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoToEnlarge)) {
+        enlargeVideoDiv(videoToEnlarge);
+    }
+
+    if (!gui.shouldHideVideos()) {
+        for (id in G.visibilityOfVideoIDs) {
+            if (G.visibilityOfVideoIDs.hasOwnProperty(id)) {
+                //if (id !== videoIDAbove && id !== videoIDUnder) {
+                if (id !== videoToEnlarge) {
+                    resetVideoDiv(id);
+                }
+            }
+        }
+    }
+
+    G.videoIDNextToCursor = videoToEnlarge;
+}
+
+function calculateVisibilityOfVideoIDs(_scoreTime) {
+    'use strict';
+
+    var videoID, i, minX, maxX;
+    for (videoID in G.visibilityOfVideoIDs) {
+        //console.log(videoID + "                   " + G.visibilityOfVideoIDs[videoID]);
+        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
+            G.visibilityOfVideoIDs[videoID] = false;
+        }
+    }
+
+    for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
+        if (_scoreTime >= G.allVideoSegments[i].x1 && _scoreTime <= G.allVideoSegments[i].x2) {
+            G.visibilityOfVideoIDs[G.allVideoSegments[i].videoID] = true;
+        }
+    }
+
+    for (i = 0; i < G.curves.length; i = i + 1) {
+        minX = getMin(G.curves[i].points[0].x, G.curves[i].points[5].x);
+        maxX = getMax(G.curves[i].points[0].x, G.curves[i].points[5].x);
+
+        if (_scoreTime >= minX && _scoreTime <= maxX) {
+            G.visibilityOfVideoIDs[G.curves[i].videoID] = true;
+        }
+    }
+}
+
+
+function updateVideoPositionCurve(d) {
+    'use strict';
+
+    console.log("videoID curve: " + d.videoID);
+}
+
+function enlargeVideoDivRect(d) {
+    'use strict';
+
+    //console.log("videoID rect: " + d.videoID);
+    enlargeVideoDiv(d.videoID);
+    gui.setSegmentQuality(d.segmentConfidence);
+}
+
+function enlargeVideoDivCurve(d) {
+    'use strict';
+
+    //console.log("videoID rect: " + d[0].videoID);
+    enlargeVideoDiv(d.videoID);
+}
+
+
+function resetVideoDivRect(d) {
+    'use strict';
+
+    resetVideoDiv(d.videoID);
+}
+
+function resetVideoDivCurve(d) {
+    'use strict';
+
+    resetVideoDiv(d.videoID);
+}

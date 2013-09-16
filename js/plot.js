@@ -571,6 +571,130 @@ function removeMouseTrackLine(d) {
     }
 }
 
+
+
+function calculateAverageVelocity() {
+    'use strict';
+
+    var i, j, velocity = 0, numerator = 0, denominator = 0, sectionLength;
+
+    G.averageVelocity = [];
+    for (i = 0; i < G.velocities.length; i = i + 1) {
+        numerator = 0;
+        denominator = 0;
+        if (G.velocities[i] !== undefined) {
+            for (j = 0; j < G.velocities[i].length; j = j + 1) {
+                velocity = G.velocities[i][j][0];
+                sectionLength = G.velocities[i][j][1];
+                //console.log(velocity + "     " + sectionLength);
+                if (velocity !== undefined && sectionLength !== undefined) {
+                    numerator = numerator + velocity * sectionLength;
+                    denominator = denominator + sectionLength;
+                }
+            }
+            if (denominator != 0) {
+                velocity = numerator / denominator;
+            } else {
+                velocity = 0;
+            }
+        } else {
+            velocity = 0;
+        }
+
+        console.log(velocity);
+        G.averageVelocity.push(velocity);
+    }
+
+}
+
+
+function createVideoSegment(segmentTimeMap, videoID, _conf) {
+    'use strict';
+
+    var scoreTimeAxis = segmentTimeMap[0], videoSegmentAxis = segmentTimeMap[1], newRectangle = {},
+        currentAvgVelInd, firstInd, secondInd, tpInd, velocity, indVel = [], sectionLength;
+
+    if (G.maxPlotX < scoreTimeAxis[scoreTimeAxis.length - 1]) {
+        G.maxPlotX = scoreTimeAxis[scoreTimeAxis.length - 1];
+    }
+
+    newRectangle.x1 = scoreTimeAxis[0];
+    newRectangle.x2 = scoreTimeAxis[scoreTimeAxis.length - 1];
+    newRectangle.width = scoreTimeAxis[scoreTimeAxis.length - 1] - scoreTimeAxis[0];
+    newRectangle.x1_notbasis = videoSegmentAxis[0];
+    newRectangle.segmentConfidence = _conf;
+    newRectangle.videoID = videoID;
+    newRectangle.timeMap = segmentTimeMap;
+
+    currentAvgVelInd = Math.floor(scoreTimeAxis[0] / G.velocityWindow);
+    firstInd = 0;
+    for (tpInd = 1; tpInd < scoreTimeAxis.length; tpInd = tpInd + 1) {
+        if (Math.floor(scoreTimeAxis[tpInd] / G.velocityWindow) > currentAvgVelInd) {
+            secondInd = tpInd - 1;
+
+            if (scoreTimeAxis[secondInd] !== scoreTimeAxis[firstInd] && videoSegmentAxis[secondInd] !== videoSegmentAxis[firstInd]) {
+                velocity = (scoreTimeAxis[secondInd] - scoreTimeAxis[firstInd]) / (videoSegmentAxis[secondInd] - videoSegmentAxis[firstInd]);
+//                if (velocity === Infinity) {
+//                    console.log("Numerator: " + segmTimeMap[0][tpInd] + "      " + segmTimeMap[0][tpInd - 1] +
+//                                "\nDenominator: " + segmTimeMap[1][tpInd] + "      " + segmTimeMap[1][tpInd - 1]);
+//                }
+                sectionLength = scoreTimeAxis[secondInd] - scoreTimeAxis[firstInd];
+                //console.log(velocity + "      " + sectionLength);
+                if (G.velocities[currentAvgVelInd]) {
+                    G.velocities[currentAvgVelInd].push([velocity, sectionLength]);
+                } else {
+                    G.velocities[currentAvgVelInd] = [velocity, sectionLength];
+                }
+
+                indVel.push([currentAvgVelInd, velocity]);
+            }
+
+            currentAvgVelInd = Math.floor(scoreTimeAxis[tpInd] / G.velocityWindow);
+            firstInd = tpInd;
+        }
+    }
+
+    newRectangle.indVel = indVel;
+
+    return newRectangle;
+}
+
+function createCurve(currSegment, nextSegment, videoID) {
+    'use strict';
+
+    var firstPoint = {x: currSegment.x2, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+        secondPoint = {x: currSegment.x2 + 10, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT  / 2},
+        thirdPoint = {x: currSegment.x2 + 10,
+            y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+        fourthPoint = {x: nextSegment.x1 - 10,
+            y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+        fifthPoint = {x: nextSegment.x1 - 10, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+        sixthPoint = {x: nextSegment.x1, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+        points = [],
+        curve = {},
+        strokeDasharray = "0,0",
+        diff = nextSegment.timeMap[1][nextSegment.timeMap[1].length - 1] - currSegment.timeMap[1][currSegment.timeMap[1].length - 1];
+
+    points.push(firstPoint);
+    points.push(secondPoint);
+    points.push(thirdPoint);
+    points.push(fourthPoint);
+    points.push(fifthPoint);
+    points.push(sixthPoint);
+
+    curve.points = points;
+
+    if (diff < 1) {
+        strokeDasharray = "2,2";
+    }
+    curve.strokeDash = strokeDasharray;
+    curve.videoID =  videoID;
+    //curve.timeMap = timeMap;
+
+    return curve;
+}
+
+
 function drawPlot() {
     'use strict';
 
@@ -597,3 +721,4 @@ function drawPlot() {
 
     createRadioButtons(svg, G.radiobuttons);
 }
+
