@@ -56,15 +56,18 @@ function initializeVisualization(scoreId) {
 
     loadScoreInViewer(scoreId);
 
+    calculateAverageVelocity2(scoreId);
+
     computePlotElements(scoreId, G.syncPairs[scoreId]);
     computePlotDimensions();
-    drawPlot();
+    drawPlot(scoreId);
     initVideos(scoreId, G.syncPairs[scoreId]);
 }
 
 function videoIsFilteredOut(scoreId, videoId) {
     return G.videos[videoId].getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
-        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter();
+        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() ||
+        !G.videos[videoId].getAvailability();
 }
 
 function populateScoreSelectionDropdown() {
@@ -313,7 +316,7 @@ function computePlotElements(scoreId, syncPairs) {
 
             videoSegments = [];
             var alignment = G.alignments.get(scoreId, videoId),
-                segm, videoSegment, conf, rbutton;
+                segment, videoSegment, confidence, rbutton;
 
             if (!G.videos.hasOwnProperty(videoId) ||
                 !G.videos[videoId].getAvailability() ||
@@ -341,9 +344,9 @@ function computePlotElements(scoreId, syncPairs) {
             }
 
             //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
-            for (segm = 0; segm < alignment.localTimeMaps.length; segm = segm + 1) {
-                conf = getMin(alignment.confidences[segm][0], alignment.confidences[segm][1]);
-                videoSegment = createVideoSegment(alignment.localTimeMaps[segm], videoId, conf);
+            for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
+                confidence = Math.min(alignment.confidences[segment][0], alignment.confidences[segment][1]);
+                videoSegment = createVideoSegment(alignment.localTimeMaps[segment], videoId, segment, confidence);
 
                 videoSegments.push(videoSegment);
 
@@ -354,18 +357,18 @@ function computePlotElements(scoreId, syncPairs) {
             assignSegmentYCoordinates(videoSegments);
 
 
-            for (segm = 0; segm < videoSegments.length - 1; segm = segm + 1) {
-                currSegment = videoSegments[segm];
-                nextSegment = videoSegments[segm + 1];
+            for (segment = 0; segment < videoSegments.length - 1; segment = segment + 1) {
+                currSegment = videoSegments[segment];
+                nextSegment = videoSegments[segment + 1];
                 curve = createCurve(currSegment, nextSegment, videoId);
                 G.curves.push(curve);
             }
 
-            for (segm = 0; segm < videoSegments.length; segm = segm + 1) {
+            for (segment = 0; segment < videoSegments.length; segment = segment + 1) {
                 rbutton = {};
                 rbutton.videoID = videoId;
-                rbutton.segmentIndex = G.allVideoSegments.length + segm; // index in G.allVideoSegments array
-                rbutton.y = videoSegments[segm].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+                rbutton.segmentIndex = G.allVideoSegments.length + segment; // index in G.allVideoSegments array
+                rbutton.y = videoSegments[segment].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
                 G.radiobuttons.push(rbutton);
                 //console.log("Length: " + G.allVideoSegments.length + "    i: " + "     index: " + rbutton.index);
             }

@@ -155,7 +155,7 @@ function areRBNeighbours(_firstRBID, _secondRBID) {
     }
 
 
-    if (modulus(G.rbIndex[_firstRBID] - G.rbIndex[_secondRBID]) === 1) {
+    if (Math.abs(G.rbIndex[_firstRBID] - G.rbIndex[_secondRBID]) === 1) {
         areNeighbours = true;
     } else {
         areNeighbours = false;
@@ -291,58 +291,23 @@ function createGradient(svg,id,stops){
     return defs.appendChild(grad);
 }
 
-function getGradientValues(_indVel) {
+function getGradientValues(tickVelocities) {
     'use strict';
 
-    var tpInd, currentAvgVelInd, velocity, gradientValues = [], value, velArray = [], avgVel, j;
-
-    for (j = 0; j < _indVel.length; j++) {
-        currentAvgVelInd = _indVel[j][0];
-        velocity = _indVel[j][1];
-        //console.log(currentAvgVelInd + "     " + velocity + "     " + G.averageVelocity[currentAvgVelInd]);
-
-        value = (Math.tan(velocity - G.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
-        //console.log(value);
-        gradientValues.push(0.5 + value);
+    var tpInd, currentVelInd, velocity, gradientValues = [], value, velArray = [], avgVel, j;
+    console.log(tickVelocities);
+    for (var tick in tickVelocities) {
+        if (tickVelocities.hasOwnProperty(tick)) {
+            var currentVel = tickVelocities[tick];
+            value = (Math.atan(currentVel)/(Math.PI/2)) * 0.5;
+            gradientValues.push(value);
+        }
     }
-    //console.log(_segmTimeMap[0].length);
-
-    // (Math.tan(avgVel - G.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
-    // gradientValues.push(0.5 + value);
-
-//    currentAvgVelInd = Math.floor(_segmTimeMap[0][0] / G.velocityWindow);
-//    for (tpInd = 1; tpInd < _segmTimeMap[0].length; tpInd = tpInd + 1) {
-//        if (Math.floor(_segmTimeMap[0][tpInd] / G.velocityWindow) > currentAvgVelInd) {
-//            if (velArray.length !== 0) {
-//                for (j = 0; j < velArray.length; j = j + 1) {
-//                    avgVel = avgVel + velArray[j];
-//                }
-//                avgVel = avgVel / velArray.length;
-//
-//                value = (Math.tan(avgVel - G.averageVelocity[currentAvgVelInd])/(Math.PI/2)) * 0.5;
-//                gradientValues.push(0.5 + value);
-//            } else {
-//                gradientValues.push(0.5);
-//            }
-//
-//            currentAvgVelInd = Math.floor(_segmTimeMap[0][tpInd] / G.velocityWindow);
-//            velArray = [];
-//        }
-//
-//        if (_segmTimeMap[0][tpInd] !== _segmTimeMap[0][tpInd - 1] && _segmTimeMap[1][tpInd] !== _segmTimeMap[1][tpInd - 1]) {
-//            velocity = (_segmTimeMap[0][tpInd] - _segmTimeMap[0][tpInd - 1]) / (_segmTimeMap[1][tpInd] - _segmTimeMap[1][tpInd - 1]);
-//
-//            velArray.push(velocity);
-//            //value = (Math.tan(velocity - G.averageVelocity[avgVelInd])/(Math.PI/2)) * 0.5;
-//            //gradientValues.push(0.5 + value);
-//            //console.log(value + "       " + _segmTimeMap[0].length);
-//        }
-//    }
 
     return gradientValues;
 }
 
-function createRectangles(_svg, _rects) {
+function createAlignmentSegmentRepresentation(_svg, _rects, scoreId) {
     'use strict';
 
     var color = d3.scale.category10(), gradientValues;
@@ -353,20 +318,23 @@ function createRectangles(_svg, _rects) {
 //        {id:3, vals:[0.9, 0.9, 0.1, 0.9]}
 //    ];
 
-    for (var k = 0; k < _rects.length; k = k + 1) {
-        console.log("Rect n" + k);
-        //var j = k % testDensities.length;
-        var props = [];
-        gradientValues = getGradientValues(_rects[k].indVel);
-        for (var i = 0; i < gradientValues.length; i = i + 1) {
-            props.push({
-                'offset': Math.round(100 * i / gradientValues.length) + "%",
-                //  'stop-color': color(Math.floor(10 * testDensities[j].vals[i])),
-                'stop-color': 'red',
-                'stop-opacity': gradientValues[i]
-            });
+
+    var segment = 0;
+    for (var videoId in G.syncPairs[scoreId]) {
+        if (videoIsFilteredOut(scoreId, videoId)) continue;
+        for (var segment = 0; segment < G.alignments.get(scoreId, videoId).localTimeMaps.length; segment++) {
+            var props = [];
+            gradientValues = getGradientValues(G.velocities2[scoreId][videoId][segment]);
+            for (var i = 0; i < gradientValues.length; i = i + 1) {
+                props.push({
+                    'offset': Math.round(100 * i / gradientValues.length) + "%",
+                    //  'stop-color': color(Math.floor(10 * testDensities[j].vals[i])),
+                    'stop-color': 'red',
+                    'stop-opacity': gradientValues[i]
+                });
+            }
+            createGradient(_svg[0][0].ownerSVGElement, 'gradient' + videoId + segment, props);
         }
-        createGradient(_svg[0][0].ownerSVGElement, 'gradient' + k, props);
     }
 
     _svg.selectAll(".bar")
@@ -378,7 +346,7 @@ function createRectangles(_svg, _rects) {
         .attr("width", function (d) { return G.x_scale(d.width); })
         .attr("y", function (d) { return G.y_scale(d.y); })
         .attr("height", G.plot_height - G.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT))
-        .style("fill", function(d, i) {return "url(#gradient" + i + ")"})
+        .style("fill", function(d, i) {return "url(#gradient" + d.videoID + d.segmentId + ")"})
         //.on("click", updateVideoPositionRect)
         .on("mouseover", enlargeVideoDivRect)
         //.on("mouseout", resetVideoDivRect)
@@ -410,7 +378,7 @@ function createCurves(_svg, _curves) {
         .attr("fill", "none")
         //.on("click", updateVideoPositionCurve)
         .on("mouseover", enlargeVideoDivCurve)
-    //.on("mouseout", resetVideoDivCurve)
+        //.on("mouseout", resetVideoDivCurve)
     ;
 }
 
@@ -572,6 +540,74 @@ function removeMouseTrackLine(d) {
 }
 
 
+function calculateAverageVelocity2(scoreId) {
+    G.velocities2[scoreId] = {};
+
+    var syncPairs = G.syncPairs[scoreId];
+    for (var videoId in syncPairs) {
+        G.velocities2[scoreId][videoId] = {};
+        if (syncPairs.hasOwnProperty(videoId) && !videoIsFilteredOut(scoreId, videoId)) {
+            console.log("computing velocity for " + videoId);
+            var alignment = G.alignments.get(scoreId, videoId);
+            for (var segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
+
+                var segmentTimeMap = alignment.localTimeMaps[segment];
+                if (segmentTimeMap[0].length < 2) continue;
+                var av = updateBinVelocities(segmentTimeMap);
+                var binV = averageBinVelocities(av);
+                G.velocities2[scoreId][videoId][segment] = binV;
+            }
+        }
+    }
+    return binV;
+}
+
+function updateBinVelocities(segmentTimeMap) {
+    var av = [];
+    var tScorePrev = segmentTimeMap[0][0];
+    var tVideoPrev = segmentTimeMap[1][0];
+    var prevBin =  Math.floor(tScorePrev / G.velocityWindow);
+
+    for (var moment = 1; moment < segmentTimeMap[0].length; moment++) {
+        var tScore = segmentTimeMap[0][moment];
+        var tVideo = segmentTimeMap[1][moment];
+
+        var currentBin = Math.floor(tScore / G.velocityWindow);
+
+        var velocity;
+        if (tVideo > tVideoPrev) {
+            velocity = (tScore - tScorePrev)/(tVideo - tVideoPrev);
+        } else {
+            velocity = 1;
+        }
+
+        if (moment == 1) av.push([prevBin, velocity, tScore / G.velocityWindow - prevBin])
+        for (var bin = prevBin; bin <= currentBin; bin++) {
+            var binIntervalShare = Math.min(tScore / G.velocityWindow, bin + 1) - Math.max(tScorePrev / G.velocityWindow, bin);
+            av.push([bin, velocity, binIntervalShare]);
+        }
+        if (moment == segmentTimeMap[0].length - 1) av.push([currentBin, velocity, currentBin + 1 - tScore / G.velocityWindow]);
+
+
+        tScorePrev = tScore;
+        tVideoPrev = tVideo;
+        prevBin = currentBin;
+    }
+    return av;
+}
+
+function averageBinVelocities(av) {
+    var binV = {};
+    for (var i in av) {
+        var t = av[i];
+        var bin = t[0];
+        var v = t[1];
+        var s = t[2];
+        binV[bin] = (binV[bin] ? binV[bin] : 0) + v*s;
+    }
+    return binV;
+}
+
 
 function calculateAverageVelocity() {
     'use strict';
@@ -608,7 +644,7 @@ function calculateAverageVelocity() {
 }
 
 
-function createVideoSegment(segmentTimeMap, videoID, _conf) {
+function createVideoSegment(segmentTimeMap, videoID, segmentId, _conf) {
     'use strict';
 
     var scoreTimeAxis = segmentTimeMap[0], videoSegmentAxis = segmentTimeMap[1], newRectangle = {},
@@ -624,37 +660,8 @@ function createVideoSegment(segmentTimeMap, videoID, _conf) {
     newRectangle.x1_notbasis = videoSegmentAxis[0];
     newRectangle.segmentConfidence = _conf;
     newRectangle.videoID = videoID;
+    newRectangle.segmentId = segmentId;
     newRectangle.timeMap = segmentTimeMap;
-
-    currentAvgVelInd = Math.floor(scoreTimeAxis[0] / G.velocityWindow);
-    firstInd = 0;
-    for (tpInd = 1; tpInd < scoreTimeAxis.length; tpInd = tpInd + 1) {
-        if (Math.floor(scoreTimeAxis[tpInd] / G.velocityWindow) > currentAvgVelInd) {
-            secondInd = tpInd - 1;
-
-            if (scoreTimeAxis[secondInd] !== scoreTimeAxis[firstInd] && videoSegmentAxis[secondInd] !== videoSegmentAxis[firstInd]) {
-                velocity = (scoreTimeAxis[secondInd] - scoreTimeAxis[firstInd]) / (videoSegmentAxis[secondInd] - videoSegmentAxis[firstInd]);
-//                if (velocity === Infinity) {
-//                    console.log("Numerator: " + segmTimeMap[0][tpInd] + "      " + segmTimeMap[0][tpInd - 1] +
-//                                "\nDenominator: " + segmTimeMap[1][tpInd] + "      " + segmTimeMap[1][tpInd - 1]);
-//                }
-                sectionLength = scoreTimeAxis[secondInd] - scoreTimeAxis[firstInd];
-                //console.log(velocity + "      " + sectionLength);
-                if (G.velocities[currentAvgVelInd]) {
-                    G.velocities[currentAvgVelInd].push([velocity, sectionLength]);
-                } else {
-                    G.velocities[currentAvgVelInd] = [velocity, sectionLength];
-                }
-
-                indVel.push([currentAvgVelInd, velocity]);
-            }
-
-            currentAvgVelInd = Math.floor(scoreTimeAxis[tpInd] / G.velocityWindow);
-            firstInd = tpInd;
-        }
-    }
-
-    newRectangle.indVel = indVel;
 
     return newRectangle;
 }
@@ -665,9 +672,9 @@ function createCurve(currSegment, nextSegment, videoID) {
     var firstPoint = {x: currSegment.x2, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         secondPoint = {x: currSegment.x2 + 10, y: currSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT  / 2},
         thirdPoint = {x: currSegment.x2 + 10,
-            y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+            y: currSegment.y + Math.abs(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         fourthPoint = {x: nextSegment.x1 - 10,
-            y: currSegment.y + modulus(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
+            y: currSegment.y + Math.abs(currSegment.y - nextSegment.y) / 2 - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         fifthPoint = {x: nextSegment.x1 - 10, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         sixthPoint = {x: nextSegment.x1, y: nextSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2},
         points = [],
@@ -695,12 +702,12 @@ function createCurve(currSegment, nextSegment, videoID) {
 }
 
 
-function drawPlot() {
+function drawPlot(scoreId) {
     'use strict';
 
     var svg = createPlotSVG();
 
-        // add blank rectangle
+    // add blank rectangle
     svg.append("rect")
         .attr("class", "blankrectangle")
         .attr("x", G.x_scale(0))
@@ -715,7 +722,7 @@ function drawPlot() {
 
     createPageTicks(svg, G.pageTimes);
 
-    createRectangles(svg, G.allVideoSegments);
+    createAlignmentSegmentRepresentation(svg, G.allVideoSegments, scoreId);
 
     createCurves(svg, G.curves);
 

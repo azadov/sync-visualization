@@ -477,8 +477,8 @@ function calculateVisibilityOfVideoIDs(_scoreTime) {
     }
 
     for (i = 0; i < G.curves.length; i = i + 1) {
-        minX = getMin(G.curves[i].points[0].x, G.curves[i].points[5].x);
-        maxX = getMax(G.curves[i].points[0].x, G.curves[i].points[5].x);
+        minX = Math.min(G.curves[i].points[0].x, G.curves[i].points[5].x);
+        maxX = Math.max(G.curves[i].points[0].x, G.curves[i].points[5].x);
 
         if (_scoreTime >= minX && _scoreTime <= maxX) {
             G.visibilityOfVideoIDs[G.curves[i].videoID] = true;

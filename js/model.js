@@ -1,5 +1,5 @@
 var CONSTANTS = {};
-CONSTANTS.SEGMENT_RECT_HEIGHT = 0.1;
+CONSTANTS.SEGMENT_RECT_HEIGHT = 0.2;
 CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS = 0.3;
 CONSTANTS.VIDEO_WIDTH = 140;
 CONSTANTS.VIDEO_HEIGHT = 100;
@@ -73,6 +73,7 @@ G.loopId = 0;
 G.prevPage = 0;
 G.foreRunningTime = 2.0;
 
-G.velocityWindow = 10;
+G.velocityWindow = 5;  // in seconds
 G.velocities = []; // array of arrays with velosities for time windows
+G.velocities2 = {};
 G.averageVelocity = []; // array with one average velocity for each time window
