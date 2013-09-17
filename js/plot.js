@@ -45,13 +45,16 @@ function assignSegmentYCoordinates(_arrayOfSortedRects) {
         if (_arrayOfSortedRects[i - 1].x2 < _arrayOfSortedRects[i].x1) {
             _arrayOfSortedRects[i].y = _arrayOfSortedRects[i - 1].y;
         } else {
-            _arrayOfSortedRects[i].y = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
             G.numberOfVideoSegmentLevels = G.numberOfVideoSegmentLevels + 1;
+            _arrayOfSortedRects[i].y = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
+
         }
     }
 }
 
 function createSegmentConnections(videoSegments, videoId) {
+    'use strict';
+
     var segment, currSegment, nextSegment, curve;
     for (segment = 0; segment < videoSegments.length - 1; segment = segment + 1) {
         currSegment = videoSegments[segment];
@@ -62,6 +65,8 @@ function createSegmentConnections(videoSegments, videoId) {
 }
 
 function createSegmentSwitches(videoSegments, videoId) {
+    'use strict';
+
     var segment, rbutton;
     for (segment = 0; segment < videoSegments.length; segment = segment + 1) {
         rbutton = {};

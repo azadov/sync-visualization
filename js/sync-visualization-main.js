@@ -331,17 +331,9 @@ function computePlotElements(scoreId, syncPairs) {
             G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
             G.videoTimeMaps[videoId] = G.videoTimeMaps[videoId] ? G.videoTimeMaps[videoId] : alignment.localTimeMaps;
             G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
-
-            //TODO: do the same as above
-            if (!G.videoStartPosition.hasOwnProperty(videoId)) {
-                G.videoStartPosition[videoId] = 0;
-            }
-            if (!G.videoReadiness.hasOwnProperty(videoId)) {
-                G.videoReadiness[videoId] = 0;
-            }
-            if (!G.videoNumOfLoadingAttempts.hasOwnProperty(videoId)) {
-                G.videoNumOfLoadingAttempts[videoId] = 0;
-            }
+            G.videoStartPosition[videoId] = G.videoStartPosition[videoId] ? G.videoStartPosition[videoId] : 0;
+            G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
+            G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;
 
             // iterating over video segments, creating their rendering data
             for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
@@ -350,7 +342,7 @@ function computePlotElements(scoreId, syncPairs) {
                 videoSegments.push(videoSegment);
             }
 
-            //videoSegments = sortRects(videoSegments);
+            videoSegments = sortRects(videoSegments);
 
             assignSegmentYCoordinates(videoSegments);
 

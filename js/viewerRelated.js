@@ -11,7 +11,7 @@ function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
     }
 }
 
-function getVideoWithLoadedAlignment() {
+function getVideoWithLoadedAlignment(scoreId) {
     var videoId;
     for (videoId in G.syncPairs[scoreId]) {
         if (G.videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability()) {
@@ -22,7 +22,7 @@ function getVideoWithLoadedAlignment() {
 }
 
 function getPageTimes(scoreId) {
-    var videoId = getVideoWithLoadedAlignment();
+    var videoId = getVideoWithLoadedAlignment(scoreId);
     // get videoId for which we should have downloaded the alignment data (if it was available we did that)
     return G.alignments.get(scoreId, videoId).streamTimes0;
 }
