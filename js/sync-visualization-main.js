@@ -71,7 +71,8 @@ function videoIsFilteredOut(scoreId, videoId) {
 }
 
 function populateScoreSelectionDropdown() {
-    for (var scoreId in G.syncPairs) {
+    var scoreId;
+    for (scoreId in G.syncPairs) {
         if (G.syncPairs.hasOwnProperty(scoreId)) {
             gui.addScoreToDropdown(scoreId);
         }
@@ -79,9 +80,10 @@ function populateScoreSelectionDropdown() {
 }
 
 function initYouTubeAPI() {
-    var tag = document.createElement('script');
+    var tag = document.createElement('script'), firstScriptTag;
     tag.src = "https://www.youtube.com/iframe_api";
-    var firstScriptTag = document.getElementsByTagName('script')[0];
+
+    firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 }
 
@@ -157,7 +159,7 @@ function loadAlignmentList(onSuccess, onFailure) {
 
         var i, scoreId, videoId,
             alignmentFileName,
-            confidence;
+            confidence, video;
 
         for (i = 0; i < json.length; i = i + 1) {
             scoreId = json[i].id0;
@@ -165,7 +167,7 @@ function loadAlignmentList(onSuccess, onFailure) {
             alignmentFileName = "alignments/" + scoreId + '_' + videoId + '.json';
             confidence = json[i].minConfidence;
 
-            var video = new Video(videoId);
+            video = new Video(videoId);
 
             G.videos[videoId] = video;
 
@@ -219,10 +221,11 @@ function fetchAlignmentData(scoreId, videoId, jsonPath, counter) {
 
 
 function getAlignments(scoreId, onAlignmentsFetched) {
-    var syncedVideos = G.syncPairs[scoreId];
-    var counter = new FiringCounter(Object.keys(syncedVideos).length, onAlignmentsFetched);
+    var syncedVideos = G.syncPairs[scoreId],
+        counter = new FiringCounter(Object.keys(syncedVideos).length, onAlignmentsFetched),
+        videoId, jsonPath;
 
-    for (var videoId in syncedVideos) {
+    for (videoId in syncedVideos) {
         if (syncedVideos.hasOwnProperty(videoId)) {
 
             console.log(G.videos[videoId]);
@@ -236,18 +239,18 @@ function getAlignments(scoreId, onAlignmentsFetched) {
                 continue;
             }
 
-            var jsonPath = syncedVideos[videoId].alignmentFileName;
+            jsonPath = syncedVideos[videoId].alignmentFileName;
             fetchAlignmentData(scoreId, videoId, jsonPath, counter);
         }
     }
 }
 
 function checkVideoAvailability(scoreId, onDone) {
-    var videoProperties = G.syncPairs[scoreId];
+    var videoProperties = G.syncPairs[scoreId],
+        counter = new FiringCounter(Object.keys(videoProperties).length, onDone),
+        videoId;
 
-    var counter = new FiringCounter(Object.keys(videoProperties).length, onDone);
-
-    for (var videoId in videoProperties) {
+    for (videoId in videoProperties) {
         if (videoProperties.hasOwnProperty(videoId)) {
             checkYouTubeVideoAvailability(videoId, counter);
         }
