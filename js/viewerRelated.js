@@ -11,15 +11,19 @@ function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
     }
 }
 
-function getPageTimes(scoreId) {
+function getVideoWithLoadedAlignment() {
     var videoId;
     for (videoId in G.syncPairs[scoreId]) {
         if (G.videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability()) {
             break;
         }
     }
-    console.log(videoId);
-    console.log(G.alignments.get(scoreId, videoId));
+    return videoId;
+}
+
+function getPageTimes(scoreId) {
+    var videoId = getVideoWithLoadedAlignment();
+    // get videoId for which we should have downloaded the alignment data (if it was available we did that)
     return G.alignments.get(scoreId, videoId).streamTimes0;
 }
 
@@ -188,9 +192,9 @@ function measureClickHandler(scoreID, viewerPage, measureNumber, totalMeasures) 
         showAndHideVideos();
     }
 
-    for (videoID in G.visibilityOfVideoIDs) {
-        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            if (G.visibilityOfVideoIDs[videoID]) {
+    for (videoID in G.visibilityOfVideos) {
+        if (G.visibilityOfVideos.hasOwnProperty(videoID)) {
+            if (G.visibilityOfVideos[videoID]) {
                 videosToPlay.push(videoID);
             }
         }

@@ -259,9 +259,9 @@ function showAndHideVideos() {
     'use strict';
 
     var videoID;
-    for (videoID in G.visibilityOfVideoIDs) {
-        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            if (G.visibilityOfVideoIDs[videoID]) {
+    for (videoID in G.visibilityOfVideos) {
+        if (G.visibilityOfVideos.hasOwnProperty(videoID)) {
+            if (G.visibilityOfVideos[videoID]) {
                 //console.log("SHOW");
                 showVideo(videoID);
             } else {
@@ -342,8 +342,8 @@ function showVideo(_videoID) {
 function pausePlayback() {
     'use strict';
 
-//    for (var videoID in G.visibilityOfVideoIDs) {
-//        if ( G.visibilityOfVideoIDs[videoID] ) {
+//    for (var videoID in G.visibilityOfVideos) {
+//        if ( G.visibilityOfVideos[videoID] ) {
 //            G.ytPlayers[videoID].pauseVideo();}
 //    }
     var vID;
@@ -446,8 +446,8 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     }
 
     if (!gui.shouldHideVideos()) {
-        for (id in G.visibilityOfVideoIDs) {
-            if (G.visibilityOfVideoIDs.hasOwnProperty(id)) {
+        for (id in G.visibilityOfVideos) {
+            if (G.visibilityOfVideos.hasOwnProperty(id)) {
                 //if (id !== videoIDAbove && id !== videoIDUnder) {
                 if (id !== videoToEnlarge) {
                     resetVideoDiv(id);
@@ -463,16 +463,16 @@ function calculateVisibilityOfVideoIDs(_scoreTime) {
     'use strict';
 
     var videoID, i, minX, maxX;
-    for (videoID in G.visibilityOfVideoIDs) {
-        //console.log(videoID + "                   " + G.visibilityOfVideoIDs[videoID]);
-        if (G.visibilityOfVideoIDs.hasOwnProperty(videoID)) {
-            G.visibilityOfVideoIDs[videoID] = false;
+    for (videoID in G.visibilityOfVideos) {
+        //console.log(videoID + "                   " + G.visibilityOfVideos[videoID]);
+        if (G.visibilityOfVideos.hasOwnProperty(videoID)) {
+            G.visibilityOfVideos[videoID] = false;
         }
     }
 
     for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
         if (_scoreTime >= G.allVideoSegments[i].x1 && _scoreTime <= G.allVideoSegments[i].x2) {
-            G.visibilityOfVideoIDs[G.allVideoSegments[i].videoID] = true;
+            G.visibilityOfVideos[G.allVideoSegments[i].videoID] = true;
         }
     }
 
@@ -481,7 +481,7 @@ function calculateVisibilityOfVideoIDs(_scoreTime) {
         maxX = Math.max(G.curves[i].points[0].x, G.curves[i].points[5].x);
 
         if (_scoreTime >= minX && _scoreTime <= maxX) {
-            G.visibilityOfVideoIDs[G.curves[i].videoID] = true;
+            G.visibilityOfVideos[G.curves[i].videoID] = true;
         }
     }
 }

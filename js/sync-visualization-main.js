@@ -56,11 +56,12 @@ function initializeVisualization(scoreId) {
 
     loadScoreInViewer(scoreId);
 
-    calculateAverageVelocity2(scoreId);
+    calculateSegmentVelocity(scoreId);
 
     computePlotElements(scoreId, G.syncPairs[scoreId]);
     computePlotDimensions();
     drawPlot(scoreId);
+
     initVideos(scoreId, G.syncPairs[scoreId]);
 }
 
@@ -190,7 +191,7 @@ function clearVideoAndPlotState() {
     G.allVideoSegments = [];
     G.curves = [];
     G.radiobuttons = [];
-    G.visibilityOfVideoIDs = {};
+    G.visibilityOfVideos = {};
     G.videoTimeMaps = {};
     G.videoStatus = {};
     G.maxPlotX = 0;
@@ -310,7 +311,7 @@ function computePlotDimensions() {
 function computePlotElements(scoreId, syncPairs) {
     'use strict';
 
-    var videoSegments = [], currSegment, nextSegment, curve;
+    var videoSegments = [];
 
     G.pageTimes = getPageTimes(scoreId);
 
@@ -327,15 +328,11 @@ function computePlotElements(scoreId, syncPairs) {
                 continue;
             }
 
-            if (!G.visibilityOfVideoIDs.hasOwnProperty(videoId)) {
-                G.visibilityOfVideoIDs[videoId] = false;
-            }
-            if (!G.videoTimeMaps.hasOwnProperty(videoId)) {
-                G.videoTimeMaps[videoId] =  alignment.localTimeMaps;
-            }
-            if (!G.videoStatus.hasOwnProperty(videoId)) {
-                G.videoStatus[videoId] = YT.PlayerState.PAUSED;
-            }
+            G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
+            G.videoTimeMaps[videoId] = G.videoTimeMaps[videoId] ? G.videoTimeMaps[videoId] : alignment.localTimeMaps;
+            G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
+
+            //TODO: do the same as above
             if (!G.videoStartPosition.hasOwnProperty(videoId)) {
                 G.videoStartPosition[videoId] = 0;
             }
@@ -346,35 +343,20 @@ function computePlotElements(scoreId, syncPairs) {
                 G.videoNumOfLoadingAttempts[videoId] = 0;
             }
 
-            //pairSyncData.localTimeMaps.forEach(function (segmentTimeMap) {
+            // iterating over video segments, creating their rendering data
             for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
                 confidence = Math.min(alignment.confidences[segment][0], alignment.confidences[segment][1]);
                 videoSegment = createVideoSegment(alignment.localTimeMaps[segment], videoId, segment, confidence);
-
                 videoSegments.push(videoSegment);
-
             }
 
             //videoSegments = sortRects(videoSegments);
 
             assignSegmentYCoordinates(videoSegments);
 
+            createSegmentConnections(videoSegments, videoId);
 
-            for (segment = 0; segment < videoSegments.length - 1; segment = segment + 1) {
-                currSegment = videoSegments[segment];
-                nextSegment = videoSegments[segment + 1];
-                curve = createCurve(currSegment, nextSegment, videoId);
-                G.curves.push(curve);
-            }
-
-            for (segment = 0; segment < videoSegments.length; segment = segment + 1) {
-                rbutton = {};
-                rbutton.videoID = videoId;
-                rbutton.segmentIndex = G.allVideoSegments.length + segment; // index in G.allVideoSegments array
-                rbutton.y = videoSegments[segment].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
-                G.radiobuttons.push(rbutton);
-                //console.log("Length: " + G.allVideoSegments.length + "    i: " + "     index: " + rbutton.index);
-            }
+            createSegmentSwitches(videoSegments, videoId);
 
             appendArrays(G.allVideoSegments, videoSegments);
         }

@@ -48,7 +48,7 @@ G.radiobuttons = [];
 
 G.rbIndex = {}; // maps radio button id to index (number from bottom to top)
 
-G.visibilityOfVideoIDs = {};        // maps videoId to the visibility of the corresponding video
+G.visibilityOfVideos = {};        // maps videoId to the visibility of the corresponding video
 G.videoTimeMaps = {};               // maps videoId to localTimeMaps
 G.videoStatus = {};                 // maps videoId to status
 G.videoStartPosition = {};          // maps videoId to start position

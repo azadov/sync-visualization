@@ -39,18 +39,37 @@ function assignSegmentYCoordinates(_arrayOfSortedRects) {
 
     _arrayOfSortedRects[0].y = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
 
+    // laying out consecutive segments on the same height, simultaneous or in reverse order on adjecent levels
     var i;
     for (i = 1; i < _arrayOfSortedRects.length; i = i + 1) {
-
         if (_arrayOfSortedRects[i - 1].x2 < _arrayOfSortedRects[i].x1) {
             _arrayOfSortedRects[i].y = _arrayOfSortedRects[i - 1].y;
-
         } else {
-            G.numberOfVideoSegmentLevels = G.numberOfVideoSegmentLevels + 1;
-
             _arrayOfSortedRects[i].y = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS);
-
+            G.numberOfVideoSegmentLevels = G.numberOfVideoSegmentLevels + 1;
         }
+    }
+}
+
+function createSegmentConnections(videoSegments, videoId) {
+    var segment, currSegment, nextSegment, curve;
+    for (segment = 0; segment < videoSegments.length - 1; segment = segment + 1) {
+        currSegment = videoSegments[segment];
+        nextSegment = videoSegments[segment + 1];
+        curve = createCurve(currSegment, nextSegment, videoId);
+        G.curves.push(curve);
+    }
+}
+
+function createSegmentSwitches(videoSegments, videoId) {
+    var segment, rbutton;
+    for (segment = 0; segment < videoSegments.length; segment = segment + 1) {
+        rbutton = {};
+        rbutton.videoID = videoId;
+        rbutton.segmentIndex = G.allVideoSegments.length + segment; // index in G.allVideoSegments array
+        rbutton.y = videoSegments[segment].y - CONSTANTS.SEGMENT_RECT_HEIGHT / 2;
+        G.radiobuttons.push(rbutton);
+        //console.log("Length: " + G.allVideoSegments.length + "    i: " + "     index: " + rbutton.index);
     }
 }
 
@@ -162,49 +181,6 @@ function areRBNeighbours(_firstRBID, _secondRBID) {
     }
 
     return [areNeighbours, firstAboveTheSecond];
-
-//    var firstRB, secondRB, currentRB, i, firstRBAboveTheSecond, rbAreNeighbours = true;
-//
-//    console.log("firstID:  " + _firstRBVideoID + "      firstIndex: " + _firstRBSegmentIndex);
-//    console.log("secondID:  " + _secondRBVideoID + "      secondIndex: " + _secondRBSegmentIndex);
-//    for (i = 0; i < G.radiobuttons.length; i = i + 1) {
-//        currentRB = G.radiobuttons[i];
-//        console.log(currentRB.videoID + "    " + currentRB.segmentIndex);
-////        if (currentRB.videoID === _firstRBVideoID) {
-////            console.log("yepVID");
-////        }
-////        if (currentRB.segmentIndex === _firstRBSegmentIndex) {
-////            console.log("yepIndex");
-////        }
-//        if ((currentRB.videoID === _firstRBVideoID) && (currentRB.segmentIndex === _firstRBSegmentIndex)) {
-//            console.log("firstVideoRB");
-//            firstRB = currentRB;
-//        }
-//
-//        if ((currentRB.videoID === _secondRBVideoID) && (currentRB.segmentIndex === _secondRBSegmentIndex)) {
-//            console.log("secondVideoRB");
-//            secondRB = currentRB;
-//        }
-//    }
-//
-//    if (firstRB.y > secondRB.y) {
-//        firstRBAboveTheSecond = true;
-//    } else {
-//        firstRBAboveTheSecond = false;
-//    }
-//
-//    for (i = 0; i < G.radiobuttons.length; i++) {
-//        currentRB = G.radiobuttons[i];
-//        if (firstRBAboveTheSecond) {
-//            if ((firstRB.y > currentRB.y) && (currentRB.y > secondRB.y)) {
-//                rbAreNeighbours = false;
-//            }
-//        } else {
-//            if ((firstRB.y < currentRB.y) && (currentRB.y < secondRB.y)) {
-//                rbAreNeighbours = false;
-//            }
-//        }
-//    }
 }
 
 /**
@@ -416,16 +392,6 @@ function createRadioButtons(_svg, _radiobuttons) {
         if (!G.rbIndex.hasOwnProperty((rbID))) {
             G.rbIndex[rbID] = i;
         }
-
-//        d3.select("g").append("line")
-//            .attr("class", "videoTopLine")
-//            .attr("x1", G.x_scale(0))
-//            .attr("y1", G.y_scale(_radiobuttons[i].y))
-//            .attr("x2", G.x_scale(G.maxPlotX))
-//            .attr("y2", G.y_scale(_radiobuttons[i].y))
-//            .attr("stroke-width", 1)
-//            .attr("stroke", "lightgrey")
-//            .attr("pointer-events", "none");
     }
 
 }
@@ -538,8 +504,8 @@ function removeMouseTrackLine(d) {
 
     var id;
     if (!$('#hideVideoDivs').prop('checked')) {
-        for (id in G.visibilityOfVideoIDs) {
-            if (G.visibilityOfVideoIDs.hasOwnProperty(id)) {
+        for (id in G.visibilityOfVideos) {
+            if (G.visibilityOfVideos.hasOwnProperty(id)) {
                 resetVideoDiv(id);
             }
         }
@@ -547,7 +513,7 @@ function removeMouseTrackLine(d) {
 }
 
 
-function calculateAverageVelocity2(scoreId) {
+function calculateSegmentVelocity(scoreId) {
     'use strict';
 
     G.velocities2[scoreId] = {};
@@ -595,7 +561,7 @@ function updateBinVelocities(segmentTimeMap) {
             continue;
         }
 
-        if (moment == 1) av.push([prevBin, velocity, tScore / G.velocityWindow - prevBin])
+        if (moment == 1) av.push([prevBin, velocity, tScore / G.velocityWindow - prevBin]);
         for (bin = prevBin; bin <= currentBin; bin++) {
             binIntervalShare = Math.min(tScore / G.velocityWindow, bin + 1) - Math.max(tScorePrev / G.velocityWindow, bin);
             av.push([bin, velocity, binIntervalShare]);
