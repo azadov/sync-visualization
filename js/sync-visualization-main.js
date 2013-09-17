@@ -58,6 +58,17 @@ function onAlignmentsFetched(scoreId) {
 }
 
 function initializeVisualization(scoreId) {
+
+    if (typeof YT === "undefined") {
+        setTimeout(function () {
+            initializeVisualization(scoreId);
+        }, 250);
+        console.log("waiting for YT API to load, retrying in 250ms");
+        return;
+    } else {
+        console.log("YT API loaded");
+    }
+
     console.log("interface for " + scoreId);
 
     clearVideoAndPlotState();
@@ -237,7 +248,6 @@ function computePlotElements(scoreId, syncPairs) {
 
     for (var videoId in syncPairs) {
         if (syncPairs.hasOwnProperty(videoId)) {
-
             videoSegments = [];
             var alignment = G.alignments.get(scoreId, videoId),
                 segment, videoSegment, confidence, rbutton;
@@ -249,7 +259,11 @@ function computePlotElements(scoreId, syncPairs) {
 
             G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
             G.videoTimeMaps[videoId] = G.videoTimeMaps[videoId] ? G.videoTimeMaps[videoId] : alignment.localTimeMaps;
-            G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
+//            if (typeof YT !== "undefined") {
+                G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
+//            } else {
+//                G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : 2;
+//            }
             G.videoStartPosition[videoId] = G.videoStartPosition[videoId] ? G.videoStartPosition[videoId] : 0;
             G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
             G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;
@@ -270,6 +284,8 @@ function computePlotElements(scoreId, syncPairs) {
             createSegmentSwitches(videoSegments, videoId);
 
             appendArrays(G.allVideoSegments, videoSegments);
+
+            console.log("video " + videoId + " is in process");
         }
     }
 }
