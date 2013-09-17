@@ -352,7 +352,7 @@ function computePlotElements(scoreId, syncPairs) {
 
             }
 
-            videoSegments = sortRects(videoSegments);
+            //videoSegments = sortRects(videoSegments);
 
             assignSegmentYCoordinates(videoSegments);
 
@@ -377,7 +377,6 @@ function computePlotElements(scoreId, syncPairs) {
         }
     }
 
-    calculateAverageVelocity();
 }
 
 

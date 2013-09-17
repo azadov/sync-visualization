@@ -578,7 +578,7 @@ function updateBinVelocities(segmentTimeMap) {
         if (tVideo > tVideoPrev) {
             velocity = (tScore - tScorePrev)/(tVideo - tVideoPrev);
         } else {
-            velocity = 1;
+            continue;
         }
 
         if (moment == 1) av.push([prevBin, velocity, tScore / G.velocityWindow - prevBin])
@@ -607,42 +607,6 @@ function averageBinVelocities(av) {
     }
     return binV;
 }
-
-
-function calculateAverageVelocity() {
-    'use strict';
-
-    var i, j, velocity = 0, numerator = 0, denominator = 0, sectionLength;
-
-    G.averageVelocity = [];
-    for (i = 0; i < G.velocities.length; i = i + 1) {
-        numerator = 0;
-        denominator = 0;
-        if (G.velocities[i] !== undefined) {
-            for (j = 0; j < G.velocities[i].length; j = j + 1) {
-                velocity = G.velocities[i][j][0];
-                sectionLength = G.velocities[i][j][1];
-                //console.log(velocity + "     " + sectionLength);
-                if (velocity !== undefined && sectionLength !== undefined) {
-                    numerator = numerator + velocity * sectionLength;
-                    denominator = denominator + sectionLength;
-                }
-            }
-            if (denominator != 0) {
-                velocity = numerator / denominator;
-            } else {
-                velocity = 0;
-            }
-        } else {
-            velocity = 0;
-        }
-
-        console.log(velocity);
-        G.averageVelocity.push(velocity);
-    }
-
-}
-
 
 function createVideoSegment(segmentTimeMap, videoID, segmentId, _conf) {
     'use strict';
