@@ -1,20 +1,25 @@
 var gui;
 
-function main() {
+// we have four modules that control functionality in our application
+// SCORE_MANAGER, VIDEO_MANAGER, PLOT, CONTROLS, CONTROLLER;
 
-    // needed for IE to have browser console.log
-    if (!window.console) {window.console = {}; window.console.log = function () {}; }
+
+// they communicate via an interface
+var MessageBus;
+
+var MessageBus = (function() {
+    var me = {};
+
+    return me;
+}());
+
+function main() {
 
     gui = G.gui;
 
-    initYouTubeAPI();
-    initScoreViewer();
+    CONTROLLER.init();
 
-    configureScoreViewer();
 
-    bindScoreFilterInputWithFilteringAction();
-
-    initQualityFilterDropdown();
 
     loadAlignmentList(function onSuccess() {
 
@@ -33,17 +38,21 @@ main();
 
 function prepareVideosForScore(scoreId) {
     console.log("preparing videos for score " + scoreId);
-    checkVideoAvailability(scoreId, function() {onVideoAvailabilityChecked(scoreId);});
+    checkVideoAvailabilities(scoreId, function () {
+        onVideoAvailabilityChecked(scoreId);
+    });
 }
 
 function onVideoAvailabilityChecked(scoreId) {
     console.log("video availability checked for score " + scoreId);
     console.log(G.videos);
-    getAlignments(scoreId, function() {onAlignmentsFetched(scoreId)();});
+    getAlignments(scoreId, function () {
+        onAlignmentsFetched(scoreId)();
+    });
 }
 
 function onAlignmentsFetched(scoreId) {
-    return function() {
+    return function () {
         initializeVisualization(scoreId);
     };
 }
@@ -67,8 +76,7 @@ function initializeVisualization(scoreId) {
 
 function videoIsFilteredOut(scoreId, videoId) {
     return G.videos[videoId].getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
-        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() ||
-        !G.videos[videoId].getAvailability();
+        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() || !G.videos[videoId].getAvailability();
 }
 
 function populateScoreSelectionDropdown() {
@@ -80,13 +88,6 @@ function populateScoreSelectionDropdown() {
     }
 }
 
-function initYouTubeAPI() {
-    var tag = document.createElement('script'), firstScriptTag;
-    tag.src = "https://www.youtube.com/iframe_api";
-
-    firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-}
 
 function initScoreViewer() {
     var pnsv = document.createElement('script');
@@ -105,44 +106,17 @@ function configureScoreViewer() {
 }
 
 
-
-
-// example of loading a viewer in an iframe as an anonymous function call. the fn can be made reusable of course.
-
-function newViewerAPIExperiment() {
-    (function(p) {
-        $('<iframe id="' + p.rootElement + '_iframe" src="http://www.peachnote.com/viewer-embedded.html?'
-            + 'scoreId=' + p.scoreId
-            + '&width=' + p.widgetWidth
-            + '&height=' + p.widgetHeight
-            + '" height=' + (p.widgetHeight + 2) + ' width=' + (p.widgetWidth + 4)
-            + ' frameborder=0 />')
-            .appendTo('#' + p.rootElement)
-    })({
-        'rootElement':'PeachnoteViewerContainer2',
-        'widgetHeight': 590,
-        'widgetWidth': 450,
-        'scoreId': 'IMSLP03796'
-    });
-
-// example of communication with the viewer in the iframe
-    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq =
-        document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq || [];
-    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq.push(['loadPage', 2]);
-}
-
-
 function bindScoreFilterInputWithFilteringAction() {
 
-    gui.addScoreDropdownChangeCallback(function() {
+    gui.addScoreDropdownChangeCallback(function () {
         prepareVideosForScore(gui.getSelectedScoreId())
     });
 
-    gui.addAlignmentQualityChangeCallback(function() {
+    gui.addAlignmentQualityChangeCallback(function () {
         initializeVisualization(gui.getSelectedScoreId());
     });
 
-    gui.addVideoTitleChangeCallback(function() {
+    gui.addVideoTitleChangeCallback(function () {
         initializeVisualization(gui.getSelectedScoreId());
     });
 }
@@ -176,8 +150,8 @@ function loadAlignmentList(onSuccess, onFailure) {
             G.syncPairs[scoreId][videoId] = {alignmentFileName: alignmentFileName, confidence: confidence};
         }
     })
-        .done(function() { onSuccess();})
-        .fail(function() { onFailure();})
+        .done(onSuccess)
+        .fail(onFailure)
     ;
 }
 
@@ -201,11 +175,6 @@ function clearVideoAndPlotState() {
     G.videoNumOfLoadingAttempts = {};
     G.averageVelocity = [];
     G.velocities = [];
-}
-
-
-function loadScoreInViewer(scoreId) {
-    _pnq.push(['loadScore', scoreId]);
 }
 
 
@@ -246,7 +215,7 @@ function getAlignments(scoreId, onAlignmentsFetched) {
     }
 }
 
-function checkVideoAvailability(scoreId, onDone) {
+function checkVideoAvailabilities(scoreId, onDone) {
     var videoProperties = G.syncPairs[scoreId],
         counter = new FiringCounter(Object.keys(videoProperties).length, onDone),
         videoId;
@@ -258,55 +227,6 @@ function checkVideoAvailability(scoreId, onDone) {
     }
 }
 
-
-function checkYouTubeVideoAvailability(videoId, counter) {
-
-    if (typeof G.videos[videoId].getAvailability() !== 'undefined') {
-        counter.increment();
-        return;
-    }
-
-    var url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
-    $.getJSON(url)
-        .done(function (data) {
-            G.videos[videoId].setAvailability(true);
-
-            if (data['entry'].hasOwnProperty("app$control") &&
-                data['entry']['app$control'].hasOwnProperty("yt$state") &&
-                data['entry']['app$control']['yt$state']['$t'] === "This video is not available in your region.") {
-                console.log("video " + videoId + " is not available");
-                G.videos[videoId].setAvailability(false);
-            } else {
-                console.log("video " + videoId + " is available");
-            }
-
-            G.videos[videoId].setTitle(data['entry']['title']['$t']);
-            counter.increment();
-        })
-        .fail(function(jqxhr, textStatus, error) {
-            G.videos[videoId].setTitle("Data not available");
-            G.videos[videoId].setAvailability(true);
-            counter.increment();
-        });
-}
-
-function computePlotDimensions() {
-    'use strict';
-
-    var pt;
-    for (pt in G.pageTimes) {
-        if (G.pageTimes.hasOwnProperty(pt)) {
-            if (G.maxPlotX < G.pageTimes[pt]) {
-                G.maxPlotX = G.pageTimes[pt];
-            }
-        }
-    }
-    G.x_scale.domain([0, G.maxPlotX]);
-    G.minPlotY = 0;
-    G.maxPlotY = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS) + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
-    G.y_scale.domain([G.minPlotY, G.maxPlotY]);
-    //console.log("extremes: " + G.maxPlotX_basis + "     " + G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT+CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS));
-}
 
 function computePlotElements(scoreId, syncPairs) {
     'use strict';
@@ -322,8 +242,7 @@ function computePlotElements(scoreId, syncPairs) {
             var alignment = G.alignments.get(scoreId, videoId),
                 segment, videoSegment, confidence, rbutton;
 
-            if (!G.videos.hasOwnProperty(videoId) ||
-                !G.videos[videoId].getAvailability() ||
+            if (!G.videos.hasOwnProperty(videoId) || !G.videos[videoId].getAvailability() ||
                 videoIsFilteredOut(scoreId, videoId)) {
                 continue;
             }
@@ -353,10 +272,7 @@ function computePlotElements(scoreId, syncPairs) {
             appendArrays(G.allVideoSegments, videoSegments);
         }
     }
-
 }
-
-
 
 
 function updatePosition() {
@@ -367,27 +283,29 @@ function updatePosition() {
         pageAndTime = getPageAndTimeForVideoTime(videoTime, G.currentPlayingYTVideoID),
         pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + G.foreRunningTime, G.currentPlayingYTVideoID),
         page,
-        pageTime,
+        scoreTime,
         normalizedPageTime,
         pagePlus,
         rbID;
 
     //if (typeof pageAndTime == "undefined") return;
-    if (pageAndTime === undefined) {return; }
+    if (pageAndTime === undefined) {
+        return;
+    }
 
     page = pageAndTime.page;
-    pageTime = pageAndTime.pageTime;
-    normalizedPageTime = getNormalizedTime(pageAndTime.page, pageAndTime.pageTime);
+    scoreTime = pageAndTime.scoreTime;
+    normalizedPageTime = getNormalizedTime(pageAndTime.page, pageAndTime.scoreTime);
     pagePlus = pageAndTimePlus ? pageAndTimePlus.page : pageAndTime.page;
 
-    //console.log("page: " + page + " pageTime: " + pageTime);
+    //console.log("page: " + page + " scoreTime: " + scoreTime);
 
     if (pagePlus !== G.prevPage) {
         _pnq.push(['loadPage', pagePlus - 1]);
         G.prevPage = pagePlus;
     }
 
-    updateVideoTrackLine(pageTime);
+    updateVideoTrackLine(scoreTime);
 
     _pnq.push(["clearMeasureHighlightings"]);
     _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
@@ -397,6 +315,4 @@ function updatePosition() {
         document.getElementById(rbID).checked = true;
         document.getElementById(rbID).focus();
     }
-    //document.getElementById(rbID).focus(); <- not here, because if video plays you will have no possibility to select another
-    //                                          IMSLP-ID in the check box
 }

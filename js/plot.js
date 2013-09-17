@@ -109,7 +109,7 @@ function rbClickHandler(d) {
                 if (pageTime === undefined) {
                     scoreTime = 0;
                 } else {
-                    scoreTime = pageTime.pageTime;
+                    scoreTime = pageTime.scoreTime;
                 }
 
                 lastRBVideoID = videoID;
@@ -453,7 +453,8 @@ function updateVideoTrackLine(_scorePos) {
 
     var svgContainer;
     if (G.videoTrackLineExist) {
-        d3.select(".videoTrackLine").attr("x1", G.x_scale(_scorePos))
+        d3.select(".videoTrackLine")
+            .attr("x1", G.x_scale(_scorePos))
             .attr("y1", G.y_scale(0))
             .attr("x2", G.x_scale(_scorePos))
             .attr("y2", G.y_scale(G.maxPlotY));
@@ -650,6 +651,25 @@ function createCurve(currSegment, nextSegment, videoID) {
     //curve.timeMap = timeMap;
 
     return curve;
+}
+
+
+function computePlotDimensions() {
+    'use strict';
+
+    var pt;
+    for (pt in G.pageTimes) {
+        if (G.pageTimes.hasOwnProperty(pt)) {
+            if (G.maxPlotX < G.pageTimes[pt]) {
+                G.maxPlotX = G.pageTimes[pt];
+            }
+        }
+    }
+    G.x_scale.domain([0, G.maxPlotX]);
+    G.minPlotY = 0;
+    G.maxPlotY = G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS) + CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS / 2;
+    G.y_scale.domain([G.minPlotY, G.maxPlotY]);
+    //console.log("extremes: " + G.maxPlotX_basis + "     " + G.numberOfVideoSegmentLevels * (CONSTANTS.SEGMENT_RECT_HEIGHT+CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS));
 }
 
 

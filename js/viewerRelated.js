@@ -1,4 +1,7 @@
 
+function loadScoreInViewer(scoreId) {
+    _pnq.push(['loadScore', scoreId]);
+}
 
 function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
     'use strict';
@@ -136,18 +139,18 @@ function getPageAndTimeForVideoTime(time, _videoID) {
     segment = segmentScoreTime[0];
     scoreTime = timeMap[segment][0][segmentScoreTime[1]];
 //console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
-    if (time < timeMap[segment][1][0]) {return {"page": 0, "pageTime": 0}; }
+    if (time < timeMap[segment][1][0]) {return {"page": 0, "scoreTime": 0}; }
 
     for (i in G.pageTimes) {
         if (G.pageTimes.hasOwnProperty(i)) {
             page = i;
             pageTime = G.pageTimes[i];
             if (pageTime >= scoreTime) {
-                return {"page": (page - 1), "pageTime": scoreTime};
+                return {"page": (page - 1), "scoreTime": scoreTime};
             }
         }
     }
-    return {"page": page, "pageTime": scoreTime};
+    return {"page": page, "scoreTime": scoreTime};
 }
 
 function getSegmentScoreTime(ytTime, _videoID) {
@@ -224,7 +227,7 @@ function updateScorePosition(d) {
     console.log("update score position");
     var pageAndTime = getPageAndTime(G.x_scale.invert(d3.mouse(this)[0])),
         page = pageAndTime.page,
-        pageTime = pageAndTime.pageTime,
+        pageTime = pageAndTime.scoreTime,
         normalizedPageTime = getNormalizedTime(page, pageTime),
         timeInScore, timeInVideo;
 
@@ -246,4 +249,30 @@ function updateScorePosition(d) {
             loadVideo(G.videoIDNextToCursor, G.videoIDNextToCursor);
         }
     }
+}
+
+
+
+// example of loading a viewer in an iframe as an anonymous function call. the fn can be made reusable of course.
+
+function newViewerAPIExperiment() {
+    (function(p) {
+        $('<iframe id="' + p.rootElement + '_iframe" src="http://www.peachnote.com/viewer-embedded.html?'
+            + 'scoreId=' + p.scoreId
+            + '&width=' + p.widgetWidth
+            + '&height=' + p.widgetHeight
+            + '" height=' + (p.widgetHeight + 2) + ' width=' + (p.widgetWidth + 4)
+            + ' frameborder=0 />')
+            .appendTo('#' + p.rootElement)
+    })({
+        'rootElement':'PeachnoteViewerContainer2',
+        'widgetHeight': 590,
+        'widgetWidth': 450,
+        'scoreId': 'IMSLP03796'
+    });
+
+// example of communication with the viewer in the iframe
+    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq =
+        document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq || [];
+    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq.push(['loadPage', 2]);
 }

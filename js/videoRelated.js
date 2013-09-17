@@ -225,17 +225,17 @@ function loadVideo(_videoContainerID, _videoID) {
 function initVideo(_videoContainerID, _videoID) {
     'use strict';
 
-    var div = G.gui.getThumbnailDiv(_videoContainerID, _videoID);
+    var thumbnailDiv = G.gui.getThumbnailDiv(_videoContainerID, _videoID);
 
-    document.getElementById(_videoContainerID).appendChild(div);
+    document.getElementById(_videoContainerID).appendChild(thumbnailDiv);
 
-    G.ytPlayerThumbnails[_videoID] = div;
+    G.ytPlayerThumbnails[_videoID] = thumbnailDiv;
 }
 
 function initVideos(scoreId, alignedVideos) {
     'use strict';
 
-    if (!YT) {
+    if (typeof YT === 'undefined') {
         setTimeout(function () {
             initVideos(scoreId, alignedVideos);
         }, 250);
@@ -519,4 +519,36 @@ function resetVideoDivCurve(d) {
     'use strict';
 
     resetVideoDiv(d.videoID);
+}
+
+
+function checkYouTubeVideoAvailability(videoId, counter) {
+
+    if (typeof G.videos[videoId].getAvailability() !== 'undefined') {
+        counter.increment();
+        return;
+    }
+
+    var url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
+    $.getJSON(url)
+        .done(function (data) {
+            G.videos[videoId].setAvailability(true);
+
+            if (data['entry'].hasOwnProperty("app$control") &&
+                data['entry']['app$control'].hasOwnProperty("yt$state") &&
+                data['entry']['app$control']['yt$state']['$t'] === "This video is not available in your region.") {
+                console.log("video " + videoId + " is not available");
+                G.videos[videoId].setAvailability(false);
+            } else {
+                console.log("video " + videoId + " is available");
+            }
+
+            G.videos[videoId].setTitle(data['entry']['title']['$t']);
+            counter.increment();
+        })
+        .fail(function(jqxhr, textStatus, error) {
+            G.videos[videoId].setTitle("Data not available");
+            G.videos[videoId].setAvailability(true);
+            counter.increment();
+        });
 }
