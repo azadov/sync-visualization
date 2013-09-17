@@ -169,6 +169,7 @@ function onPlayerStateChange(event) {
     console.log("OnPlayerStateChange: " + newState);
 
     if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
+        for (var item in event.target) {console.log(item);}
         if (G.currentPlayingYTVideoID !== event.target.getVideoData().video_id) {
             G.lastPlayedYTVideoID = G.currentPlayingYTVideoID;
             G.currentPlayingYTVideoID = event.target.getVideoData().video_id;
@@ -235,7 +236,7 @@ function initVideo(_videoContainerID, _videoID) {
 function initVideos(scoreId, alignedVideos) {
     'use strict';
 
-    if (!YT) {
+    if (typeof YT === "undefined") {
         setTimeout(function () {
             initVideos(scoreId, alignedVideos);
         }, 250);
