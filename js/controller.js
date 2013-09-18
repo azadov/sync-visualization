@@ -24,8 +24,7 @@ var CONTROLLER = (function(params) {
         // needed for IE to have browser console.log
         if (!window.console) {
             window.console = {};
-            window.console.log = function () {
-            };
+            window.console.log = function (msg) {};
         }
     }
 

@@ -1,3 +1,10 @@
+function initScoreViewer() {
+    var pnsv = document.createElement('script');
+    pnsv.type = 'text/javascript';
+    pnsv.async = true;
+    pnsv.src = 'http://pchnote.appspot.com/scoreviewer/scoreviewer.nocache.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(pnsv);
+}
 
 function loadScoreInViewer(scoreId) {
     _pnq.push(['loadScore', scoreId]);
@@ -78,10 +85,14 @@ function getYtOffsetByScoreTime(videoID, time) {
 
     var timeMap = G.videoTimeMaps[videoID], s, i;
     for (s = 0; s < timeMap.length; s = s + 1) {
-        if (timeMap[s][0][0] > time) {continue; }
+        if (timeMap[s][0][0] > time) {
+            continue;
+        }
         for (i in timeMap[s][0]) {
             if (timeMap[s][0].hasOwnProperty(i)) {
-                if (timeMap[s][0][i] >= time) {return [s, i]; }
+                if (timeMap[s][0][i] >= time) {
+                    return [s, i];
+                }
             }
         }
     }
@@ -134,12 +145,16 @@ function getPageAndTimeForVideoTime(time, _videoID) {
         segment, scoreTime,
         i;
 
-    if (segmentScoreTime === undefined) {return undefined; }
+    if (segmentScoreTime === undefined) {
+        return undefined;
+    }
 
     segment = segmentScoreTime[0];
     scoreTime = timeMap[segment][0][segmentScoreTime[1]];
 //console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
-    if (time < timeMap[segment][1][0]) {return {"page": 0, "scoreTime": 0}; }
+    if (time < timeMap[segment][1][0]) {
+        return {"page": 0, "scoreTime": 0};
+    }
 
     for (i in G.pageTimes) {
         if (G.pageTimes.hasOwnProperty(i)) {
@@ -162,12 +177,14 @@ function getSegmentScoreTime(ytTime, _videoID) {
     for (s = 0; s < timeMap.length; s = s + 1) {
         //if (timeMap[s][1][0] > ytTime) {continue; }
         //console.log("segm: " + s + "   1st: " + timeMap[s][1][0] + "   ytime: " + ytTime);
-        if ( timeMap[s][1][0] <= ytTime && ytTime < timeMap[s][1][timeMap[s][1].length - 1] ){
+        if (timeMap[s][1][0] <= ytTime && ytTime < timeMap[s][1][timeMap[s][1].length - 1]) {
             out = [s, 0];
             for (i in timeMap[s][1]) {
                 if (timeMap[s][1].hasOwnProperty(i)) {
                     //if (timeMap[s][1][i] >= ytTime) return [s, i];
-                    if (timeMap[s][1][i] <= ytTime) {out = [s, i]; }
+                    if (timeMap[s][1][i] <= ytTime) {
+                        out = [s, i];
+                    }
                 }
             }
             //console.log("time: " + ytTime + "      segm: " + out[0] + "    scoretime: " + out[1]);
@@ -252,27 +269,23 @@ function updateScorePosition(d) {
 }
 
 
-
 // example of loading a viewer in an iframe as an anonymous function call. the fn can be made reusable of course.
 
-function newViewerAPIExperiment() {
-    (function(p) {
-        $('<iframe id="' + p.rootElement + '_iframe" src="http://www.peachnote.com/viewer-embedded.html?'
-            + 'scoreId=' + p.scoreId
-            + '&width=' + p.widgetWidth
-            + '&height=' + p.widgetHeight
-            + '" height=' + (p.widgetHeight + 2) + ' width=' + (p.widgetWidth + 4)
-            + ' frameborder=0 />')
-            .appendTo('#' + p.rootElement)
-    })({
-        'rootElement':'PeachnoteViewerContainer2',
-        'widgetHeight': 590,
-        'widgetWidth': 450,
-        'scoreId': 'IMSLP03796'
-    });
 
-// example of communication with the viewer in the iframe
-    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq =
-        document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq || [];
-    document.getElementById('PeachnoteViewerContainer2_iframe').contentWindow._pnq.push(['loadPage', 2]);
-}
+
+
+var viewer = PeachnoteViewer.initializeViewer(
+    {
+        'rootElement': 'PeachnoteViewerContainer2'
+        ,'widgetHeight': 590
+        ,'widgetWidth': 450
+        ,'loadScore': "IMSLP00001"  // optional
+    },
+    function (viewer) {
+        console.log("viewer instance loaded");
+        viewer.loadScore("IMSLP00001");   // possible
+    }
+);
+viewer.setScoreLoadCallback(function(scoreId) {
+    console.log(scoreId + " is loaded");
+});

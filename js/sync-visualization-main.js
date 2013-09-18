@@ -100,14 +100,6 @@ function populateScoreSelectionDropdown() {
 }
 
 
-function initScoreViewer() {
-    var pnsv = document.createElement('script');
-    pnsv.type = 'text/javascript';
-    pnsv.async = true;
-    pnsv.src = 'http://pchnote.appspot.com/scoreviewer/scoreviewer.nocache.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(pnsv);
-}
-
 function configureScoreViewer() {
     window._pnq = window._pnq || [];
     _pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
