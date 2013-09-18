@@ -83,6 +83,7 @@ function initializeVisualization(scoreId) {
     drawPlot(scoreId);
 
     initVideos(scoreId, G.syncPairs[scoreId]);
+    preloadVideos();
 }
 
 function videoIsFilteredOut(scoreId, videoId) {
@@ -251,11 +252,11 @@ function computePlotElements(scoreId, syncPairs) {
 
             G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
             G.videoTimeMaps[videoId] = G.videoTimeMaps[videoId] ? G.videoTimeMaps[videoId] : alignment.localTimeMaps;
-//            if (typeof YT !== "undefined") {
+            if (typeof YT.PlayerState !== "undefined") {
                 G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
-//            } else {
-//                G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : 2;
-//            }
+            } else {
+                G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : 2;
+            }
             G.videoStartPosition[videoId] = G.videoStartPosition[videoId] ? G.videoStartPosition[videoId] : 0;
             G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
             G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;

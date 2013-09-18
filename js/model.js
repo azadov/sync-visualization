@@ -56,11 +56,14 @@ G.videoReadiness = {};              // maps videoId to 1 (if video loaded) or 0 
 G.videoNumOfLoadingAttempts = {};   // maps videoId to number of loading attempts
 G.videoLoadingInterval = {};        // maps videoId to interval
 
+G.videoPreLoadingInterval = 0;  // interval
+
 G.videos = {};
 G.alignments = new Alignments();
 
 G.ytPlayers = {};
 G.ytPlayerThumbnails = {};
+G.ytPreloadedPlayers = {};
 
 G.mouseTrackLineExist = false;
 G.videoTrackLineExist = false;
@@ -69,7 +72,7 @@ G.currentPlayingYTVideoID = "";
 G.lastPlayedYTVideoID = "";
 G.videoIDNextToCursor = "";
 G.segmentNextToCursor = {};
-G.loopId = 0;
+G.loopId = 0;   // interval that works when video is playing
 G.prevPage = 0;
 G.foreRunningTime = 2.0;
 

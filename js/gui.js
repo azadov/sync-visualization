@@ -15,6 +15,7 @@ function GUI() {
     this.plotContainer = $('#plotContainer');
     this.hideVideosCheckbox = $('#hideVideoDivs');
     this.segmentQuality = $("#segmQual");
+    this.videoPreloadContainer = $('#videosPreloadContainer');
 }
 
 /**
@@ -73,6 +74,14 @@ GUI.prototype.resetScoreDOM = function() {
     this.videoContainer.empty();
     this.plotContainer.empty();
 };
+
+GUI.prototype.getVideoContainer = function() {
+    return this.videoContainer;
+}
+
+GUI.prototype.getVideoPreloadContainer = function() {
+    return this.videoPreloadContainer;
+}
 
 GUI.prototype.getThumbnailDiv = function(_videoContainerID, _videoID) {
     // Thease are to position the play button centrally.

@@ -54,6 +54,13 @@
             font-size: 14px
         }
 
+        #videosPreloadContainer {
+            position:absolute;
+            left: -400px;
+            width: 400px
+        }
+
+
     </style>
 </head>
 
@@ -73,6 +80,7 @@
 <!-- not in form, because of Enter-Key -->
 Filter: <input id="videoTitelFilter" type="text">
 
+
 <div>
     <div id="blaha">
         <div id="plotContainer"> </div>
@@ -87,6 +95,8 @@ Filter: <input id="videoTitelFilter" type="text">
     <div id="PeachnoteViewerContainer2"></div>
 
 </div>
+
+<div id="videosPreloadContainer"></div>
 
 <script src="./js/alignment.js"></script>
 <script src="./js/gui.js"></script>
