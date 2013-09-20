@@ -12,7 +12,7 @@ CONSTANTS.VIDEO_LOADING_STATUS_READY = 2;
 
 CONSTANTS.VIDEO_LOADING_WAITING_TIME = 4000; // 4 sec
 
-CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY = 0;
+CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY = 0;   // thumbnail
 CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY = 1;
 
 var G = {};
@@ -46,7 +46,6 @@ G.minPlotY = 0;
 G.maxPlotY = 0;
 
 G.syncPairs = {};          // list of file names of video syncs for a scoreId
-G.pageTimes = [];
 
 G.defaultScoreID = "IMSLP00001";
 G.scoreSyncFileNames = [];

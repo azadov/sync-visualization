@@ -148,7 +148,7 @@ var CONTROLLER = (function(params) {
         calculateSegmentVelocity(scoreId);
 
         computePlotElements(scoreId, G.syncPairs[scoreId]);
-        computePlotDimensions();
+        computePlotDimensions(scoreId);
         drawPlot(scoreId);
 
         initVideos(scoreId, G.syncPairs[scoreId]);

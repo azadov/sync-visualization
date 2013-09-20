@@ -233,8 +233,9 @@ function createPageTicks(_svg, _pageTimes) {
     'use strict';
 
     var key, betterLabelShift;
+    console.log("init page times");
     for (key in _pageTimes) {
-        //console.log("page: " + key);
+        console.log("page: " + key);
         if (_pageTimes.hasOwnProperty(key)) {
             betterLabelShift = (0 - - key) > 9 ? G.labelShift : G.labelShift / 2;
             _svg.append("text")
@@ -633,14 +634,14 @@ function createCurve(currSegment, nextSegment, videoID) {
 }
 
 
-function computePlotDimensions() {
+function computePlotDimensions(_scoreId) {
     'use strict';
 
-    var pt;
-    for (pt in G.pageTimes) {
-        if (G.pageTimes.hasOwnProperty(pt)) {
-            if (G.maxPlotX < G.pageTimes[pt]) {
-                G.maxPlotX = G.pageTimes[pt];
+    var pt, pageTimes = SCORE_MANAGER.getPageTimes(_scoreId);
+    for (pt in pageTimes) {
+        if (pageTimes.hasOwnProperty(pt)) {
+            if (G.maxPlotX < pageTimes[pt]) {
+                G.maxPlotX = pageTimes[pt];
             }
         }
     }
@@ -670,7 +671,7 @@ function drawPlot(scoreId) {
         .on("mousemove", showSuitableVideoDivsForCurrentMousePosition)
     ;
 
-    createPageTicks(svg, G.pageTimes);
+    createPageTicks(svg, SCORE_MANAGER.getPageTimes(scoreId));
 
     createAlignmentSegmentRepresentation(svg, G.allVideoSegments, scoreId);
 

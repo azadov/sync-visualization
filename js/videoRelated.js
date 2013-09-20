@@ -1,6 +1,8 @@
 function enlargeVideoDiv(_videoID) {
     'use strict';
 
+    if (_videoID === "") return;
+
     var elementToEnlarge, secondElementToEnlarge, thumbnail, vID, someVideoPlaying = false,
         newWidth = CONSTANTS.PLAYING_VIDEO_WIDTH,
         newHeight = CONSTANTS.PLAYING_VIDEO_HEIGHT,
@@ -45,6 +47,8 @@ function enlargeVideoDiv(_videoID) {
 
 function resetVideoDiv(_videoID) {
     'use strict';
+
+    if (_videoID === "") return;
 
     var elementToReset, secondElementToReset, thumbnail,
         pw = Math.ceil(CONSTANTS.VIDEO_WIDTH / 2 - 38.5),
@@ -226,6 +230,7 @@ function onPlayerStateChange(event) {
 
     console.log("OnPlayerStateChange: " + "   " + event.target.getVideoData().video_id + "   " + newState);
 
+
     if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
         if (G.currentPlayingYTVideoID !== event.target.getVideoData().video_id) {
             G.lastPlayedYTVideoID = G.currentPlayingYTVideoID;
@@ -260,7 +265,7 @@ function onPlayerStateChange(event) {
         } else {
             deleteInterval = true;
         }
-
+        //console.log("video to reset: " + G.lastPlayedYTVideoID);
         resetVideoDiv(G.lastPlayedYTVideoID);
     }
 
@@ -532,6 +537,7 @@ function showSuitableVideoDivsForCurrentMousePosition() {
             if (G.visibilityOfVideos.hasOwnProperty(id)) {
                 //if (id !== videoIDAbove && id !== videoIDUnder) {
                 if (id !== videoToEnlarge) {
+                    //console.log("video to reset: " + id);
                     resetVideoDiv(id);
                 }
             }

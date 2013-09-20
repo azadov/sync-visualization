@@ -79,8 +79,6 @@ function clearVideoAndPlotState() {
 function computePlotElements(scoreId, syncPairs) {
     'use strict';
 
-   
-
     for (var videoId in syncPairs) {
         if (syncPairs.hasOwnProperty(videoId)) {
             computePlotElementsForVideo(scoreId, videoId);

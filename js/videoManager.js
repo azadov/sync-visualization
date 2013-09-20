@@ -44,12 +44,12 @@ var VIDEO_MANAGER = (function (me) {
 
     me.updateVideoPosition = function (videoTime) {
         if (G.videoIDNextToCursor !== "") {
-            if (G.ytPlayers.hasOwnProperty(G.videoIDNextToCursor)) {
+            if (G.videos[G.videoIDNextToCursor].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
 
                 G.ytPlayers[G.videoIDNextToCursor].seekTo(Math.max(0, videoTime));
                 G.ytPlayers[G.videoIDNextToCursor].playVideo();
 
-            } else if (G.ytPlayerThumbnails.hasOwnProperty(G.videoIDNextToCursor)) {
+            } else if (G.videos[G.videoIDNextToCursor].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
                 G.videoStartPosition[G.videoIDNextToCursor] = videoTime;
                 loadVideo(G.videoIDNextToCursor, G.videoIDNextToCursor);
