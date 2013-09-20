@@ -18,8 +18,8 @@ var PeachnoteViewer = (function (me) {
          * a stub that can later be modified by user.
          * @param scoreId
          */
-        this.scoreLoadedCallback = function(scoreId) {};
-
+        this.scoreLoadedCallback = function(event) {};
+        this.measureClickCallback = function(event) {};
 
         var iFrameUrl = 'http://www.peachnote.com/viewer-embedded.html?'
             + '&width=' + params.widgetWidth
@@ -42,7 +42,7 @@ var PeachnoteViewer = (function (me) {
                     onViewerMessage(that, message, origin);
                 },
                 onReady: function () {
-                    onLoaded(that);
+                    if (typeof onLoaded === 'function') onLoaded(that);
                 }
             });
         }
@@ -58,8 +58,10 @@ var PeachnoteViewer = (function (me) {
      */
     function onViewerMessage(viewer, message, origin) {
         var m = JSON.parse(message);
-        if (m.type == "scoreLoaded") {
-            viewer.scoreLoadedCallback(m.scoreId);
+        if ("scoreLoaded" == m.type) {
+            viewer.scoreLoadedCallback(m);
+        } else if ("measureClick" == m.type) {
+            viewer.measureClickCallback(m);
         }
     }
 
@@ -70,11 +72,25 @@ var PeachnoteViewer = (function (me) {
     Viewer.prototype.loadScore = function (scoreId) {
         this.socket.postMessage('["loadScore", "' + scoreId + '"]');
     };
-
+    Viewer.prototype.loadPage = function(page) {
+        this.socket.postMessage('["loadPage", "' + page + '"]');
+    };
+    Viewer.prototype.clearMeasureHighlightings = function() {
+        this.socket.postMessage('["clearMeasureHighlightings"]');
+    };
+    Viewer.prototype.highlightMeasureAtNormalizedTime = function(time, page, exclusive) {
+        this.socket.postMessage('["highlightMeasureAtNormalizedTime", ' + time + ', ' + page + ', ' + exclusive + ']');
+    };
+    Viewer.prototype.highlightMeasure = function(measureNumber, page) {
+        this.socket.postMessage('["highlightMeasure", ' + measureNumber + ', ' + page + ']');
+    };
 
     Viewer.prototype.setScoreLoadCallback = function(callback) {
          this.scoreLoadedCallback = callback;
-    }
+    };
+    Viewer.prototype.setMeasureClickCallback = function(callback) {
+        this.measureClickCallback = callback;
+    };
 
 
     me.initializeViewer = function (params, onLoaded) {

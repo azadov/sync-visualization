@@ -235,7 +235,7 @@ function onPlayerStateChange(event) {
             }
         }
         clearInterval(G.loopId);
-        G.loopId = setInterval(updatePosition, 500);
+        G.loopId = setInterval(function() {CONTROLLER.updatePosition();}, 500);
 
         //console.log("LastPlayedVideo: " + G.lastPlayedYTVideoID + "     current: " + G.currentPlayingYTVideoID);
 
@@ -455,7 +455,7 @@ function showSuitableVideoDivsForCurrentMousePosition() {
         videoToEnlarge = "";
 
     //console.log("hide video ID " + currentMouseXPoint);
-    calculateVisibilityOfVideoIDs(currentMouseXPoint);
+    calculateVisibilityOfVideos(currentMouseXPoint);
 
     if (gui.shouldHideVideos()) {
         showAndHideVideos();
@@ -537,7 +537,7 @@ function showSuitableVideoDivsForCurrentMousePosition() {
     G.videoIDNextToCursor = videoToEnlarge;
 }
 
-function calculateVisibilityOfVideoIDs(_scoreTime) {
+function calculateVisibilityOfVideos(_scoreTime) {
     'use strict';
 
     var videoID, i, minX, maxX;
@@ -599,34 +599,3 @@ function resetVideoDivCurve(d) {
     resetVideoDiv(d.videoID);
 }
 
-
-function checkYouTubeVideoAvailability(videoId, counter) {
-
-    if (typeof G.videos[videoId].getAvailability() !== 'undefined') {
-        counter.increment();
-        return;
-    }
-
-    var url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
-    $.getJSON(url)
-        .done(function (data) {
-            G.videos[videoId].setAvailability(true);
-
-            if (data['entry'].hasOwnProperty("app$control") &&
-                data['entry']['app$control'].hasOwnProperty("yt$state") &&
-                data['entry']['app$control']['yt$state']['$t'] === "This video is not available in your region.") {
-                console.log("video " + videoId + " is not available");
-                G.videos[videoId].setAvailability(false);
-            } else {
-                console.log("video " + videoId + " is available");
-            }
-
-            G.videos[videoId].setTitle(data['entry']['title']['$t']);
-            counter.increment();
-        })
-        .fail(function(jqxhr, textStatus, error) {
-            G.videos[videoId].setTitle("Data not available");
-            G.videos[videoId].setAvailability(true);
-            counter.increment();
-        });
-}

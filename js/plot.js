@@ -78,7 +78,7 @@ function createSegmentSwitches(videoSegments, videoId) {
     }
 }
 
-function rbClickHandler(d) {
+function rbClickHandler(d, scoreId) {
     'use strict';
 
     var splt = d.id.split("_"), currentRBVideoID = "", currentRBSegmentIndex = splt[splt.length - 2], lastRBVideoID,
@@ -104,7 +104,7 @@ function rbClickHandler(d) {
         if (G.ytPlayers.hasOwnProperty(videoID)) {
             if (G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
                 playingVideoTime = G.ytPlayers[videoID].getCurrentTime();
-                pageTime = getPageAndTimeForVideoTime(playingVideoTime, videoID);
+                pageTime = getPageAndTimeForVideoTime(playingVideoTime, scoreId, videoID);
 
                 if (pageTime === undefined) {
                     scoreTime = 0;
@@ -309,7 +309,7 @@ function createAlignmentSegmentRepresentation(_svg, _rects, scoreId) {
     for (videoId in G.syncPairs[scoreId]) {
         if (G.syncPairs[scoreId].hasOwnProperty(videoId)) {
             if (videoIsFilteredOut(scoreId, videoId)) continue;
-            for (segment = 0; segment < G.alignments.get(scoreId, videoId).localTimeMaps.length; segment++) {
+            for (segment = 0; segment < CONTROLLER.getAlignment(scoreId, videoId).localTimeMaps.length; segment++) {
                 props = [];
                 gradientValues = getGradientValues(G.velocities2[scoreId][videoId][segment]);
                 for (i = 0; i < gradientValues.length; i = i + 1) {
@@ -370,7 +370,7 @@ function createCurves(_svg, _curves) {
     ;
 }
 
-function createRadioButtons(_svg, _radiobuttons) {
+function createRadioButtons(_svg, _radiobuttons, scoreId) {
     'use strict';
 
     var i, plotDiv = document.getElementById("plotContainer"), selectVideoRB, topForRB, rbID, h;
@@ -385,6 +385,9 @@ function createRadioButtons(_svg, _radiobuttons) {
         selectVideoRB.setAttribute('type', 'radio');
         selectVideoRB.setAttribute('name', 'selectVideoGroupRB');
         selectVideoRB.setAttribute('class', 'videoRB');
+        $(selectVideoRB).bind('click', function() {
+            rbClickHandler(this, scoreId);
+        });
         selectVideoRB.setAttribute('onclick', 'rbClickHandler(this)');
 
         //console.log("Height: " + $("#videoTitelFilter").height());
@@ -427,7 +430,10 @@ function createPlotSVG() {
             .append("g")
             .attr("transform", "translate(" + G.plot_margin.left + "," + G.plot_margin.top + ")")
 
-            .on("click", updateScorePosition)
+            .on("click", function() {
+                var scoreTime = G.x_scale.invert(d3.mouse(this)[0]);
+                CONTROLLER.onPlotClick(scoreTime)
+            })
             .on("mousemove", updateMouseTrackLine)
             //.on("mousemove", showSuitableVideoDivsForCurrentMousePosition)
             //.on("mousemove", handleMouseMoveEvent)
@@ -518,33 +524,6 @@ function removeMouseTrackLine(d) {
     }
 }
 
-
-function calculateSegmentVelocity(scoreId) {
-    'use strict';
-
-    G.velocities2[scoreId] = {};
-
-    var syncPairs = G.syncPairs[scoreId], videoId, alignment, segment, segmentTimeMap, av, binV;
-
-    for (videoId in syncPairs) {
-        if (syncPairs.hasOwnProperty(videoId)) {
-            G.velocities2[scoreId][videoId] = {};
-            if (syncPairs.hasOwnProperty(videoId) && !videoIsFilteredOut(scoreId, videoId)) {
-                console.log("computing velocity for " + videoId);
-                alignment = G.alignments.get(scoreId, videoId);
-                for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
-
-                    segmentTimeMap = alignment.localTimeMaps[segment];
-                    if (segmentTimeMap[0].length < 2) continue;
-                    av = updateBinVelocities(segmentTimeMap);
-                    binV = averageBinVelocities(av);
-                    G.velocities2[scoreId][videoId][segment] = binV;
-                }
-            }
-        }
-    }
-    return binV;
-}
 
 function updateBinVelocities(segmentTimeMap) {
     'use strict';
@@ -697,6 +676,6 @@ function drawPlot(scoreId) {
 
     createCurves(svg, G.curves);
 
-    createRadioButtons(svg, G.radiobuttons);
+    createRadioButtons(svg, G.radiobuttons, scoreId);
 }
 

@@ -1,25 +1,5 @@
-function initScoreViewer() {
-    var pnsv = document.createElement('script');
-    pnsv.type = 'text/javascript';
-    pnsv.async = true;
-    pnsv.src = 'http://pchnote.appspot.com/scoreviewer/scoreviewer.nocache.js';
-    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(pnsv);
-}
 
-function loadScoreInViewer(scoreId) {
-    _pnq.push(['loadScore', scoreId]);
-}
 
-function getVideoTimeFromScoreTime(_timeInScore, _timeMap) {
-    'use strict';
-
-    var indexOfLastSynchronizedTimePointInScore = 0, i, segm;
-    for (i = 0; i < _timeMap[0].length - 1; i = i + 1) {
-        if ((_timeInScore >= _timeMap[0][i]) && (_timeInScore < _timeMap[0][i + 1])) {
-            return _timeMap[1][i];
-        }
-    }
-}
 
 function getVideoWithLoadedAlignment(scoreId) {
     var videoId;
@@ -31,59 +11,11 @@ function getVideoWithLoadedAlignment(scoreId) {
     return videoId;
 }
 
-function getPageTimes(scoreId) {
-    var videoId = getVideoWithLoadedAlignment(scoreId);
-    // get videoId for which we should have downloaded the alignment data (if it was available we did that)
-    return G.alignments.get(scoreId, videoId).streamTimes0;
-}
 
-function getPageAndTime(_scoreTime) {
-    'use strict';
-    var page = 0, pageTime = 0, i;
-    //console.log("score time: " + _scoreTime);
-    for (i in G.pageTimes) {
-        if (G.pageTimes.hasOwnProperty(i)) {
-            page = i;
-            pageTime = G.pageTimes[i];
-            if (pageTime >= _scoreTime) {
-                console.log("page: " + (page - 1));
-                return {"page": (page - 1), "pageTime": _scoreTime};
-            }
-        }
-    }
-    //console.log("page: " + page);
-    return {"page": page, "pageTime": _scoreTime};
-}
-
-function pageDuration(page) {
+function getYtOffsetByScoreTime(scoreId, videoID, time) {
     'use strict';
 
-    if (G.pageTimes[page + 1]) {
-        return G.pageTimes[page + 1] - G.pageTimes[page];
-    } else {
-        var maxTime = 0, i, s, timeMap;
-        for (i in G.videoTimeMaps) {
-            if (G.videoTimeMaps.hasOwnProperty(i)) {
-                timeMap = G.videoTimeMaps[i];
-                for (s = 0; s < timeMap.length; s = s + 1) {
-                    maxTime = Math.max(maxTime, Math.max.apply(null, timeMap[s][0]));
-                }
-            }
-        }
-        return maxTime - G.pageTimes[page];
-    }
-}
-
-function getNormalizedTime(page, pageTime) {
-    'use strict';
-
-    return (pageTime - G.pageTimes[page]) / pageDuration(page);
-}
-
-function getYtOffsetByScoreTime(videoID, time) {
-    'use strict';
-
-    var timeMap = G.videoTimeMaps[videoID], s, i;
+    var timeMap = CONTROLLER.getTimeMap(scoreId, videoID), s, i;
     for (s = 0; s < timeMap.length; s = s + 1) {
         if (timeMap[s][0][0] > time) {
             continue;
@@ -98,13 +30,13 @@ function getYtOffsetByScoreTime(videoID, time) {
     }
 }
 
-function getVideoTimeForPagePosition(videoID, pt) {
+function getVideoTimeForPagePosition(scoreId, videoId, pt) {
     'use strict';
-
+     console.log("get video time for score position " + scoreId + " " + videoId);
     //console.log("getting time for page position " + page + " " + relPos);
     //var pt = G.pageTimes[page] + pageDuration(page) * relPos;
-    var segmentScoreTime = getYtOffsetByScoreTime(videoID, pt),
-        timeMap = G.videoTimeMaps[videoID];
+    var segmentScoreTime = getYtOffsetByScoreTime(scoreId, videoId, pt),
+        timeMap = CONTROLLER.getTimeMap(scoreId, videoId);
     return timeMap[segmentScoreTime[0]][1][segmentScoreTime[1]];
 }
 
@@ -136,12 +68,12 @@ function getSegmentIndexFromVideoTime(_videoID, _vtime) {
     }
 }
 
-function getPageAndTimeForVideoTime(time, _videoID) {
+function getPageAndTimeForVideoTime(time, scoreId, videoId) {
     'use strict';
 
     var page = 0, pageTime = 0,
-        timeMap = G.videoTimeMaps[_videoID],
-        segmentScoreTime = getSegmentScoreTime(time, _videoID),
+        timeMap = CONTROLLER.getTimeMap(scoreId, videoId),
+        segmentScoreTime = getSegmentScoreTime(time, scoreId, videoId),
         segment, scoreTime,
         i;
 
@@ -156,10 +88,11 @@ function getPageAndTimeForVideoTime(time, _videoID) {
         return {"page": 0, "scoreTime": 0};
     }
 
-    for (i in G.pageTimes) {
-        if (G.pageTimes.hasOwnProperty(i)) {
+    var pageTimes = SCORE_MANAGER.getPageTimes(scoreId);
+    for (i in pageTimes) {
+        if (pageTimes.hasOwnProperty(i)) {
             page = i;
-            pageTime = G.pageTimes[i];
+            pageTime = pageTimes[i];
             if (pageTime >= scoreTime) {
                 return {"page": (page - 1), "scoreTime": scoreTime};
             }
@@ -168,10 +101,10 @@ function getPageAndTimeForVideoTime(time, _videoID) {
     return {"page": page, "scoreTime": scoreTime};
 }
 
-function getSegmentScoreTime(ytTime, _videoID) {
+function getSegmentScoreTime(ytTime, scoreId, _videoID) {
     'use strict';
 
-    var timeMap = G.videoTimeMaps[_videoID],
+    var timeMap = CONTROLLER.getTimeMap(scoreId, _videoID),
         s, i, out;
 
     for (s = 0; s < timeMap.length; s = s + 1) {
@@ -193,99 +126,3 @@ function getSegmentScoreTime(ytTime, _videoID) {
     }
 }
 
-
-function measureClickHandler(scoreID, viewerPage, measureNumber, totalMeasures) {
-    "use strict";
-
-    var page = viewerPage - -1, oneVideoPlaying = false, videosToPlay = [], randomIndex;
-    _pnq.push(["clearMeasureHighlightings"]);
-    _pnq.push(["highlightMeasure", measureNumber, page - 1]);
-
-    console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
-    var scoreTime = G.pageTimes[page] + pageDuration(page) * (measureNumber - 1) / totalMeasures,
-        videoID,
-        videoTime;
-
-    calculateVisibilityOfVideoIDs(scoreTime);
-
-    if (gui.shouldHideVideos()) {
-        showAndHideVideos();
-    }
-
-    for (videoID in G.visibilityOfVideos) {
-        if (G.visibilityOfVideos.hasOwnProperty(videoID)) {
-            if (G.visibilityOfVideos[videoID]) {
-                videosToPlay.push(videoID);
-            }
-        }
-    }
-
-    randomIndex = getRandom(0, videosToPlay.length - 1);
-    console.log("length: " + videosToPlay.length + "      index: " + randomIndex);
-
-    videoID = videosToPlay[randomIndex];
-    videoTime = getVideoTimeForPagePosition(videoID, scoreTime);
-    if (G.ytPlayers.hasOwnProperty(videoID)) {
-
-        G.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
-        G.ytPlayers[videoID].playVideo();
-
-    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoID)) {
-
-        G.videoStartPosition[videoID] = videoTime;
-        loadVideo(videoID, videoID);
-    }
-}
-
-
-function updateScorePosition(d) {
-    'use strict';
-
-    console.log("update score position");
-    var pageAndTime = getPageAndTime(G.x_scale.invert(d3.mouse(this)[0])),
-        page = pageAndTime.page,
-        pageTime = pageAndTime.scoreTime,
-        normalizedPageTime = getNormalizedTime(page, pageTime),
-        timeInScore, timeInVideo;
-
-    _pnq.push(['loadPage', page - 1]);
-    _pnq.push(["clearMeasureHighlightings"]);
-    _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
-
-    if (G.videoIDNextToCursor !== "") {
-        timeInScore = G.x_scale.invert(d3.mouse(this)[0]),
-            timeInVideo = getVideoTimeFromScoreTime(timeInScore, G.segmentNextToCursor.timeMap); //G.videoTimeMaps[G.videoIDNextToCursor]
-        if (G.ytPlayers.hasOwnProperty(G.videoIDNextToCursor)) {
-
-            G.ytPlayers[G.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
-            G.ytPlayers[G.videoIDNextToCursor].playVideo();
-
-        } else if (G.ytPlayerThumbnails.hasOwnProperty(G.videoIDNextToCursor)) {
-
-            G.videoStartPosition[G.videoIDNextToCursor] = timeInVideo;
-            loadVideo(G.videoIDNextToCursor, G.videoIDNextToCursor);
-        }
-    }
-}
-
-
-// example of loading a viewer in an iframe as an anonymous function call. the fn can be made reusable of course.
-
-
-
-
-var viewer = PeachnoteViewer.initializeViewer(
-    {
-        'rootElement': 'PeachnoteViewerContainer2'
-        ,'widgetHeight': 590
-        ,'widgetWidth': 450
-        ,'loadScore': "IMSLP00001"  // optional
-    },
-    function (viewer) {
-        console.log("viewer instance loaded");
-        viewer.loadScore("IMSLP00001");   // possible
-    }
-);
-viewer.setScoreLoadCallback(function(scoreId) {
-    console.log(scoreId + " is loaded");
-});

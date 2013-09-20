@@ -13,121 +13,16 @@ var MessageBus = (function() {
     return me;
 }());
 
-function main() {
+gui = G.gui;
 
-    gui = G.gui;
-
-    CONTROLLER.init();
+CONTROLLER.init();
 
 
-
-    loadAlignmentList(function onSuccess() {
-
-        console.log("alignment list loaded");
-
-        populateScoreSelectionDropdown();
-
-        prepareVideosForScore(G.defaultScoreID);
-
-    }, function onFailure() {
-        console.log("couldn't load alignment json file!");
-    });
-}
-
-main();
-
-function prepareVideosForScore(scoreId) {
-    console.log("preparing videos for score " + scoreId);
-    checkVideoAvailabilities(scoreId, function () {
-        onVideoAvailabilityChecked(scoreId);
-    });
-}
-
-function onVideoAvailabilityChecked(scoreId) {
-    console.log("video availability checked for score " + scoreId);
-    console.log(G.videos);
-    getAlignments(scoreId, function () {
-        onAlignmentsFetched(scoreId)();
-    });
-}
-
-function onAlignmentsFetched(scoreId) {
-    return function () {
-        initializeVisualization(scoreId);
-    };
-}
-
-function initializeVisualization(scoreId) {
-
-    if (typeof YT === "undefined") {
-        setTimeout(function () {
-            initializeVisualization(scoreId);
-        }, 250);
-        console.log("waiting for YT API to load, retrying in 250ms");
-        return;
-    } else {
-        console.log("YT API loaded");
-    }
-
-    console.log("interface for " + scoreId);
-
-    clearVideoAndPlotState();
-    gui.resetScoreDOM();
-
-    loadScoreInViewer(scoreId);
-
-    calculateSegmentVelocity(scoreId);
-
-    computePlotElements(scoreId, G.syncPairs[scoreId]);
-    computePlotDimensions();
-    drawPlot(scoreId);
-
-    initVideos(scoreId, G.syncPairs[scoreId]);
-    preloadVideos();
-}
 
 function videoIsFilteredOut(scoreId, videoId) {
     return G.videos[videoId].getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
-        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() || !G.videos[videoId].getAvailability();
-}
-
-function populateScoreSelectionDropdown() {
-    var scoreId;
-    for (scoreId in G.syncPairs) {
-        if (G.syncPairs.hasOwnProperty(scoreId)) {
-            gui.addScoreToDropdown(scoreId);
-        }
-    }
-}
-
-
-function configureScoreViewer() {
-    window._pnq = window._pnq || [];
-    _pnq.push(['rootElement', 'PeachnoteViewerContainerId']);
-    _pnq.push(['widgetHeight', 620]);
-    _pnq.push(['widgetWidth', 450]);
-    _pnq.push(['addMeasureClickHandler', measureClickHandler]);
-}
-
-
-function bindScoreFilterInputWithFilteringAction() {
-
-    gui.addScoreDropdownChangeCallback(function () {
-        prepareVideosForScore(gui.getSelectedScoreId())
-    });
-
-    gui.addAlignmentQualityChangeCallback(function () {
-        initializeVisualization(gui.getSelectedScoreId());
-    });
-
-    gui.addVideoTitleChangeCallback(function () {
-        initializeVisualization(gui.getSelectedScoreId());
-    });
-}
-
-function initQualityFilterDropdown() {
-    var qualities = [0, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7];
-    gui.populateQualityFilter(qualities)
+        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() ||
+        !G.videos[videoId].getAvailability();
 }
 
 
@@ -182,146 +77,61 @@ function clearVideoAndPlotState() {
 }
 
 
-function fetchAlignmentData(scoreId, videoId, jsonPath, counter) {
-    $.getJSON(jsonPath)
-        .done(function (json) {
-            G.alignments.add(scoreId, videoId, json);
-            counter.increment();
-        })
-        .fail(function (jqxhr, textStatus, error) {
-            counter.increment();
-        });
-}
 
 
-function getAlignments(scoreId, onAlignmentsFetched) {
-    var syncedVideos = G.syncPairs[scoreId],
-        counter = new FiringCounter(Object.keys(syncedVideos).length, onAlignmentsFetched),
-        videoId, jsonPath;
 
-    for (videoId in syncedVideos) {
-        if (syncedVideos.hasOwnProperty(videoId)) {
-
-            console.log(G.videos[videoId]);
-
-            if (!G.videos[videoId].getAvailability() ||
-                G.videos[videoId].getTitle().indexOf(gui.getVideoTitleFilterString()) == -1 ||
-                syncedVideos[videoId].quality < gui.getAlignmentQualityFilter() ||
-                G.alignments.get(scoreId, videoId)
-                ) {
-                counter.increment();
-                continue;
-            }
-
-            jsonPath = syncedVideos[videoId].alignmentFileName;
-            fetchAlignmentData(scoreId, videoId, jsonPath, counter);
-        }
-    }
-}
-
-function checkVideoAvailabilities(scoreId, onDone) {
-    var videoProperties = G.syncPairs[scoreId],
-        counter = new FiringCounter(Object.keys(videoProperties).length, onDone),
-        videoId;
-
-    for (videoId in videoProperties) {
-        if (videoProperties.hasOwnProperty(videoId)) {
-            checkYouTubeVideoAvailability(videoId, counter);
-        }
-    }
-}
 
 
 function computePlotElements(scoreId, syncPairs) {
     'use strict';
 
-    var videoSegments = [];
-
-    G.pageTimes = getPageTimes(scoreId);
 
     for (var videoId in syncPairs) {
         if (syncPairs.hasOwnProperty(videoId)) {
-            videoSegments = [];
-            var alignment = G.alignments.get(scoreId, videoId),
-                segment, videoSegment, confidence, rbutton;
-
-            if (!G.videos.hasOwnProperty(videoId) || !G.videos[videoId].getAvailability() ||
-                videoIsFilteredOut(scoreId, videoId)) {
-                continue;
-            }
-
-            G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
-            G.videoTimeMaps[videoId] = G.videoTimeMaps[videoId] ? G.videoTimeMaps[videoId] : alignment.localTimeMaps;
-            if (typeof YT.PlayerState !== "undefined") {
-                G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
-            } else {
-                G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : 2;
-            }
-            G.videoStartPosition[videoId] = G.videoStartPosition[videoId] ? G.videoStartPosition[videoId] : 0;
-            G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
-            G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;
-
-            // iterating over video segments, creating their rendering data
-            for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
-                confidence = Math.min(alignment.confidences[segment][0], alignment.confidences[segment][1]);
-                videoSegment = createVideoSegment(alignment.localTimeMaps[segment], videoId, segment, confidence);
-                videoSegments.push(videoSegment);
-            }
-
-            videoSegments = sortRects(videoSegments);
-
-            assignSegmentYCoordinates(videoSegments);
-
-            createSegmentConnections(videoSegments, videoId);
-
-            createSegmentSwitches(videoSegments, videoId);
-
-            appendArrays(G.allVideoSegments, videoSegments);
-
-            console.log("video " + videoId + " is in process");
+            computePlotElementsForVideo(scoreId, videoId);
         }
     }
 }
 
 
-function updatePosition() {
-    'use strict';
+function computePlotElementsForVideo(scoreId, videoId) {
+    var videoSegments = [],
+        alignment = CONTROLLER.getAlignment(scoreId, videoId),
+        segment, videoSegment, confidence;
 
-    //console.log("updatePosition: videoID: " + G.currentPlayingYTVideoID + "");
-    var videoTime = G.ytPlayers[G.currentPlayingYTVideoID].getCurrentTime(),
-        pageAndTime = getPageAndTimeForVideoTime(videoTime, G.currentPlayingYTVideoID),
-        pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + G.foreRunningTime, G.currentPlayingYTVideoID),
-        page,
-        scoreTime,
-        normalizedPageTime,
-        pagePlus,
-        rbID;
-
-    //if (typeof pageAndTime == "undefined") return;
-    if (pageAndTime === undefined) {
+    if (!G.videos.hasOwnProperty(videoId) || !G.videos[videoId].getAvailability() ||
+        videoIsFilteredOut(scoreId, videoId)) {
         return;
     }
 
-    page = pageAndTime.page;
-    scoreTime = pageAndTime.scoreTime;
-    normalizedPageTime = getNormalizedTime(pageAndTime.page, pageAndTime.scoreTime);
-    pagePlus = pageAndTimePlus ? pageAndTimePlus.page : pageAndTime.page;
-
-    //console.log("page: " + page + " scoreTime: " + scoreTime);
-
-    if (pagePlus !== G.prevPage) {
-        _pnq.push(['loadPage', pagePlus - 1]);
-        G.prevPage = pagePlus;
+    G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
+    G.videoTimeMaps[videoId] = G.videoTimeMaps[videoId] ? G.videoTimeMaps[videoId] : alignment.localTimeMaps;
+    G.videoStartPosition[videoId] = G.videoStartPosition[videoId] ? G.videoStartPosition[videoId] : 0;
+    G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
+    G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;
+    if (typeof YT.PlayerState !== "undefined") {
+        G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
+    } else {
+        G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : 2;
     }
 
-    updateVideoTrackLine(scoreTime);
-
-    _pnq.push(["clearMeasureHighlightings"]);
-    _pnq.push(["highlightMeasureAtNormalizedTime", normalizedPageTime, page - 1, true]);
-
-    rbID = G.currentPlayingYTVideoID + "_" + getSegmentIndexFromVideoTime(G.currentPlayingYTVideoID, videoTime) + "_RB";
-    if (!document.getElementById(rbID).checked) {
-        document.getElementById(rbID).checked = true;
-        document.getElementById(rbID).focus();
+    // iterating over video segments, creating their rendering data
+    for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
+        confidence = Math.min(alignment.confidences[segment][0], alignment.confidences[segment][1]);
+        videoSegment = createVideoSegment(alignment.localTimeMaps[segment], videoId, segment, confidence);
+        videoSegments.push(videoSegment);
     }
+
+    videoSegments = sortRects(videoSegments);
+
+    assignSegmentYCoordinates(videoSegments);
+
+    createSegmentConnections(videoSegments, videoId);
+
+    createSegmentSwitches(videoSegments, videoId);
+
+    appendArrays(G.allVideoSegments, videoSegments);
+
+    console.log("video " + videoId + " is in process");
 }
+

@@ -59,7 +59,6 @@ G.videoLoadingInterval = {};        // maps videoId to interval
 G.videoPreLoadingInterval = 0;  // interval
 
 G.videos = {};
-G.alignments = new Alignments();
 
 G.ytPlayers = {};
 G.ytPlayerThumbnails = {};
