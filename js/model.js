@@ -1,6 +1,7 @@
 var CONSTANTS = {};
 CONSTANTS.SEGMENT_RECT_HEIGHT = 0.2;
 CONSTANTS.DISTANCE_BETWEEN_SEGMENT_RECTS = 0.3;
+
 CONSTANTS.VIDEO_WIDTH = 140;
 CONSTANTS.VIDEO_HEIGHT = 100;
 CONSTANTS.PLAYING_VIDEO_WIDTH = 280;
@@ -15,12 +16,17 @@ CONSTANTS.VIDEO_LOADING_WAITING_TIME = 4000; // 4 sec
 CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY = 0;   // thumbnail
 CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY = 1;
 
+CONSTANTS.DEFAULT_SCORE_ID = "IMSLP00001";
+
+CONSTANTS.FORE_RUNNING_TIME = 2.0;
+
+CONSTANTS.VELOCITY_WINDOW = 5;  // in seconds
+
+CONSTANTS.LABEL_SHIFT = 4;
+
 var G = {};
 
 G.gui = new GUI();
-
-G.numberOfVideoSegmentLevels = 1;
-G.labelShift = 4;
 
 G.plot_margin = {top: 20, right: 20, bottom: 30, left: 40};
 G.plot_width = 600 - G.plot_margin.left - G.plot_margin.right;
@@ -41,13 +47,15 @@ G.xAxis = d3.svg.axis()
 // don't show the ticks of x-axis
 //G.xAxis.tickFormat(function (d) { return ''; });
 
+
+G.numberOfVideoSegmentLevels = 1;
+
 G.maxPlotX = 0;
 G.minPlotY = 0;
 G.maxPlotY = 0;
 
 G.syncPairs = {};          // list of file names of video syncs for a scoreId
 
-G.defaultScoreID = "IMSLP00001";
 G.scoreSyncFileNames = [];
 
 G.allVideoSegments = [];
@@ -76,11 +84,9 @@ G.currentPlayingYTVideoID = "";
 G.lastPlayedYTVideoID = "";
 G.videoIDNextToCursor = "";
 G.segmentNextToCursor = {};
-G.loopId = 0;   // interval that works when video is playing
+G.updatePositionInterval = 0;   // interval that works when video is playing
 G.prevPage = 0;
-G.foreRunningTime = 2.0;
 
-G.velocityWindow = 5;  // in seconds
 G.velocities = []; // array of arrays with velosities for time windows
 G.velocities2 = {};
 G.averageVelocity = []; // array with one average velocity for each time window

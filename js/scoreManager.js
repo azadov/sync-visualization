@@ -6,7 +6,7 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
 
     me.init = function () {
 
-        this.loadScore(G.defaultScoreID);
+        this.loadScore(G.DEFAULT_SCORE_ID);
 
     };
 

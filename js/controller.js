@@ -27,7 +27,7 @@ var CONTROLLER = (function(params) {
 
             populateScoreSelectionDropdown();
 
-            prepareVideosForScore(G.defaultScoreID);
+            prepareVideosForScore(CONSTANTS.DEFAULT_SCORE_ID);
 
         }, function onFailure() {
             console.log("couldn't load alignment json file!");
@@ -87,7 +87,7 @@ var CONTROLLER = (function(params) {
         var videoTime = G.ytPlayers[G.currentPlayingYTVideoID].getCurrentTime(),
             scoreId = gui.getSelectedScoreId(),
             pageAndTime = getPageAndTimeForVideoTime(videoTime, scoreId, G.currentPlayingYTVideoID),
-            pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + G.foreRunningTime, scoreId, G.currentPlayingYTVideoID),
+            pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + CONSTANTS.FORE_RUNNING_TIME, scoreId, G.currentPlayingYTVideoID),
             page,
             scoreTime,
             normalizedPageTime,
@@ -152,7 +152,6 @@ var CONTROLLER = (function(params) {
         drawPlot(scoreId);
 
         initVideos(scoreId, G.syncPairs[scoreId]);
-        preloadVideos();
     };
 
     me.getAlignment = function(scoreId, videoId) {

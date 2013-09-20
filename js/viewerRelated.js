@@ -74,6 +74,7 @@ function getPageAndTimeForVideoTime(time, scoreId, videoId) {
         timeMap = CONTROLLER.getTimeMap(scoreId, videoId),
         segmentScoreTime = getSegmentScoreTime(time, scoreId, videoId),
         segment, scoreTime,
+        pageTimes = SCORE_MANAGER.getPageTimes(scoreId);
         i;
 
     if (segmentScoreTime === undefined) {
@@ -87,7 +88,6 @@ function getPageAndTimeForVideoTime(time, scoreId, videoId) {
         return {"page": 0, "scoreTime": 0};
     }
 
-    var pageTimes = SCORE_MANAGER.getPageTimes(scoreId);
     for (i in pageTimes) {
         if (pageTimes.hasOwnProperty(i)) {
             page = i;

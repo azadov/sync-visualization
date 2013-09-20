@@ -233,11 +233,9 @@ function createPageTicks(_svg, _pageTimes) {
     'use strict';
 
     var key, betterLabelShift;
-    console.log("init page times");
     for (key in _pageTimes) {
-        console.log("page: " + key);
         if (_pageTimes.hasOwnProperty(key)) {
-            betterLabelShift = (0 - - key) > 9 ? G.labelShift : G.labelShift / 2;
+            betterLabelShift = (0 - - key) > 9 ? CONSTANTS.LABEL_SHIFT : CONSTANTS.LABEL_SHIFT / 2;
             _svg.append("text")
                 .attr("x", G.x_scale(_pageTimes[key]) - betterLabelShift)
                 .attr("y", G.y_scale(0))
@@ -532,14 +530,14 @@ function updateBinVelocities(segmentTimeMap) {
     var av = [],
         tScorePrev = segmentTimeMap[0][0],
         tVideoPrev = segmentTimeMap[1][0],
-        prevBin =  Math.floor(tScorePrev / G.velocityWindow),
+        prevBin =  Math.floor(tScorePrev / CONSTANTS.VELOCITY_WINDOW),
         moment, tScore, tVideo, currentBin, velocity, bin, binIntervalShare;
 
     for (moment = 1; moment < segmentTimeMap[0].length; moment++) {
         tScore = segmentTimeMap[0][moment];
         tVideo = segmentTimeMap[1][moment];
 
-        currentBin = Math.floor(tScore / G.velocityWindow);
+        currentBin = Math.floor(tScore / CONSTANTS.VELOCITY_WINDOW);
 
         if (tVideo > tVideoPrev) {
             velocity = (tScore - tScorePrev)/(tVideo - tVideoPrev);
@@ -547,12 +545,12 @@ function updateBinVelocities(segmentTimeMap) {
             continue;
         }
 
-        if (moment == 1) av.push([prevBin, velocity, tScore / G.velocityWindow - prevBin]);
+        if (moment == 1) av.push([prevBin, velocity, tScore / CONSTANTS.VELOCITY_WINDOW - prevBin]);
         for (bin = prevBin; bin <= currentBin; bin++) {
-            binIntervalShare = Math.min(tScore / G.velocityWindow, bin + 1) - Math.max(tScorePrev / G.velocityWindow, bin);
+            binIntervalShare = Math.min(tScore / CONSTANTS.VELOCITY_WINDOW, bin + 1) - Math.max(tScorePrev / CONSTANTS.VELOCITY_WINDOW, bin);
             av.push([bin, velocity, binIntervalShare]);
         }
-        if (moment == segmentTimeMap[0].length - 1) av.push([currentBin, velocity, currentBin + 1 - tScore / G.velocityWindow]);
+        if (moment == segmentTimeMap[0].length - 1) av.push([currentBin, velocity, currentBin + 1 - tScore / CONSTANTS.VELOCITY_WINDOW]);
 
 
         tScorePrev = tScore;

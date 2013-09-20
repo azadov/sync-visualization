@@ -248,8 +248,8 @@ function onPlayerStateChange(event) {
                 }
             }
         }
-        clearInterval(G.loopId);
-        G.loopId = setInterval(function() {CONTROLLER.updatePosition();}, 500);
+        clearInterval(G.updatePositionInterval);
+        G.updatePositionInterval = setInterval(function() {CONTROLLER.updatePosition();}, 500);
 
         //console.log("LastPlayedVideo: " + G.lastPlayedYTVideoID + "     current: " + G.currentPlayingYTVideoID);
 
@@ -261,7 +261,7 @@ function onPlayerStateChange(event) {
 
     } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
         if (deleteInterval) {
-            clearInterval(G.loopId);
+            clearInterval(G.updatePositionInterval);
         } else {
             deleteInterval = true;
         }
