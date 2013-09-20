@@ -4,6 +4,10 @@ function Video(id) {
     this.id = id;
     this.title = "";
     this.availability = undefined;
+    this.loadingStatus = CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED;
+    this.numberOfLoadingAttempts = 0;
+    this.displayStatus = CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY;
+    this.player = undefined;
 }
 
 Video.prototype.getId = function() {
@@ -24,4 +28,36 @@ Video.prototype.setAvailability = function(availability) {
 
 Video.prototype.getAvailability = function() {
     return this.availability;
+}
+
+Video.prototype.setLoadingStatus = function(status) {
+    this.loadingStatus = status;
+}
+
+Video.prototype.getLoadingStatus = function() {
+    return this.loadingStatus;
+}
+
+Video.prototype.increaseNumOfLoadingAttempts = function() {
+    this.numberOfLoadingAttempts = this.numberOfLoadingAttempts + 1;
+}
+
+Video.prototype.getNumOfLoadingAttempts = function() {
+    return this.numberOfLoadingAttempts;
+}
+
+Video.prototype.setDisplayStatus = function(status) {
+    this.displayStatus = status;
+}
+
+Video.prototype.getDisplayStatus = function() {
+    return this.displayStatus;
+}
+
+Video.prototype.setPlayer = function(player) {
+    this.player = player;
+}
+
+Video.prototype.getPlayer = function() {
+    return this.player;
 }

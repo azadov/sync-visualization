@@ -15,7 +15,6 @@ function GUI() {
     this.plotContainer = $('#plotContainer');
     this.hideVideosCheckbox = $('#hideVideoDivs');
     this.segmentQuality = $("#segmQual");
-    this.videoPreloadContainer = $('#videosPreloadContainer');
 }
 
 /**
@@ -79,11 +78,8 @@ GUI.prototype.getVideoContainer = function() {
     return this.videoContainer;
 }
 
-GUI.prototype.getVideoPreloadContainer = function() {
-    return this.videoPreloadContainer;
-}
 
-GUI.prototype.getThumbnailDiv = function(_videoContainerID, _videoID) {
+GUI.prototype.getThumbnailDiv = function(_videoID) {
     // Thease are to position the play button centrally.
     var pw = Math.ceil(CONSTANTS.VIDEO_WIDTH / 2 - 38.5),
         ph = Math.ceil(CONSTANTS.VIDEO_HEIGHT / 2 + 38.5);
@@ -91,7 +87,7 @@ GUI.prototype.getThumbnailDiv = function(_videoContainerID, _videoID) {
     // The image+button overlay code.
     var code = '<div style="width:'
         + CONSTANTS.VIDEO_WIDTH + 'px; height:' + CONSTANTS.VIDEO_HEIGHT
-        + 'px; margin:0 auto"><a href="#"  onclick="loadVideo(\'' + _videoContainerID + '\', \'' + _videoID
+        + 'px; margin:0 auto"><a href="#"  onclick="loadVideo(\'' + _videoID
         + '\');return false;" id="skipser-youtubevid-' + _videoID + '"><img src="http://i.ytimg.com/vi/' + _videoID
         + '/hqdefault.jpg" style="width:' + CONSTANTS.VIDEO_WIDTH + 'px; height:' + CONSTANTS.VIDEO_HEIGHT
         + 'px;" /><div class="yt-thumbnail-playbutton" style="margin-left:'

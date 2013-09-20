@@ -7,28 +7,32 @@ function enlargeVideoDiv(_videoID) {
         pw = Math.ceil(CONSTANTS.PLAYING_VIDEO_WIDTH / 2 - 38.5),
         ph = Math.ceil(CONSTANTS.PLAYING_VIDEO_HEIGHT / 2 + 38.5);
 
-    if (G.ytPlayers.hasOwnProperty(_videoID)) {
-        elementToEnlarge = document.getElementById(_videoID);  //.firstChild.firstChild
-        elementToEnlarge.width = newWidth;
-        elementToEnlarge.height = newHeight;
-    }
-
-    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToEnlarge = document.getElementById(_videoID).firstChild;
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) { // enlarge thumbnail
+        elementToEnlarge = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToEnlarge.style.width = newWidth + "px";
         elementToEnlarge.style.height = newHeight + "px";
 
-        secondElementToEnlarge = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToEnlarge = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.firstChild;
         secondElementToEnlarge.style.width = newWidth + "px";
         secondElementToEnlarge.style.height = newHeight + "px";
 
-        thumbnail = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thumbnail = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.lastChild;
         thumbnail.style.marginLeft = pw + "px";
         thumbnail.style.marginTop = "-" + ph + "px";
     }
 
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) { // enlarge video div
+        elementToEnlarge = document.getElementById(getVideoDivId(_videoID));  //.firstChild.firstChild
+        elementToEnlarge.width = newWidth;
+        elementToEnlarge.height = newHeight;
+//        $('#' + _videoID).animate({
+//            width: newWidth,
+//            height: newHeight
+//        }, 500 );
+    }
+
     for (vID in G.ytPlayers) {
-        if (G.ytPlayers.hasOwnProperty(vID) && vID !== _videoID) {
+        if (G.ytPlayers.hasOwnProperty(vID) && vID !== _videoID && G.videos[vID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
             if (G.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[vID].getPlayerState() === YT.PlayerState.BUFFERING) {
                 someVideoPlaying = true;
             }
@@ -46,26 +50,32 @@ function resetVideoDiv(_videoID) {
         pw = Math.ceil(CONSTANTS.VIDEO_WIDTH / 2 - 38.5),
         ph = Math.ceil(CONSTANTS.VIDEO_HEIGHT / 2 + 38.5);
 
-    if (G.ytPlayers.hasOwnProperty(_videoID)) {
-        if (G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
-            elementToReset = document.getElementById(_videoID);
-            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
-            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
-        }
-    }
-
-    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToReset = document.getElementById(_videoID).firstChild;
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) { // reset thumbnail
+        elementToReset = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
         elementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
 
-        secondElementToReset = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToReset = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.firstChild;
         secondElementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
         secondElementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
 
-        thumbnail = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thumbnail = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.lastChild;
         thumbnail.style.marginLeft = pw + "px";
         thumbnail.style.marginTop = "-" + ph + "px";
+    }
+
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+        if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY
+            && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING
+            && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
+            elementToReset = document.getElementById(getVideoDivId(_videoID));
+            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
+            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
+//            $('#' + _videoID).animate({
+//                width: CONSTANTS.VIDEO_WIDTH,
+//                height: CONSTANTS.VIDEO_HEIGHT
+//            }, 500 );
+        }
     }
 }
 
@@ -94,77 +104,78 @@ function deactivateVideo(_videoID) {
     }
 }
 
-function preloadVideos() {
+function getThumbnailDivId(_videoId) {
+    return _videoId + "Thumbnail";
+}
+
+function getVideoDivId(_videoId) {
+    return _videoId + "Video";
+}
+
+function getPreloadedVideoContainerID(_videoID) {
+    return _videoID + "_p";
+}
+
+function createVideoDiv(_videoID) {
+    $('<div>').attr('class', 'yt-videos').attr('id', getVideoDivId(_videoID))
+        .css('position', 'absolute').css('left', -1000)
+        .appendTo(G.gui.getVideoContainer());
+}
+
+function getNewYoutubePlayer(_videoContainerId, _videoId) {
+    return new YT.Player(_videoContainerId, {
+                     height: CONSTANTS.VIDEO_HEIGHT,
+                     width: CONSTANTS.VIDEO_WIDTH,
+                     videoId: _videoId,
+                     events: {
+                         'onReady': onPlayerReady,
+                         'onStateChange': onPlayerStateChange,
+                         'onError': onPlayerError
+                     }
+    });
+}
+
+function preloadVideo(_videoId) {
     if (typeof YT === "undefined") {
         setTimeout(function () {
-            preloadVideos();
+            preloadVideo(_videoId);
         }, 250);
         console.log("waiting for YT API to load, retrying in 250ms");
         return;
     }
 
-    var videoId, changedId, ytplayer, allVideosPreloaded = true, div;
+    if (G.videos[_videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED) {
+        console.log("preload " + _videoId);
 
-    for (videoId in G.videoReadiness) {
-        if (G.videoReadiness.hasOwnProperty(videoId)) {
-            if (G.videoReadiness[videoId] === 0) {
-                allVideosPreloaded = false;
-                changedId = videoId + "_p";
+        G.videos[_videoId].setLoadingStatus(CONSTANTS.VIDEO_LOADING_STATUS_LOAD);
 
-                $('<div>').attr('class', 'yt-videos').attr('id', changedId)
-                          .css('position', 'absolute').css('left', -1000)
-                          .appendTo(G.gui.getVideoContainer());
+        createVideoDiv(_videoId);
 
-                console.log("preload " + videoId);
+        //G.ytPlayers[_videoId] = getNewYoutubePlayer(changedVideoContainerId, _videoId);
 
-                ytplayer = new YT.Player(changedId, {
-                    height: CONSTANTS.VIDEO_HEIGHT,
-                    width: CONSTANTS.VIDEO_WIDTH,
-                    videoId: videoId,
-                    events: {
-                        'onReady': onPlayerReady,
-                        'onStateChange': onPlayerStateChange,
-                        'onError': onPlayerError
-                    }
-                });
-                console.log("preload 1");
-                G.ytPreloadedPlayers[videoId] = ytplayer;
-                console.log("preload 2");
-            }
-        }
-    }
-
-    if (allVideosPreloaded) {
-        clearInterval(G.videoPreLoadingInterval);
+        tryToLoad(_videoId);
+        G.videoLoadingInterval[_videoId] = setInterval(function () {
+            tryToLoad(_videoId);
+        }, CONSTANTS.VIDEO_LOADING_WAITING_TIME);
     }
 }
 
-function tryToLoad(_videoContainerID, _videoID) {
+function tryToLoad(_videoID) {
     'use strict';
 
-    var ytplayer;
-    if (G.videoReadiness[_videoID] === 0 && G.videoNumOfLoadingAttempts[_videoID] === 3) {
+    var videoContainerID = getVideoDivId(_videoID), player;
+
+    if (G.videos[_videoID].getLoadingStatus() !== CONSTANTS.VIDEO_LOADING_STATUS_READY && G.videos[_videoID].getNumOfLoadingAttempts() === 3) {
         deactivateVideo(_videoID);
         clearInterval(G.videoLoadingInterval[_videoID]);
-        //console.log("VideoID: " + _videoID + "   deactivate");
-    } else if (G.videoReadiness[_videoID] === 0 && G.videoNumOfLoadingAttempts[_videoID] < 3) {
+        console.log("VideoID: " + _videoID + "   deactivate");
+    } else if (G.videos[_videoID].getLoadingStatus()!== CONSTANTS.VIDEO_LOADING_STATUS_READY && G.videos[_videoID].getNumOfLoadingAttempts() < 3) {
 
-        //console.log("VideoID: " + _videoID + "    Attempt: " + G.videoNumOfLoadingAttempts[_videoID]);
+        console.log("VideoID: " + _videoID + "   LoadingAttempts: " + G.videos[_videoID].getNumOfLoadingAttempts() + "   VideoContainer: " + videoContainerID);
+        //G.ytPlayers[_videoID] = getNewYoutubePlayer(videoContainerID, _videoID);
+        player = getNewYoutubePlayer(videoContainerID, _videoID);
 
-        ytplayer = new YT.Player(_videoContainerID, {
-            height: CONSTANTS.VIDEO_HEIGHT,
-            width: CONSTANTS.VIDEO_WIDTH,
-            videoId: _videoID,
-            events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange,
-                'onError': onPlayerError
-            }
-        });
-
-        G.ytPlayers[_videoID] = ytplayer;
-
-        G.videoNumOfLoadingAttempts[_videoID] = G.videoNumOfLoadingAttempts[_videoID] + 1;
+        G.videos[_videoID].increaseNumOfLoadingAttempts();
     }
 }
 
@@ -173,9 +184,9 @@ function onPlayerError(event) {
 
     //console.log("OnPlayerError: " + event.data + "      VideoID: " + event.target.getVideoData().video_id);
     var videoID = event.target.getVideoData().video_id;
-
+    console.log("OnPlayerError: " + event.target.getVideoData().video_id);
     deactivateVideo(videoID);
-    clearInterval(G.videoLoadingInterval[_videoID]);
+    clearInterval(G.videoLoadingInterval[videoID]);
 }
 
 
@@ -184,19 +195,26 @@ function onPlayerReady(event) {
 
     var videoID = event.target.getVideoData().video_id;
 
-//    if (G.ytPlayers.hasOwnProperty(videoID)) {
-//        event.target.seekTo(Math.max(0, G.videoStartPosition[videoID]));
-//        event.target.playVideo();
-//
-//        enlargeVideoDiv(videoID);
-//    }
+    event.target.seekTo(Math.max(0, G.videoStartPosition[videoID]));
 
-    G.videoReadiness[videoID] = 1;
+    console.log("onPlayerReady: " + videoID);
+
+    if (G.videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+        console.log("       " + videoID + " out of display -> pause");
+        event.target.pauseVideo();
+    } else if (G.videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+        console.log("       " + videoID + " in display -> play");
+        event.target.playVideo();
+        enlargeVideoDiv(videoID);
+    }
+
+    G.videos[videoID].setLoadingStatus(CONSTANTS.VIDEO_LOADING_STATUS_READY);
+
+    G.videos[videoID].setPlayer(event.target);
+
+    G.ytPlayers[videoID] = event.target;
 
     clearInterval(G.videoLoadingInterval[videoID]);
-
-    //console.log("OnPlayerReady: " + videoID);
-    //G.ytPlayers[videoID].addEventListener('onStateChange', onPlayerStateChange);
 }
 
 var deleteInterval = true;
@@ -205,17 +223,8 @@ function onPlayerStateChange(event) {
 
     var newState = event.data, videoID;
     //console.log("state: " + event.data + "     target: " + event.target.id);
-//    for (var videoID in G.ytPlayers) {
-//        if ( G.ytPlayers[videoID] == event.target ) {
-//            console.log("videoId: " + videoID);
-//        }
-//    }
-//    console.log("videoID: " + event.target.getVideoData().video_id);
-//    for (var key in event.target.getVideoData().video_id) {
-//        console.log("key: " + key);
-//    }
 
-    console.log("OnPlayerStateChange: " + newState);
+    console.log("OnPlayerStateChange: " + "   " + event.target.getVideoData().video_id + "   " + newState);
 
     if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
         if (G.currentPlayingYTVideoID !== event.target.getVideoData().video_id) {
@@ -258,54 +267,47 @@ function onPlayerStateChange(event) {
 }
 
 
-function loadVideo(_videoContainerID, _videoID) {
+function loadVideo(_videoID) {
     'use strict';
 
-    //console.log("Video clicked: " + _videoContainerID + "   " + _videoID);
-    //$('#' + _videoContainerID).empty();
-    var videoIframe, changedId;
+    var videoContainerID = _videoID;
 
     delete G.ytPlayerThumbnails[_videoID];
 
-    if (G.ytPreloadedPlayers.hasOwnProperty(_videoID)) {
-//        G.ytPreloadedPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
-//        G.ytPreloadedPlayers[_videoID].playVideo();
+    console.log("Load video: " + _videoID);
+
+    G.videos[_videoID].setDisplayStatus(CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY);
+
+    $("#" + getThumbnailDivId(_videoID)).remove(); // remove thumbnail div
+
+    $("#" + getVideoDivId(_videoID)).css('position', '').css('left', '').css('background-color', 'lightgrey');
+
+    if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
         console.log("id: " + _videoID + " already preloaded");
-        $("#" + _videoID).remove(); // remove thumbnail div
 
-        changedId = _videoID + "_p";
-        //videoIframe = $("#" + changedId).detach();
-        //G.gui.getVideoContainer().append(videoIframe);
-
-        $("#" + changedId).attr("id", _videoID).css('position', '').css('left', '');
-
-        //$("#" + changedId).attr("id", _videoID);
-
-        G.ytPlayers[_videoID] = G.ytPreloadedPlayers[_videoID];
-        delete G.ytPreloadedPlayers[_videoID];
-
-        //G.ytPreloadedPlayers[_videoID][i][id] = _videoID;
-        //G.ytPreloadedPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
-        //G.ytPreloadedPlayers[_videoID].playVideo();
-        //console.log("start postition: " + G.videoStartPosition[_videoID]);
         G.ytPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
         G.ytPlayers[_videoID].playVideo();
+
         enlargeVideoDiv(_videoID);
 
         console.log("id: " + _videoID + " play");
-    } else {
-        G.videoLoadingInterval[_videoID] = setInterval(function () {
-            tryToLoad(_videoContainerID, _videoID);
-        }, 1000);
-    }
+    } //else {
+//        console.log("");
+//        G.videoLoadingInterval[_videoID] = setInterval(function () {
+//            tryToLoad(videoContainerID, _videoID);
+//        }, CONSTANTS.VIDEO_LOADING_WAITING_TIME);
+//    }
 }
 
-function initVideo(_videoContainerID, _videoID) {
-    'use strict';
+function createThumbnailDiv(_videoID) {
 
-    var thumbnailDiv = G.gui.getThumbnailDiv(_videoContainerID, _videoID);
 
-    document.getElementById(_videoContainerID).appendChild(thumbnailDiv);
+    var videoContainerID = getThumbnailDivId(_videoID), thumbnailDiv = G.gui.getThumbnailDiv(_videoID);
+
+    $('<div>').attr('class', 'yt-videos').attr('id', videoContainerID)
+        .appendTo(G.gui.getVideoContainer());
+
+    document.getElementById(videoContainerID).appendChild(thumbnailDiv);
 
     G.ytPlayerThumbnails[_videoID] = thumbnailDiv;
 }
@@ -321,13 +323,14 @@ function initVideos(scoreId, alignedVideos) {
         return;
     }
 
-    for (var videoId in alignedVideos) {
+    var videoId;
+    for (videoId in alignedVideos) {
         if (alignedVideos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability() && !videoIsFilteredOut(scoreId, videoId)) {
-
-            $('<div>').attr('class', 'yt-videos').attr('id', videoId).appendTo($('#videos'));
-
             console.log('initializing video ' + videoId);
-            initVideo(videoId, videoId);
+
+            createThumbnailDiv(videoId);
+
+            preloadVideo(videoId);
         }
     }
     //optimizeYouTubeEmbeds();
@@ -515,12 +518,13 @@ function showSuitableVideoDivsForCurrentMousePosition() {
             G.segmentNextToCursor = videoSegmentAbove;
         }
     }
-    if (G.ytPlayers.hasOwnProperty(videoToEnlarge)) {
+
+    if (G.ytPlayerThumbnails.hasOwnProperty(videoToEnlarge)) {
+        enlargeVideoDiv(videoToEnlarge);
+    } else  if (G.ytPlayers.hasOwnProperty(videoToEnlarge)) {
         if (G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.BUFFERING) {
             enlargeVideoDiv(videoToEnlarge);
         }
-    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoToEnlarge)) {
-        enlargeVideoDiv(videoToEnlarge);
     }
 
     if (!gui.shouldHideVideos()) {

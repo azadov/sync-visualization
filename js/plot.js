@@ -155,7 +155,7 @@ function rbClickHandler(d) {
     } else if (G.ytPlayerThumbnails.hasOwnProperty(videoIDToPlay)) {
 
         G.videoStartPosition[videoIDToPlay] = videoTime;
-        loadVideo(videoIDToPlay, videoIDToPlay);
+        loadVideo(videoIDToPlay);
     }
 
     if (!document.getElementById(rbIDToCheck).checked) {

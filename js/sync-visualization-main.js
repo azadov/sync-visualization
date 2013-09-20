@@ -83,7 +83,7 @@ function initializeVisualization(scoreId) {
     drawPlot(scoreId);
 
     initVideos(scoreId, G.syncPairs[scoreId]);
-    preloadVideos();
+    //preloadVideos();
 }
 
 function videoIsFilteredOut(scoreId, videoId) {
@@ -258,8 +258,6 @@ function computePlotElements(scoreId, syncPairs) {
                 G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : 2;
             }
             G.videoStartPosition[videoId] = G.videoStartPosition[videoId] ? G.videoStartPosition[videoId] : 0;
-            G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
-            G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;
 
             // iterating over video segments, creating their rendering data
             for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
@@ -277,8 +275,6 @@ function computePlotElements(scoreId, syncPairs) {
             createSegmentSwitches(videoSegments, videoId);
 
             appendArrays(G.allVideoSegments, videoSegments);
-
-            console.log("video " + videoId + " is in process");
         }
     }
 }

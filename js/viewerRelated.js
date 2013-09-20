@@ -225,15 +225,16 @@ function measureClickHandler(scoreID, viewerPage, measureNumber, totalMeasures) 
 
     videoID = videosToPlay[randomIndex];
     videoTime = getVideoTimeForPagePosition(videoID, scoreTime);
-    if (G.ytPlayers.hasOwnProperty(videoID)) {
+
+    if (G.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+
+        G.videoStartPosition[videoID] = videoTime;
+        loadVideo(videoID);
+    } else if (G.ytPlayers.hasOwnProperty(videoID)) {
 
         G.ytPlayers[videoID].seekTo(Math.max(0, videoTime));
         G.ytPlayers[videoID].playVideo();
 
-    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoID)) {
-
-        G.videoStartPosition[videoID] = videoTime;
-        loadVideo(videoID, videoID);
     }
 }
 
@@ -254,16 +255,16 @@ function updateScorePosition(d) {
 
     if (G.videoIDNextToCursor !== "") {
         timeInScore = G.x_scale.invert(d3.mouse(this)[0]),
-            timeInVideo = getVideoTimeFromScoreTime(timeInScore, G.segmentNextToCursor.timeMap); //G.videoTimeMaps[G.videoIDNextToCursor]
-        if (G.ytPlayers.hasOwnProperty(G.videoIDNextToCursor)) {
+        timeInVideo = getVideoTimeFromScoreTime(timeInScore, G.segmentNextToCursor.timeMap); //G.videoTimeMaps[G.videoIDNextToCursor]
+        if (G.ytPlayerThumbnails.hasOwnProperty(G.videoIDNextToCursor)) {
+
+            G.videoStartPosition[G.videoIDNextToCursor] = timeInVideo;
+            loadVideo(G.videoIDNextToCursor);
+        } else if (G.ytPlayers.hasOwnProperty(G.videoIDNextToCursor)) {
 
             G.ytPlayers[G.videoIDNextToCursor].seekTo(Math.max(0, timeInVideo));
             G.ytPlayers[G.videoIDNextToCursor].playVideo();
 
-        } else if (G.ytPlayerThumbnails.hasOwnProperty(G.videoIDNextToCursor)) {
-
-            G.videoStartPosition[G.videoIDNextToCursor] = timeInVideo;
-            loadVideo(G.videoIDNextToCursor, G.videoIDNextToCursor);
         }
     }
 }
