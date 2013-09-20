@@ -6,6 +6,15 @@ CONSTANTS.VIDEO_HEIGHT = 100;
 CONSTANTS.PLAYING_VIDEO_WIDTH = 280;
 CONSTANTS.PLAYING_VIDEO_HEIGHT = 225;
 
+CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED = 0;
+CONSTANTS.VIDEO_LOADING_STATUS_LOAD = 1;
+CONSTANTS.VIDEO_LOADING_STATUS_READY = 2;
+
+CONSTANTS.VIDEO_LOADING_WAITING_TIME = 4000; // 4 sec
+
+CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY = 0;
+CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY = 1;
+
 var G = {};
 
 G.gui = new GUI();
@@ -52,11 +61,8 @@ G.visibilityOfVideos = {};        // maps videoId to the visibility of the corre
 G.videoTimeMaps = {};               // maps videoId to localTimeMaps
 G.videoStatus = {};                 // maps videoId to status
 G.videoStartPosition = {};          // maps videoId to start position
-G.videoReadiness = {};              // maps videoId to 1 (if video loaded) or 0 (if video not loaded)
-G.videoNumOfLoadingAttempts = {};   // maps videoId to number of loading attempts
 G.videoLoadingInterval = {};        // maps videoId to interval
 
-G.videoPreLoadingInterval = 0;  // interval
 
 G.videos = {};
 

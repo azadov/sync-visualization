@@ -18,10 +18,9 @@ gui = G.gui;
 CONTROLLER.init();
 
 
-
 function videoIsFilteredOut(scoreId, videoId) {
     return G.videos[videoId].getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
-        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() ||
+        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() || 
         !G.videos[videoId].getAvailability();
 }
 
@@ -77,14 +76,10 @@ function clearVideoAndPlotState() {
 }
 
 
-
-
-
-
-
 function computePlotElements(scoreId, syncPairs) {
     'use strict';
 
+   
 
     for (var videoId in syncPairs) {
         if (syncPairs.hasOwnProperty(videoId)) {
@@ -134,4 +129,3 @@ function computePlotElementsForVideo(scoreId, videoId) {
 
     console.log("video " + videoId + " is in process");
 }
-
