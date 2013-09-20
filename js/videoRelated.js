@@ -9,7 +9,8 @@ function enlargeVideoDiv(_videoID) {
         pw = Math.ceil(CONSTANTS.PLAYING_VIDEO_WIDTH / 2 - 38.5),
         ph = Math.ceil(CONSTANTS.PLAYING_VIDEO_HEIGHT / 2 + 38.5);
 
-    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) { // enlarge thumbnail
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY
+        && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_LARGE) { // enlarge thumbnail
         elementToEnlarge = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToEnlarge.style.width = newWidth + "px";
         elementToEnlarge.style.height = newHeight + "px";
@@ -21,16 +22,34 @@ function enlargeVideoDiv(_videoID) {
         thumbnail = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.lastChild;
         thumbnail.style.marginLeft = pw + "px";
         thumbnail.style.marginTop = "-" + ph + "px";
+//        $('#' + getThumbnailDivId(_videoID)).first().animate({
+//            width: newWidth + "px",
+//            height: newHeight + "px"
+//        }, CONSTANTS.ANIMATION_TIME);
+//        $('#' + getThumbnailDivId(_videoID)).first().first().first().animate({
+//            width: newWidth + "px",
+//            height: newHeight + "px"
+//        }, CONSTANTS.ANIMATION_TIME);
+//        $('#' + getThumbnailDivId(_videoID)).first().first().last().animate({
+//            marginLeft: pw + "px",
+//            marginTop: "-" + ph + "px"
+//        }, CONSTANTS.ANIMATION_TIME);
+
+        G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_LARGE);
     }
 
-    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) { // enlarge video div
-        elementToEnlarge = document.getElementById(getVideoDivId(_videoID));  //.firstChild.firstChild
-        elementToEnlarge.width = newWidth;
-        elementToEnlarge.height = newHeight;
-//        $('#' + _videoID).animate({
-//            width: newWidth,
-//            height: newHeight
-//        }, 500 );
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY
+        && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_LARGE) { // enlarge video div
+//        elementToEnlarge = document.getElementById(getVideoDivId(_videoID));  //.firstChild.firstChild
+//        elementToEnlarge.width = newWidth;
+//        elementToEnlarge.height = newHeight;
+        //console.log("to enlarge: " + _videoID);
+        $('#' + getVideoDivId(_videoID)).animate({
+            width: newWidth,
+            height: newHeight
+        }, CONSTANTS.ANIMATION_TIME );
+
+        G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_LARGE);
     }
 
     for (vID in G.ytPlayers) {
@@ -54,7 +73,8 @@ function resetVideoDiv(_videoID) {
         pw = Math.ceil(CONSTANTS.VIDEO_WIDTH / 2 - 38.5),
         ph = Math.ceil(CONSTANTS.VIDEO_HEIGHT / 2 + 38.5);
 
-    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) { // reset thumbnail
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY
+        && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_NORMAL) { // reset thumbnail
         elementToReset = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
         elementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
@@ -66,19 +86,37 @@ function resetVideoDiv(_videoID) {
         thumbnail = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.lastChild;
         thumbnail.style.marginLeft = pw + "px";
         thumbnail.style.marginTop = "-" + ph + "px";
+//        $('#' + getThumbnailDivId(_videoID)).first().animate({
+//            width: CONSTANTS.VIDEO_WIDTH + "px",
+//            height: CONSTANTS.VIDEO_HEIGHT + "px"
+//        }, CONSTANTS.ANIMATION_TIME);
+//        $('#' + getThumbnailDivId(_videoID)).first().first().first().animate({
+//            width: CONSTANTS.VIDEO_WIDTH + "px",
+//            height: CONSTANTS.VIDEO_HEIGHT + "px"
+//        }, CONSTANTS.ANIMATION_TIME);
+//        $('#' + getThumbnailDivId(_videoID)).first().first().last().animate({
+//            marginLeft: pw + "px",
+//            marginTop: "-" + ph + "px"
+//        }, CONSTANTS.ANIMATION_TIME);
+
+        G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_NORMAL);
     }
 
     if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
         if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY
+            && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_NORMAL
             && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING
             && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
-            elementToReset = document.getElementById(getVideoDivId(_videoID));
-            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
-            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
-//            $('#' + _videoID).animate({
-//                width: CONSTANTS.VIDEO_WIDTH,
-//                height: CONSTANTS.VIDEO_HEIGHT
-//            }, 500 );
+//            elementToReset = document.getElementById(getVideoDivId(_videoID));
+//            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
+//            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
+            //console.log("to reset: " + _videoID);
+            $('#' + getVideoDivId(_videoID)).animate({
+                width: CONSTANTS.VIDEO_WIDTH,
+                height: CONSTANTS.VIDEO_HEIGHT
+            }, CONSTANTS.ANIMATION_TIME );
+
+            G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_NORMAL);
         }
     }
 }
@@ -490,6 +528,12 @@ function showSuitableVideoDivsForCurrentMousePosition() {
 
     if (videoIDUnder === "" && videoIDAbove === "")  {
         G.videoIDNextToCursor = "";
+        // resize all videos
+        for (id in G.visibilityOfVideos) {
+            if (G.visibilityOfVideos.hasOwnProperty(id)) {
+                resetVideoDiv(id);
+            }
+        }
         return;
     }
     //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);

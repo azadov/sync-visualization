@@ -8,6 +8,7 @@ function Video(id) {
     this.numberOfLoadingAttempts = 0;
     this.displayStatus = CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY;
     this.player = undefined;
+    this.sizeStatus = CONSTANTS.VIDEO_SIZE_STATUS_NORMAL;
 }
 
 Video.prototype.getId = function() {
@@ -60,4 +61,12 @@ Video.prototype.setPlayer = function(player) {
 
 Video.prototype.getPlayer = function() {
     return this.player;
+}
+
+Video.prototype.setSizeStatus = function(status) {
+    this.sizeStatus = status;
+}
+
+Video.prototype.getSizeStatus = function() {
+    return this.sizeStatus;
 }
