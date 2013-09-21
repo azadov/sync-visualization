@@ -17,7 +17,7 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
 
         this.loadScore(1, {
             'rootElement': 'PeachnoteViewerContainerId', 'widgetHeight': 620, 'widgetWidth': 460,
-            'loadScore': CONSTANTS.DEFAULT_SCORE_ID
+            'loadScore': "IMSLP90564", 'loadPage': 5
         });
 
     };
@@ -37,7 +37,7 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
                 if (!viewers.hasOwnProperty(viewerId)) {
                     viewers[viewerId] = PeachnoteViewer.initializeViewer(props);
                 } else {
-                    viewers[viewerId].loadScore(props.loadScore);
+                    viewers[viewerId].loadScore(props.loadScore, props.loadPage);
                 }
 
                 viewers[viewerId].setMeasureClickCallback(measureClickHandler);
@@ -141,7 +141,8 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
         this.clearMeasureHighlightings();
         this.highlightMeasure(measureNumber, viewerPage);
 
-        console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
+        console.log("clicked on page " + page + " of " + scoreId
+            + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
         var scoreTime = pageTimes[scoreId][page] + pageDuration(scoreId, page) * (measureNumber - 1) / totalMeasures;
 
         CONTROLLER.onScoreTimeChanged(scoreId, scoreTime);

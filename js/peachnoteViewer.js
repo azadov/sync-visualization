@@ -27,7 +27,8 @@ var PeachnoteViewer = (function (me) {
         var iFrameUrl = 'http://www.peachnote.com/viewer-embedded.html?'
             + '&width=' + params.widgetWidth
             + '&height=' + params.widgetHeight
-            + '&scoreId=' + params.loadScore;
+            + '&scoreId=' + params.loadScore
+            + '&page=' + params.loadPage;
 
         function initXDMConnection() {
             if (typeof easyXDM === 'undefined') {
@@ -77,8 +78,9 @@ var PeachnoteViewer = (function (me) {
      * an interface that the Viewer object provides to load scores
      * @param scoreId
      */
-    Viewer.prototype.loadScore = function (scoreId) {
-        this.socket.postMessage('["loadScore", "' + scoreId + '"]');
+    Viewer.prototype.loadScore = function (scoreId, page) {
+        if (typeof page === 'undefined') page = 0;
+        this.socket.postMessage('["loadScore", "' + scoreId + '", ' + page + ']');
     };
     Viewer.prototype.loadPage = function(page) {
         this.socket.postMessage('["loadPage", "' + page + '"]');
