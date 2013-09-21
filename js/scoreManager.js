@@ -6,7 +6,8 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
 
     me.init = function () {
 
-        this.loadScore(G.DEFAULT_SCORE_ID);
+        console.log("initializing score manager");
+        this.loadScore(CONSTANTS.DEFAULT_SCORE_ID);
 
     };
 
@@ -28,6 +29,9 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
     };
 
     me.loadScore = function (scoreId, params) {
+
+        console.log("loading score " + scoreId + " with params " + JSON.stringify(params));
+
         if (typeof params === 'undefined') {
             params = {
                 'rootElement': 'PeachnoteViewerContainerId', 'widgetHeight': 620, 'widgetWidth': 460

@@ -481,12 +481,11 @@ function pausePlayback() {
 }
 
 
-function showSuitableVideoDivsForCurrentMousePosition() {
+function showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYPoint) {
     'use strict';
 
-    var currentMouseXPoint = G.x_scale.invert(d3.mouse(this)[0]),
-        currentMouseYPoint = G.y_scale.invert(d3.mouse(this)[1]),
-        yAboveMousePoint = G.maxPlotY,
+
+        var yAboveMousePoint = G.maxPlotY,
         yUnderMousePoint = 0,
         videoIDAbove = "",
         videoIDUnder = "",
@@ -497,10 +496,9 @@ function showSuitableVideoDivsForCurrentMousePosition() {
         currentSegment,
         yAb,
         yUn,
-        factor = 0,
         videoToEnlarge = "";
 
-    //console.log("hide video ID " + currentMouseXPoint);
+
     calculateVisibilityOfVideos(currentMouseXPoint);
 
     if (gui.shouldHideVideos()) {
@@ -537,7 +535,7 @@ function showSuitableVideoDivsForCurrentMousePosition() {
         return;
     }
     //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
-    factor = 1;
+    var factor = 1;
     if (videoIDUnder === "") {
         //factor = currentMouseYPoint / yAboveMousePoint;
         videoToEnlarge = videoIDAbove;

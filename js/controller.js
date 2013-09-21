@@ -205,13 +205,12 @@ var CONTROLLER = (function(params) {
     }
 
 
-    function getVideoTimeFromScoreTime(scoreTime, _timeMap) {
+    function getVideoTimeFromScoreTime(scoreTime, timeMap) {
         'use strict';
-
         var i;
-        for (i = 0; i < _timeMap[0].length - 1; i = i + 1) {
-            if ((scoreTime >= _timeMap[0][i]) && (scoreTime < _timeMap[0][i + 1])) {
-                return _timeMap[1][i];
+        for (i = 0; i < timeMap[0].length - 1; i = i + 1) {
+            if ((scoreTime >= timeMap[0][i]) && (scoreTime < timeMap[0][i + 1])) {
+                return timeMap[1][i];
             }
         }
     }

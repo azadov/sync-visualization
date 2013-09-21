@@ -5,6 +5,8 @@ var VIDEO_MANAGER = (function (me) {
      * initialize video manager
      */
     me.init = function () {
+        console.log("initializing video manager");
+
         initYouTubeAPI();
     };
 

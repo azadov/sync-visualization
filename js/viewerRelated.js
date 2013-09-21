@@ -11,10 +11,12 @@ function getVideoWithLoadedAlignment(scoreId) {
 
 
 
-function getYtOffsetByScoreTime(videoID, time) {
+function getYtOffsetByScoreTime(scoreId, videoId, time) {
     'use strict';
-
-    var timeMap = CONTROLLER.getTimeMap(scoreId, videoID), s, i;
+    if (typeof CONTROLLER.getTimeMap(scoreId, videoId) === 'undefined') {
+        console.log("no timemap available for " + scoreId + " " + videoId + " !");
+    }
+    var timeMap = CONTROLLER.getTimeMap(scoreId, videoId), s, i;
     for (s = 0; s < timeMap.length; s = s + 1) {
         if (timeMap[s][0][0] > time) {
             continue;
@@ -29,12 +31,12 @@ function getYtOffsetByScoreTime(videoID, time) {
     }
 }
 
-function getVideoTimeForPagePosition(videoID, pt) {
+function getVideoTimeForPagePosition(scoreId, videoId, time) {
     'use strict';
-    console.log("get video time for score position " + scoreId + " " + videoId);
+    console.log("get video time for score position " + scoreId + " " + videoId + " " + time);
     //console.log("getting time for page position " + page + " " + relPos);
     //var pt = G.pageTimes[page] + pageDuration(page) * relPos;
-    var segmentScoreTime = getYtOffsetByScoreTime(scoreId, videoId, pt),
+    var segmentScoreTime = getYtOffsetByScoreTime(scoreId, videoId, time),
         timeMap = CONTROLLER.getTimeMap(scoreId, videoId);
     return timeMap[segmentScoreTime[0]][1][segmentScoreTime[1]];
 }

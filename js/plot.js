@@ -434,7 +434,7 @@ function createPlotSVG() {
                 CONTROLLER.onPlotClick(scoreTime)
             })
             .on("mousemove", updateMouseTrackLine)
-            //.on("mousemove", showSuitableVideoDivsForCurrentMousePosition)
+            //.on("mousemove", showSuitableVideoDivsForPlotPosition)
             //.on("mousemove", handleMouseMoveEvent)
             .on("mouseout", removeMouseTrackLine)
         ;
@@ -666,7 +666,11 @@ function drawPlot(scoreId) {
         //.on("click", updateScorePosition)
         //.on("mousemove", updateMouseTrackLine)
         //.on("mouseout", removeMouseTrackLine)
-        .on("mousemove", showSuitableVideoDivsForCurrentMousePosition)
+        .on("mousemove", function() {
+            var currentMouseXPoint = G.x_scale.invert(d3.mouse(this)[0]),
+                currentMouseYPoint = G.y_scale.invert(d3.mouse(this)[1]);
+            showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYPoint);
+        })
     ;
 
     createPageTicks(svg, SCORE_MANAGER.getPageTimes(scoreId));
