@@ -45,6 +45,7 @@ var VIDEO_MANAGER = (function (me) {
     };
 
     me.updateVideoPosition = function (videoTime) {
+        console.log("UpdateVideoPosition: " + G.videoIDNextToCursor);
         if (G.videoIDNextToCursor !== "") {
             if (G.videos[G.videoIDNextToCursor].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
 
@@ -54,7 +55,7 @@ var VIDEO_MANAGER = (function (me) {
             } else if (G.videos[G.videoIDNextToCursor].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
                 G.videoStartPosition[G.videoIDNextToCursor] = videoTime;
-                loadVideo(G.videoIDNextToCursor, G.videoIDNextToCursor);
+                loadVideo(G.videoIDNextToCursor);
             }
         }
     };

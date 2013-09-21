@@ -10,7 +10,7 @@ function enlargeVideoDiv(_videoID) {
         ph = Math.ceil(CONSTANTS.PLAYING_VIDEO_HEIGHT / 2 + 38.5);
 
     if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY
-        && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_LARGE) { // enlarge thumbnail
+        && G.videos[_videoID].getThumbnailSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_LARGE) { // enlarge thumbnail
         elementToEnlarge = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToEnlarge.style.width = newWidth + "px";
         elementToEnlarge.style.height = newHeight + "px";
@@ -35,11 +35,11 @@ function enlargeVideoDiv(_videoID) {
 //            marginTop: "-" + ph + "px"
 //        }, CONSTANTS.ANIMATION_TIME);
 
-        G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_LARGE);
+        G.videos[_videoID].setThumbnailSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_LARGE);
     }
 
     if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY
-        && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_LARGE) { // enlarge video div
+        && G.videos[_videoID].getVideoSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_LARGE) { // enlarge video div
 //        elementToEnlarge = document.getElementById(getVideoDivId(_videoID));  //.firstChild.firstChild
 //        elementToEnlarge.width = newWidth;
 //        elementToEnlarge.height = newHeight;
@@ -49,7 +49,7 @@ function enlargeVideoDiv(_videoID) {
             height: newHeight
         }, CONSTANTS.ANIMATION_TIME );
 
-        G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_LARGE);
+        G.videos[_videoID].setVideoSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_LARGE);
     }
 
     for (vID in G.ytPlayers) {
@@ -74,7 +74,7 @@ function resetVideoDiv(_videoID) {
         ph = Math.ceil(CONSTANTS.VIDEO_HEIGHT / 2 + 38.5);
 
     if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY
-        && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_NORMAL) { // reset thumbnail
+        && G.videos[_videoID].getThumbnailSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_NORMAL) { // reset thumbnail
         elementToReset = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToReset.style.width = CONSTANTS.VIDEO_WIDTH + "px";
         elementToReset.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
@@ -99,12 +99,12 @@ function resetVideoDiv(_videoID) {
 //            marginTop: "-" + ph + "px"
 //        }, CONSTANTS.ANIMATION_TIME);
 
-        G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_NORMAL);
+        G.videos[_videoID].setThumbnailSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_NORMAL);
     }
 
     if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
         if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY
-            && G.videos[_videoID].getSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_NORMAL
+            && G.videos[_videoID].getVideoSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_NORMAL
             && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING
             && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
 //            elementToReset = document.getElementById(getVideoDivId(_videoID));
@@ -116,7 +116,7 @@ function resetVideoDiv(_videoID) {
                 height: CONSTANTS.VIDEO_HEIGHT
             }, CONSTANTS.ANIMATION_TIME );
 
-            G.videos[_videoID].setSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_NORMAL);
+            G.videos[_videoID].setVideoSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_NORMAL);
         }
     }
 }
@@ -325,13 +325,13 @@ function loadVideo(_videoID) {
 
     $("#" + getVideoDivId(_videoID)).css('position', '').css('left', '').css('background-color', 'lightgrey');
 
+    enlargeVideoDiv(_videoID);
+
     if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
         console.log("id: " + _videoID + " already preloaded");
 
         G.ytPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
         G.ytPlayers[_videoID].playVideo();
-
-        enlargeVideoDiv(_videoID);
 
         console.log("id: " + _videoID + " play");
     } //else {
@@ -485,18 +485,16 @@ function showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYP
     'use strict';
 
 
-        var yAboveMousePoint = G.maxPlotY,
+    var yAboveMousePoint = G.maxPlotY,
         yUnderMousePoint = 0,
         videoIDAbove = "",
         videoIDUnder = "",
         videoSegmentAbove,
         videoSegmentUnder,
-        i,
-        id,
+        i, id, yAb, yUn,
         currentSegment,
-        yAb,
-        yUn,
-        videoToEnlarge = "";
+        videoToEnlarge = "",
+        cursorOnVideoSegment = false;
 
 
     calculateVisibilityOfVideos(currentMouseXPoint);
@@ -509,6 +507,12 @@ function showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYP
     for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
         currentSegment = G.allVideoSegments[i];
         if (currentMouseXPoint >= currentSegment.x1 && currentMouseXPoint <= currentSegment.x2) {
+            //console.log(currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT + "     " + currentMouseYPoint + "   " + currentSegment.y);
+//            if (currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT <= currentMouseYPoint && currentMouseYPoint <= currentSegment.y) {
+//                cursorOnVideoSegment = true;
+//                G.videoIDNextToCursor = currentSegment.videoID;
+//                G.segmentNextToCursor = currentSegment;
+//            }
             yUn = currentSegment.y;// - CONSTANTS.SEGMENT_RECT_HEIGHT;
             if (currentMouseYPoint > yUn && yUn > yUnderMousePoint) {
                 yUnderMousePoint = yUn;
@@ -523,8 +527,8 @@ function showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYP
             }
         }
     }
-
-    if (videoIDUnder === "" && videoIDAbove === "")  {
+    //console.log("toenlargeornottoenlarge   " + videoIDUnder + "    " + videoIDAbove + "    " + cursorOnVideoSegment);
+    if (videoIDUnder === "" && videoIDAbove === "")  {  // && !cursorOnVideoSegment
         G.videoIDNextToCursor = "";
         // resize all videos
         for (id in G.visibilityOfVideos) {
@@ -629,6 +633,8 @@ function enlargeVideoDivRect(d) {
     //console.log("videoID rect: " + d.videoID);
     enlargeVideoDiv(d.videoID);
     gui.setSegmentQuality(d.segmentConfidence);
+    G.segmentNextToCursor = d;
+    G.videoIDNextToCursor = d.videoID;
 }
 
 function enlargeVideoDivCurve(d) {

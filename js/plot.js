@@ -147,12 +147,12 @@ function rbClickHandler(d, scoreId) {
         }
     }
 
-    if (G.ytPlayers.hasOwnProperty(videoIDToPlay)) {
+    if (G.videos[videoIDToPlay].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
 
         G.ytPlayers[videoIDToPlay].seekTo(Math.max(0, videoTime));
         G.ytPlayers[videoIDToPlay].playVideo();
 
-    } else if (G.ytPlayerThumbnails.hasOwnProperty(videoIDToPlay)) {
+    } else if (G.videos[videoIDToPlay].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
         G.videoStartPosition[videoIDToPlay] = videoTime;
         loadVideo(videoIDToPlay);
@@ -431,7 +431,7 @@ function createPlotSVG() {
 
             .on("click", function() {
                 var scoreTime = G.x_scale.invert(d3.mouse(this)[0]);
-                CONTROLLER.onPlotClick(scoreTime)
+                CONTROLLER.onPlotClick(scoreTime);
             })
             .on("mousemove", updateMouseTrackLine)
             //.on("mousemove", showSuitableVideoDivsForPlotPosition)
@@ -485,11 +485,13 @@ function updateMouseTrackLine(d) {
     var currentMouseX = d3.mouse(this)[0], svgContainer;
 
     if (G.mouseTrackLineExist) {
+        //console.log("update mouse track line")
         d3.select(".mouseTrackLine").attr("x1", currentMouseX)
             .attr("y1", G.y_scale(0))
             .attr("x2", currentMouseX)
             .attr("y2", G.y_scale(G.maxPlotY));
     } else {
+        console.log("create mouse track line");
         svgContainer = d3.select("g");
         svgContainer.append("line")
             .attr("class", "mouseTrackLine")
@@ -509,15 +511,26 @@ function updateMouseTrackLine(d) {
 function removeMouseTrackLine(d) {
     'use strict';
 
-    console.log("remove mouseTrackLine");
-    d3.select(".mouseTrackLine").remove();
-    G.mouseTrackLineExist = false;
+    var currentMouseX = G.x_scale.invert(d3.mouse(this)[0]), currentMouseY = G.y_scale.invert(d3.mouse(this)[1]), remove = true, id;
 
-    var id;
-    if (!$('#hideVideoDivs').prop('checked')) {
-        for (id in G.visibilityOfVideos) {
-            if (G.visibilityOfVideos.hasOwnProperty(id)) {
-                resetVideoDiv(id);
+    // whyever this function is invoked also by transition to rectangle or to curve,
+    // that is why follow 'if' is needed
+    //console.log(currentMouseX + "     " + G.maxPlotX + "     " + currentMouseY + "    " + G.maxPlotY);
+    if (0 <= currentMouseX && currentMouseX <= G.maxPlotX
+        && 0 <= currentMouseY && currentMouseY <= G.maxPlotY) {
+        remove = false;
+    }
+
+    if (remove) {
+        console.log("remove mouseTrackLine");
+        d3.select(".mouseTrackLine").remove();
+        G.mouseTrackLineExist = false;
+
+        if (!$('#hideVideoDivs').prop('checked')) {
+            for (id in G.visibilityOfVideos) {
+                if (G.visibilityOfVideos.hasOwnProperty(id)) {
+                    resetVideoDiv(id);
+                }
             }
         }
     }

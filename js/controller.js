@@ -76,6 +76,7 @@ var CONTROLLER = (function(params) {
     me.onPlotClick = function(scoreTime) {
         var scoreId = gui.getSelectedScoreId();
         SCORE_MANAGER.updateScorePosition(scoreId, scoreTime);
+        //console.log("onPlotClick segmentNextToCursor: " + G.segmentNextToCursor.videoID);
         var videoTime = getVideoTimeFromScoreTime(scoreTime, G.segmentNextToCursor.timeMap);
         VIDEO_MANAGER.updateVideoPosition(videoTime);
     };
