@@ -1,7 +1,13 @@
 var SCORE_MANAGER = (function (me, PeachnoteViewer) {
 
+    /**
+     * hash of the form viewerId: viewerProperties
+     */
     var viewers = {};
 
+    /**
+     * hash of the form scoreId: pageTimes
+     */
     var pageTimes = {};
 
     me.init = function () {
@@ -9,54 +15,76 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
         console.log("initializing score manager");
         this.loadScore(CONSTANTS.DEFAULT_SCORE_ID);
 
+        this.loadScore(1, {
+            'rootElement': 'PeachnoteViewerContainerId', 'widgetHeight': 620, 'widgetWidth': 460,
+            'loadScore': CONSTANTS.DEFAULT_SCORE_ID
+        });
+
     };
 
     /**
      * loads the score
      *
-     * @param  params should be a hash with keys equal to scoreIds to be loaded
+     * @param  params should be a hash with keys equal to viewerIds of viewers to be used
      * and values the configuration of the corresponding viewers.
      *
      */
     me.loadScores = function (params) {
-        for (var scoreId in params) {
-            if (params.hasOwnProperty(scoreId)) {
-                var props = params[scoreId];
-                viewers[scoreId] = PeachnoteViewer.initializeViewer(props);
-                viewers[scoreId].setMeasureClickCallback(measureClickHandler);
+        for (var viewerId in params) {
+            if (params.hasOwnProperty(viewerId)) {
+                var props = params[viewerId];
+
+                if (!viewers.hasOwnProperty(viewerId)) {
+                    viewers[viewerId] = PeachnoteViewer.initializeViewer(props);
+                } else {
+                    viewers[viewerId].loadScore(props.loadScore);
+                }
+
+                viewers[viewerId].setMeasureClickCallback(measureClickHandler);
             }
         }
     };
 
-    me.loadScore = function (scoreId, params) {
-
-        console.log("loading score " + scoreId + " with params " + JSON.stringify(params));
+    me.loadScore = function (viewerId, params) {
 
         if (typeof params === 'undefined') {
             params = {
-                'rootElement': 'PeachnoteViewerContainerId', 'widgetHeight': 620, 'widgetWidth': 460
-            }
+                'rootElement': 'PeachnoteViewerContainerId', 'widgetHeight': 620, 'widgetWidth': 460,
+                'loadScore': viewerId
+            };
+
+            console.log("loading score in Viewer " + 0 + " with params " + JSON.stringify(params));
+            this.loadScores({0: params});
+        } else {
+            var p = {};
+            p[viewerId] = params;
+
+            console.log("loading score in Viewer " + viewerId + " with params " + JSON.stringify(params));
+            this.loadScores(p);
         }
-        params.loadScore = scoreId;
-        var p = {};
-        p[scoreId] = params;
-        this.loadScores(p);
+
     };
 
     me.updateScorePosition = function (scoreId, scoreTime) {
         'use strict';
 
-        console.log("update score position");
+        console.log("update score position in viewers displaying " + scoreId);
 
         var page = getPage(scoreId, scoreTime),
             normalizedPageTime = SCORE_MANAGER.getNormalizedTime(scoreId, page, scoreTime);
-
         console.log("normalizedTime " + normalizedPageTime);
 
-        var viewer = SCORE_MANAGER.getViewer(scoreId);
-        viewer.loadPage(page - 1);
-        viewer.clearMeasureHighlightings();
-        viewer.highlightMeasureAtNormalizedTime(normalizedPageTime, page - 1, true);
+        for (var viewerId in viewers) {
+            if (viewers.hasOwnProperty(viewerId)) {
+                var viewer = viewers[viewerId];
+                var sid = viewer.getLoadedScoreId();
+                if (sid === scoreId) {
+                    viewer.loadPage(page - 1);
+                    viewer.clearMeasureHighlightings();
+                    viewer.highlightMeasureAtNormalizedTime(normalizedPageTime, page - 1, true);
+                }
+            }
+        }
     };
 
     /**
@@ -66,8 +94,31 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
         return viewers;
     };
 
-    me.getViewer = function (scoreId) {
-        return viewers[scoreId];
+    me.getViewer = function (viewerId) {
+        return viewers[viewerId];
+    };
+
+    me.getViewersForScore = function(scoreId) {
+        var out = [], viewerId, sid;
+        for (viewerId in viewers) {
+            if (viewers.hasOwnProperty(viewerId)) {
+                sid = viewers[viewerId].getLoadedScoreId();
+                if (scoreId === sid) out.push(viewers[viewerId]);
+            }
+        }
+        return out;
+    };
+
+    me.getNormalizedTime = function(scoreId, page, pageTime) {
+        return (pageTime - pageTimes[scoreId][page]) / pageDuration(scoreId, page);
+    };
+
+    me.setPageTimes = function(scoreId, pt) {
+        pageTimes[scoreId] = pt;
+    };
+
+    me.getPageTimes = function(scoreId) {
+        return pageTimes[scoreId];
     };
 
     /**
@@ -91,7 +142,7 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
         this.highlightMeasure(measureNumber, viewerPage);
 
         console.log("clicked on page " + page + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
-        var scoreTime = pageTimes[page] + pageDuration(scoreId, page) * (measureNumber - 1) / totalMeasures;
+        var scoreTime = pageTimes[scoreId][page] + pageDuration(scoreId, page) * (measureNumber - 1) / totalMeasures;
 
         CONTROLLER.onScoreTimeChanged(scoreId, scoreTime);
     }
@@ -126,18 +177,6 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
         }
     }
 
-    me.getNormalizedTime = function(scoreId, page, pageTime) {
-        return (pageTime - pageTimes[scoreId][page]) / pageDuration(scoreId, page);
-    };
-
-
-    me.setPageTimes = function(scoreId, pt) {
-        pageTimes[scoreId] = pt;
-    };
-
-    me.getPageTimes = function(scoreId) {
-        return pageTimes[scoreId];
-    };
 
 
     return me;

@@ -38,6 +38,9 @@ function getVideoTimeForPagePosition(scoreId, videoId, time) {
     //var pt = G.pageTimes[page] + pageDuration(page) * relPos;
     var segmentScoreTime = getYtOffsetByScoreTime(scoreId, videoId, time),
         timeMap = CONTROLLER.getTimeMap(scoreId, videoId);
+    if (typeof segmentScoreTime === 'undefined') {
+        throw "no video segment available for this place in the score";
+    }
     return timeMap[segmentScoreTime[0]][1][segmentScoreTime[1]];
 }
 

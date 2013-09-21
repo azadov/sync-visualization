@@ -3,7 +3,6 @@ var CONTROLLER = (function(params) {
     var me = params.controller,
         videoManager = params.videoManager,
         scoreManager = params.scoreManager,
-
         alignments = new Alignments()
     ;
 
@@ -15,6 +14,7 @@ var CONTROLLER = (function(params) {
         fixIEConsoleBug();
 
         videoManager.init();
+
         scoreManager.init();
 
         bindScoreFilterInputWithFilteringAction();
@@ -43,6 +43,7 @@ var CONTROLLER = (function(params) {
         calculateVisibilityOfVideos(scoreTime);
 
         if (gui.shouldHideVideos()) {
+
             showAndHideVideos();
         }
 
@@ -77,6 +78,9 @@ var CONTROLLER = (function(params) {
         var scoreId = gui.getSelectedScoreId();
         SCORE_MANAGER.updateScorePosition(scoreId, scoreTime);
         //console.log("onPlotClick segmentNextToCursor: " + G.segmentNextToCursor.videoID);
+        if (typeof G.segmentNextToCursor.timeMap === 'undefined') {
+            throw new ControllerException("no video segment available for this place in the score");
+        }
         var videoTime = getVideoTimeFromScoreTime(scoreTime, G.segmentNextToCursor.timeMap);
         VIDEO_MANAGER.updateVideoPosition(videoTime);
     };
@@ -108,13 +112,12 @@ var CONTROLLER = (function(params) {
         console.log("page: " + page + " scoreTime: " + scoreTime);
         console.log(pageAndTime);
 
-        var viewer = SCORE_MANAGER.getViewer(scoreId);
-        viewer.clearMeasureHighlightings();
-        viewer.highlightMeasureAtNormalizedTime(normalizedPageTime, page - 1, true);
-
-        if (pagePlus !== G.prevPage) {
+        var viewers = SCORE_MANAGER.getViewersForScore(scoreId);
+        for (var i = 0; i < viewers.length; i++) {
+            var viewer = viewers[i];
+            viewer.clearMeasureHighlightings();
+            viewer.highlightMeasureAtNormalizedTime(normalizedPageTime, page - 1, true);
             viewer.loadPage(pagePlus - 1);
-            G.prevPage = pagePlus;
         }
 
         updateVideoTrackLine(scoreTime);
@@ -322,6 +325,11 @@ var CONTROLLER = (function(params) {
             window.console = {};
             window.console.log = function (msg) {};
         }
+    }
+
+    function ControllerException(message) {
+        this.message = message;
+        this.name = "PeachnoteControllerException";
     }
 
     return me;

@@ -13,12 +13,15 @@ var PeachnoteViewer = (function (me) {
         var that = this;
 
         this.socket = {};
+        this.loadedScoreId = undefined;
 
         /**
          * a stub that can later be modified by user.
          * @param scoreId
          */
-        this.scoreLoadedCallback = function(event) {};
+        this.scoreLoadedCallback = function(event) {
+            this.loadedScoreId = event.scoreId;
+        };
         this.measureClickCallback = function(event) {};
 
         var iFrameUrl = 'http://www.peachnote.com/viewer-embedded.html?'
@@ -42,7 +45,9 @@ var PeachnoteViewer = (function (me) {
                     onViewerMessage(that, message, origin);
                 },
                 onReady: function () {
-                    if (typeof onLoaded === 'function') onLoaded(that);
+                    if (typeof onLoaded === 'function') {
+                        onLoaded(that);
+                    }
                 }
             });
         }
@@ -65,6 +70,9 @@ var PeachnoteViewer = (function (me) {
         }
     }
 
+    Viewer.prototype.getLoadedScoreId = function() {
+        return this.loadedScoreId;
+    };
     /**
      * an interface that the Viewer object provides to load scores
      * @param scoreId
@@ -86,7 +94,10 @@ var PeachnoteViewer = (function (me) {
     };
 
     Viewer.prototype.setScoreLoadCallback = function(callback) {
-         this.scoreLoadedCallback = callback;
+         this.scoreLoadedCallback = function(event) {
+             this.loadedScoreId = event.scoreId;
+             callback(event);
+         }
     };
     Viewer.prototype.setMeasureClickCallback = function(callback) {
         this.measureClickCallback = callback;
@@ -116,7 +127,10 @@ var PeachnoteViewer = (function (me) {
      * @returns {boolean}
      */
     function validateParams(params) {
-        if (!params.hasOwnProperty("rootElement") || !params.hasOwnProperty("widgetWidth") || !params.hasOwnProperty("widgetHeight")) return false;
+        if (!params.hasOwnProperty("rootElement") ||
+            !params.hasOwnProperty("widgetWidth") ||
+            !params.hasOwnProperty("widgetHeight"))
+            return false;
 
         return true;
     }
