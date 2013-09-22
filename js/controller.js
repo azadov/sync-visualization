@@ -61,15 +61,15 @@ var CONTROLLER = (function(params) {
         videoId = videosToPlay[randomIndex];
         console.log(G.visibilityOfVideos);
         videoTime = getVideoTimeForPagePosition(scoreId, videoId, scoreTime);
-        if (G.ytPlayers.hasOwnProperty(videoId)) {
+        if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
 
             G.ytPlayers[videoId].seekTo(Math.max(0, videoTime));
             G.ytPlayers[videoId].playVideo();
 
-        } else if (G.ytPlayerThumbnails.hasOwnProperty(videoId)) {
+        } else if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
             G.videoStartPosition[videoId] = videoTime;
-            loadVideo(videoId, videoId);
+            loadVideo(videoId);
         }
     };
 
