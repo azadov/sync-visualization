@@ -77,8 +77,6 @@ G.videoLoadingInterval = {};        // maps videoId to interval
 G.videos = {};
 
 G.ytPlayers = {};
-G.ytPlayerThumbnails = {};
-G.ytPreloadedPlayers = {};
 
 G.mouseTrackLineExist = false;
 G.videoTrackLineExist = false;

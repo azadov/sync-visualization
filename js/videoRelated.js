@@ -329,7 +329,6 @@ function onPlayerStateChange(event) {
 function loadVideo(_videoID) {
     'use strict';
     console.log("videoDiv: " + $("#" + getVideoDivId(_videoID)));
-    delete G.ytPlayerThumbnails[_videoID];
 
     console.log("Load video: " + _videoID);
 
@@ -379,8 +378,6 @@ function createThumbnailDiv(videoId) {
         .appendTo($('#' + getThumbnailAndVideoHolderDivId(videoId)));
 
     document.getElementById(videoContainerID).appendChild(thumbnailDiv);
-
-    G.ytPlayerThumbnails[videoId] = thumbnailDiv;
 }
 
 function createVideoThumbnails(scoreId, videos) {
@@ -442,14 +439,14 @@ function showAndHideVideos() {
                 //console.log("SHOW");
                 showVideo(videoID);
             } else {
-                if (G.ytPlayers.hasOwnProperty(videoID)) {
+                if (G.videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
                     //console.log("Video in ytPlayer: " + videoID);
                     if (G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
                         //console.log("HideVideoID: " + videoID + "    state: " + G.ytPlayers[videoID].getPlayerState());
                         hideVideo(videoID);
                     }
                 }
-                if (G.ytPlayerThumbnails.hasOwnProperty(videoID)) {
+                if (G.videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
                     hideVideo(videoID);
                 }
             }
@@ -463,22 +460,22 @@ function hideVideo(_videoID) {
     //document.getElementById(_videoID).style.display = "none";
     //document.getElementById(_videoID).style.visibility = "hidden";
     var elementToHide, secondElementToHide, thirdElementToHide;
-    if (G.ytPlayers.hasOwnProperty(_videoID)) {
-        elementToHide = document.getElementById(_videoID);
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+        elementToHide = document.getElementById(getVideoDivId(_videoID));
         elementToHide.width = 0;
         elementToHide.height = 0;
     }
 
-    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToHide = document.getElementById(_videoID).firstChild;
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+        elementToHide = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToHide.style.width = 0 + "px";
         elementToHide.style.height = 0 + "px";
 
-        secondElementToHide = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToHide = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.firstChild;
         secondElementToHide.style.width = 0 + "px";
         secondElementToHide.style.height = 0 + "px";
 
-        thirdElementToHide = document.getElementById(_videoID).firstChild.firstChild.lastChild;
+        thirdElementToHide = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.lastChild;
         thirdElementToHide.style.width = 0 + "px";
         thirdElementToHide.style.height = 0 + "px";
     }
@@ -489,9 +486,12 @@ function showVideo(_videoID) {
 
     //document.getElementById(_videoID).style.display = "";
     //document.getElementById(_videoID).style.visibility = "visible";
-    var elementToShow, secondElementToShow, thirdElementToShow;
-    if (G.ytPlayers.hasOwnProperty(_videoID)) {
-        elementToShow = document.getElementById(_videoID);
+    var elementToShow, secondElementToShow, thirdElementToShow,
+        pw = Math.ceil(CONSTANTS.VIDEO_WIDTH / 2 - 38.5),
+        ph = Math.ceil(CONSTANTS.VIDEO_HEIGHT / 2 + 38.5);
+
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+        elementToShow = document.getElementById(getVideoDivId(_videoID));
         elementToShow.width = CONSTANTS.VIDEO_WIDTH;
         elementToShow.height = CONSTANTS.VIDEO_HEIGHT;
 
@@ -501,18 +501,20 @@ function showVideo(_videoID) {
         }
     }
 
-    if (G.ytPlayerThumbnails.hasOwnProperty(_videoID)) {
-        elementToShow = document.getElementById(_videoID).firstChild;
+    if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+        elementToShow = document.getElementById(getThumbnailDivId(_videoID)).firstChild;
         elementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
         elementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
 
-        secondElementToShow = document.getElementById(_videoID).firstChild.firstChild.firstChild;
+        secondElementToShow = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.firstChild;
         secondElementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
         secondElementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
 
-        thirdElementToShow = document.getElementById(_videoID).firstChild.firstChild.lastChild;
-        thirdElementToShow.style.width = CONSTANTS.VIDEO_WIDTH + "px";
-        thirdElementToShow.style.height = CONSTANTS.VIDEO_HEIGHT + "px";
+        thirdElementToShow = document.getElementById(getThumbnailDivId(_videoID)).firstChild.firstChild.lastChild;
+        thirdElementToShow.style.width = 77 + "px";
+        thirdElementToShow.style.height = 77 + "px";
+        thirdElementToShow.style.marginLeft = pw + "px";
+        thirdElementToShow.style.marginTop = "-" + ph + "px";
     }
 }
 
@@ -623,9 +625,9 @@ function showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYP
         }
     }
 
-    if (G.ytPlayerThumbnails.hasOwnProperty(videoToEnlarge)) {
+    if (G.videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
         enlargeVideoDiv(videoToEnlarge);
-    } else  if (G.ytPlayers.hasOwnProperty(videoToEnlarge)) {
+    } else  if (G.videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
         if (G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.BUFFERING) {
             enlargeVideoDiv(videoToEnlarge);
         }
