@@ -147,8 +147,8 @@ function rbClickHandler(d, scoreId) {
         }
     }
 
-    // TODO: don't call VIDEO_MANAGER directly from hier. Call it via CONTROLLER
-    VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime);
+    CONTROLLER.onRBClick(videoIDToPlay, videoTime);
+    //VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime);
 
     if (!document.getElementById(rbIDToCheck).checked) {
         document.getElementById(rbIDToCheck).checked = true;
@@ -674,7 +674,7 @@ function drawPlot(scoreId) {
         .on("mousemove", function() {
             var currentMouseXPoint = G.x_scale.invert(d3.mouse(this)[0]),
                 currentMouseYPoint = G.y_scale.invert(d3.mouse(this)[1]);
-            showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYPoint);
+            CONTROLLER.onMouseMove(currentMouseXPoint, currentMouseYPoint);
         })
     ;
 

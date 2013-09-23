@@ -84,10 +84,9 @@ var CONTROLLER = (function(params) {
             scoreId = gui.getSelectedScoreId(),
             pageAndTime = getPageAndTimeForVideoTime(videoTime, scoreId, G.currentPlayingYTVideoID),
             pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + CONSTANTS.FORE_RUNNING_TIME, scoreId, G.currentPlayingYTVideoID),
-            page,
+            page, pagePlus,
             scoreTime,
             normalizedPageTime,
-            pagePlus,
             rbID;
 
         //if (typeof pageAndTime == "undefined") return;
@@ -113,8 +112,6 @@ var CONTROLLER = (function(params) {
 
         updateVideoTrackLine(scoreTime);
 
-
-
         rbID = G.currentPlayingYTVideoID + "_" + getSegmentIndexFromVideoTime(G.currentPlayingYTVideoID, videoTime) + "_RB";
         if (!document.getElementById(rbID).checked) {
             document.getElementById(rbID).checked = true;
@@ -122,6 +119,13 @@ var CONTROLLER = (function(params) {
         }
     };
 
+    me.onMouseMove = function(currentMouseXPoint, currentMouseYPoint) {
+        VIDEO_MANAGER.showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYPoint);
+    }
+
+    me.onRBClick = function(videoIDToPlay, videoTime) {
+        VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime);
+    }
 
     me.initializeVisualization = function(scoreId) {
 

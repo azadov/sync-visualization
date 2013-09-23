@@ -44,6 +44,118 @@ var VIDEO_MANAGER = (function (me) {
     me.clear = function () {
     };
 
+    me.showSuitableVideoDivsForPlotPosition = function(currentMouseXPoint, currentMouseYPoint) {
+        'use strict';
+
+
+        var yAboveMousePoint = G.maxPlotY,
+            yUnderMousePoint = 0,
+            videoIDAbove = "",
+            videoIDUnder = "",
+            videoSegmentAbove,
+            videoSegmentUnder,
+            i, id, yAb, yUn,
+            currentSegment,
+            videoToEnlarge = "",
+            cursorOnVideoSegment = false;
+
+
+        calculateVisibilityOfVideos(currentMouseXPoint);
+
+        if (gui.shouldHideVideos()) {
+            showAndHideVideos();
+        }
+
+
+        for (i = 0; i < G.allVideoSegments.length; i = i + 1) {
+            currentSegment = G.allVideoSegments[i];
+            if (currentMouseXPoint >= currentSegment.x1 && currentMouseXPoint <= currentSegment.x2) {
+                //console.log(currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT + "     " + currentMouseYPoint + "   " + currentSegment.y);
+//            if (currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT <= currentMouseYPoint && currentMouseYPoint <= currentSegment.y) {
+//                cursorOnVideoSegment = true;
+//                G.videoIDNextToCursor = currentSegment.videoID;
+//                G.segmentNextToCursor = currentSegment;
+//            }
+                yUn = currentSegment.y;// - CONSTANTS.SEGMENT_RECT_HEIGHT;
+                if (currentMouseYPoint > yUn && yUn > yUnderMousePoint) {
+                    yUnderMousePoint = yUn;
+                    videoIDUnder = currentSegment.videoID;
+                    videoSegmentUnder = currentSegment;
+                }
+                yAb = currentSegment.y - CONSTANTS.SEGMENT_RECT_HEIGHT;
+                if (currentMouseYPoint < yAb && yAb < yAboveMousePoint) {
+                    yAboveMousePoint = yAb;
+                    videoIDAbove = currentSegment.videoID;
+                    videoSegmentAbove = currentSegment;
+                }
+            }
+        }
+        //console.log("toenlargeornottoenlarge   " + videoIDUnder + "    " + videoIDAbove + "    " + cursorOnVideoSegment);
+        if (videoIDUnder === "" && videoIDAbove === "")  {  // && !cursorOnVideoSegment
+            G.videoIDNextToCursor = "";
+            // resize all videos
+            for (id in G.visibilityOfVideos) {
+                if (G.visibilityOfVideos.hasOwnProperty(id)) {
+                    resetVideoDiv(id);
+                }
+            }
+            return;
+        }
+        //console.log("above: " + videoIDAbove + "  yAb: " + yAboveMousePoint + "        under: " + videoIDUnder + "  yUn: " + yUnderMousePoint);
+        var factor = 1;
+        if (videoIDUnder === "") {
+            //factor = currentMouseYPoint / yAboveMousePoint;
+            videoToEnlarge = videoIDAbove;
+            G.segmentNextToCursor = videoSegmentAbove;
+        } else if (videoIDAbove === "") {
+            //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / (G.maxPlotY - yUnderMousePoint);
+            videoToEnlarge = videoIDUnder;
+            G.segmentNextToCursor = videoSegmentUnder;
+        } else if (videoIDUnder === videoIDAbove) {
+            factor = 1;
+            videoToEnlarge = videoIDUnder;
+            if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
+                G.segmentNextToCursor = videoSegmentUnder;
+            } else {
+                G.segmentNextToCursor = videoSegmentAbove;
+            }
+        } else {
+            if ((yAboveMousePoint - currentMouseYPoint) >= (currentMouseYPoint - yUnderMousePoint)) {
+                // point under is the next to mouse point
+                //factor = 1 - (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2);
+                videoToEnlarge = videoIDUnder;
+                G.segmentNextToCursor = videoSegmentUnder;
+            } else {
+                // point above is the next to mouse point
+                //factor = (currentMouseYPoint - yUnderMousePoint) / ((yAboveMousePoint - yUnderMousePoint) / 2) - 1;
+                videoToEnlarge = videoIDAbove;
+                G.segmentNextToCursor = videoSegmentAbove;
+            }
+        }
+
+        if (G.videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+            enlargeVideoDiv(videoToEnlarge);
+        } else  if (G.videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+            if (G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.BUFFERING) {
+                enlargeVideoDiv(videoToEnlarge);
+            }
+        }
+
+        if (!gui.shouldHideVideos()) {
+            for (id in G.visibilityOfVideos) {
+                if (G.visibilityOfVideos.hasOwnProperty(id)) {
+                    //if (id !== videoIDAbove && id !== videoIDUnder) {
+                    if (id !== videoToEnlarge) {
+                        //console.log("video to reset: " + id);
+                        resetVideoDiv(id);
+                    }
+                }
+            }
+        }
+
+        G.videoIDNextToCursor = videoToEnlarge;
+    }
+
     me.updateVideoPosition = function (videoId, videoTime) {
         console.log("UpdateVideoPosition: " + videoId);
         if (videoId !== "") {
@@ -111,28 +223,6 @@ var VIDEO_MANAGER = (function (me) {
             });
     }
 
-    function loadVideo(_videoID) {
-        'use strict';
-
-        console.log("Load video: " + _videoID);
-
-        G.videos[_videoID].setDisplayStatus(CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY);
-
-        $("#" + getThumbnailDivId(_videoID)).remove(); // remove thumbnail div
-
-        $("#" + getVideoDivId(_videoID)).css('position', '').css('left', '').css('background-color', 'lightgrey');
-
-        enlargeVideoDiv(_videoID);
-
-        if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
-            console.log("id: " + _videoID + " already preloaded");
-
-            G.ytPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
-            G.ytPlayers[_videoID].playVideo();
-
-            console.log("id: " + _videoID + " play");
-        }
-    }
 
     me.initVideos = function(scoreId, alignedVideos) {
         'use strict';
