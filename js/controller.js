@@ -61,16 +61,7 @@ var CONTROLLER = (function(params) {
         videoId = videosToPlay[randomIndex];
         console.log(G.visibilityOfVideos);
         videoTime = getVideoTimeForPagePosition(scoreId, videoId, scoreTime);
-        if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
-
-            G.ytPlayers[videoId].seekTo(Math.max(0, videoTime));
-            G.ytPlayers[videoId].playVideo();
-
-        } else if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
-
-            G.videoStartPosition[videoId] = videoTime;
-            loadVideo(videoId);
-        }
+        VIDEO_MANAGER.updateVideoPosition(videoId, videoTime);
     };
 
 
@@ -82,7 +73,7 @@ var CONTROLLER = (function(params) {
             throw new ControllerException("no video segment available for this place in the score");
         }
         var videoTime = getVideoTimeFromScoreTime(scoreTime, G.segmentNextToCursor.timeMap);
-        VIDEO_MANAGER.updateVideoPosition(videoTime);
+        VIDEO_MANAGER.updateVideoPosition(G.videoIDNextToCursor, videoTime);
     };
 
     me.updatePosition = function() {
@@ -155,7 +146,7 @@ var CONTROLLER = (function(params) {
         computePlotDimensions(scoreId);
         drawPlot(scoreId);
 
-        initVideos(scoreId, G.syncPairs[scoreId]);
+        VIDEO_MANAGER.initVideos(scoreId, G.syncPairs[scoreId]);
     };
 
     me.getAlignment = function(scoreId, videoId) {

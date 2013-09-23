@@ -147,16 +147,8 @@ function rbClickHandler(d, scoreId) {
         }
     }
 
-    if (G.videos[videoIDToPlay].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
-
-        G.ytPlayers[videoIDToPlay].seekTo(Math.max(0, videoTime));
-        G.ytPlayers[videoIDToPlay].playVideo();
-
-    } else if (G.videos[videoIDToPlay].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
-
-        G.videoStartPosition[videoIDToPlay] = videoTime;
-        loadVideo(videoIDToPlay);
-    }
+    // TODO: don't call VIDEO_MANAGER directly from hier. Call it via CONTROLLER
+    VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime);
 
     if (!document.getElementById(rbIDToCheck).checked) {
         document.getElementById(rbIDToCheck).checked = true;

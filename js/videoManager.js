@@ -44,18 +44,18 @@ var VIDEO_MANAGER = (function (me) {
     me.clear = function () {
     };
 
-    me.updateVideoPosition = function (videoTime) {
-        console.log("UpdateVideoPosition: " + G.videoIDNextToCursor);
-        if (G.videoIDNextToCursor !== "") {
-            if (G.videos[G.videoIDNextToCursor].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+    me.updateVideoPosition = function (videoId, videoTime) {
+        console.log("UpdateVideoPosition: " + videoId);
+        if (videoId !== "") {
+            if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
 
-                G.ytPlayers[G.videoIDNextToCursor].seekTo(Math.max(0, videoTime));
-                G.ytPlayers[G.videoIDNextToCursor].playVideo();
+                G.ytPlayers[videoId].seekTo(Math.max(0, videoTime));
+                G.ytPlayers[videoId].playVideo();
 
-            } else if (G.videos[G.videoIDNextToCursor].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+            } else if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
-                G.videoStartPosition[G.videoIDNextToCursor] = videoTime;
-                loadVideo(G.videoIDNextToCursor);
+                G.videoStartPosition[videoId] = videoTime;
+                loadVideo(videoId);
             }
         }
     };
@@ -109,6 +109,50 @@ var VIDEO_MANAGER = (function (me) {
                 G.videos[videoId].setAvailability(true);
                 counter.increment();
             });
+    }
+
+    function loadVideo(_videoID) {
+        'use strict';
+
+        console.log("Load video: " + _videoID);
+
+        G.videos[_videoID].setDisplayStatus(CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY);
+
+        $("#" + getThumbnailDivId(_videoID)).remove(); // remove thumbnail div
+
+        $("#" + getVideoDivId(_videoID)).css('position', '').css('left', '').css('background-color', 'lightgrey');
+
+        enlargeVideoDiv(_videoID);
+
+        if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
+            console.log("id: " + _videoID + " already preloaded");
+
+            G.ytPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
+            G.ytPlayers[_videoID].playVideo();
+
+            console.log("id: " + _videoID + " play");
+        }
+    }
+
+    me.initVideos = function(scoreId, alignedVideos) {
+        'use strict';
+
+        if (typeof YT === "undefined") {
+            setTimeout(function () {
+                initVideos(scoreId, alignedVideos);
+            }, 250);
+            console.log("waiting for YT API to load, retrying in 250ms");
+            return;
+        }
+
+        createThumbnailAndVideoHolderDiv(scoreId, alignedVideos);
+
+        createVideoThumbnails(scoreId, alignedVideos);
+
+        initVideoDivs(scoreId, alignedVideos);
+
+        setTimeout(function() {preloadVideos(scoreId, alignedVideos);}, 3000);
+
     }
 
     return me;

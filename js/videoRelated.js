@@ -159,6 +159,7 @@ function deactivateVideo(_videoID) {
     }
 }
 
+
 function getThumbnailAndVideoHolderDivId(_videoId) {
     return _videoId + "ThumbnailAndVideoHolder";
 }
@@ -191,6 +192,25 @@ function getNewYoutubePlayer(_videoContainerId, _videoId) {
     });
 }
 
+function tryToLoad(_videoID) {
+    'use strict';
+
+    var videoContainerID = getVideoDivId(_videoID), player;
+
+    if (G.videos[_videoID].getLoadingStatus() !== CONSTANTS.VIDEO_LOADING_STATUS_READY && G.videos[_videoID].getNumOfLoadingAttempts() === 3) {
+        deactivateVideo(_videoID);
+        clearInterval(G.videoLoadingInterval[_videoID]);
+        console.log("VideoID: " + _videoID + "   deactivate");
+    } else if (G.videos[_videoID].getLoadingStatus()!== CONSTANTS.VIDEO_LOADING_STATUS_READY && G.videos[_videoID].getNumOfLoadingAttempts() < 3) {
+
+        console.log("VideoID: " + _videoID + "   LoadingAttempts: " + G.videos[_videoID].getNumOfLoadingAttempts() + "   VideoContainer: " + videoContainerID);
+        //G.ytPlayers[_videoID] = getNewYoutubePlayer(videoContainerID, _videoID);
+        player = getNewYoutubePlayer(videoContainerID, _videoID);
+
+        G.videos[_videoID].increaseNumOfLoadingAttempts();
+    }
+}
+
 function preloadVideo(videoId) {
 
     if (typeof YT === "undefined") {
@@ -214,25 +234,6 @@ function preloadVideo(videoId) {
         G.videoLoadingInterval[videoId] = setInterval(function () {
             tryToLoad(videoId);
         }, CONSTANTS.VIDEO_LOADING_WAITING_TIME);
-    }
-}
-
-function tryToLoad(_videoID) {
-    'use strict';
-
-    var videoContainerID = getVideoDivId(_videoID), player;
-
-    if (G.videos[_videoID].getLoadingStatus() !== CONSTANTS.VIDEO_LOADING_STATUS_READY && G.videos[_videoID].getNumOfLoadingAttempts() === 3) {
-        deactivateVideo(_videoID);
-        clearInterval(G.videoLoadingInterval[_videoID]);
-        console.log("VideoID: " + _videoID + "   deactivate");
-    } else if (G.videos[_videoID].getLoadingStatus()!== CONSTANTS.VIDEO_LOADING_STATUS_READY && G.videos[_videoID].getNumOfLoadingAttempts() < 3) {
-
-        console.log("VideoID: " + _videoID + "   LoadingAttempts: " + G.videos[_videoID].getNumOfLoadingAttempts() + "   VideoContainer: " + videoContainerID);
-        //G.ytPlayers[_videoID] = getNewYoutubePlayer(videoContainerID, _videoID);
-        player = getNewYoutubePlayer(videoContainerID, _videoID);
-
-        G.videos[_videoID].increaseNumOfLoadingAttempts();
     }
 }
 
@@ -325,36 +326,6 @@ function onPlayerStateChange(event) {
 
 }
 
-
-function loadVideo(_videoID) {
-    'use strict';
-    console.log("videoDiv: " + $("#" + getVideoDivId(_videoID)));
-
-    console.log("Load video: " + _videoID);
-
-    G.videos[_videoID].setDisplayStatus(CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY);
-
-    $("#" + getThumbnailDivId(_videoID)).remove(); // remove thumbnail div
-
-    $("#" + getVideoDivId(_videoID)).css('position', '').css('left', '').css('background-color', 'lightgrey');
-
-    enlargeVideoDiv(_videoID);
-
-    if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
-        console.log("id: " + _videoID + " already preloaded");
-
-        G.ytPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
-        G.ytPlayers[_videoID].playVideo();
-
-        console.log("id: " + _videoID + " play");
-    } //else {
-//        console.log("");
-//        G.videoLoadingInterval[_videoID] = setInterval(function () {
-//            tryToLoad(videoContainerID, _videoID);
-//        }, CONSTANTS.VIDEO_LOADING_WAITING_TIME);
-//    }
-}
-
 function createThumbnailAndVideoHolderDiv(scoreId, videos) {
     var videoId;
     for (videoId in videos) {
@@ -408,26 +379,7 @@ function preloadVideos(scoreId, videos) {
     }
 }
 
-function initVideos(scoreId, alignedVideos) {
-    'use strict';
 
-    if (typeof YT === "undefined") {
-        setTimeout(function () {
-            initVideos(scoreId, alignedVideos);
-        }, 250);
-        console.log("waiting for YT API to load, retrying in 250ms");
-        return;
-    }
-
-    createThumbnailAndVideoHolderDiv(scoreId, alignedVideos);
-
-    createVideoThumbnails(scoreId, alignedVideos);
-
-    initVideoDivs(scoreId, alignedVideos);
-
-    setTimeout(function() {preloadVideos(scoreId, alignedVideos);}, 3000);
-
-}
 
 function showAndHideVideos() {
     'use strict';
