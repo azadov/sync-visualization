@@ -155,7 +155,7 @@ function rbClickHandler(d, scoreId) {
     }
     document.getElementById(rbIDToCheck).focus();
 
-    $("#videoTitle").text(G.videos[videoIDToPlay].getTitle());
+    G.gui.setVideoTitle(G.videos[videoIDToPlay].getTitle());
 }
 
 function areRBNeighbours(_firstRBID, _secondRBID) {
@@ -327,7 +327,7 @@ function createAlignmentSegmentRepresentation(_svg, _rects, scoreId) {
         .attr("height", G.plot_height - G.y_scale(CONSTANTS.SEGMENT_RECT_HEIGHT))
         .style("fill", function(d, i) {return "url(#gradient" + d.videoID + d.segmentId + ")"})
         //.on("click", updateVideoPositionRect)
-        .on("mouseover", enlargeVideoDivRect)
+        .on("mouseover", CONTROLLER.onMouseOverVideoSegment)
         //.on("mouseout", resetVideoDivRect)
         .append("svg:title")
         .text(function (d) {return G.videos[d.videoID].getTitle()});
@@ -356,7 +356,7 @@ function createCurves(_svg, _curves) {
         //.attr("stroke-dasharray", "0,0")
         .attr("fill", "none")
         //.on("click", updateVideoPositionCurve)
-        .on("mouseover", enlargeVideoDivCurve)
+        .on("mouseover", CONTROLLER.onMouseOverCurve)
         //.on("mouseout", resetVideoDivCurve)
     ;
 }

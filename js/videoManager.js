@@ -156,6 +156,21 @@ var VIDEO_MANAGER = (function (me) {
         G.videoIDNextToCursor = videoToEnlarge;
     }
 
+    me.onMouseOverVideoSegment = function(d) {
+        'use strict';
+
+        //console.log("videoID rect: " + d.videoID);
+        enlargeVideoDiv(d.videoID);
+        gui.setSegmentQuality(d.segmentConfidence);
+        G.segmentNextToCursor = d;
+        G.videoIDNextToCursor = d.videoID;
+    }
+
+    me.onMouseOverCurve = function(d) {
+        //console.log("videoID rect: " + d[0].videoID);
+        enlargeVideoDiv(d.videoID);
+    }
+
     me.updateVideoPosition = function (videoId, videoTime) {
         console.log("UpdateVideoPosition: " + videoId);
         if (videoId !== "") {

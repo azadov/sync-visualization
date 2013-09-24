@@ -127,6 +127,14 @@ var CONTROLLER = (function(params) {
         VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime);
     }
 
+    me.onMouseOverVideoSegment = function(d) {
+        VIDEO_MANAGER.onMouseOverVideoSegment(d);
+    }
+
+    me.onMouseOverCurve = function(d) {
+        VIDEO_MANAGER.onMouseOverCurve(d);
+    }
+
     me.initializeVisualization = function(scoreId) {
 
         if (typeof YT === "undefined") {

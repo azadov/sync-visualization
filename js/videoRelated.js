@@ -536,39 +536,3 @@ function calculateVisibilityOfVideos(_scoreTime) {
 }
 
 
-function updateVideoPositionCurve(d) {
-    'use strict';
-
-    console.log("videoID curve: " + d.videoID);
-}
-
-function enlargeVideoDivRect(d) {
-    'use strict';
-
-    //console.log("videoID rect: " + d.videoID);
-    enlargeVideoDiv(d.videoID);
-    gui.setSegmentQuality(d.segmentConfidence);
-    G.segmentNextToCursor = d;
-    G.videoIDNextToCursor = d.videoID;
-}
-
-function enlargeVideoDivCurve(d) {
-    'use strict';
-
-    //console.log("videoID rect: " + d[0].videoID);
-    enlargeVideoDiv(d.videoID);
-}
-
-
-function resetVideoDivRect(d) {
-    'use strict';
-
-    resetVideoDiv(d.videoID);
-}
-
-function resetVideoDivCurve(d) {
-    'use strict';
-
-    resetVideoDiv(d.videoID);
-}
-
