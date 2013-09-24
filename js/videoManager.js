@@ -1,5 +1,9 @@
 var VIDEO_MANAGER = (function (me) {
-
+    /**
+     * current videos that are available and passed all filters
+     * @type {Array}
+     */
+    var currentVideoIdsThatPassedAllFilters = [];
 
     /**
      * initialize video manager
@@ -43,6 +47,10 @@ var VIDEO_MANAGER = (function (me) {
      */
     me.clear = function () {
     };
+
+    me.getCurrentVideoIdsThatPassedAllFilters = function() {
+        return currentVideoIdsThatPassedAllFilters;
+    }
 
     me.showSuitableVideoDivsForPlotPosition = function(currentMouseXPoint, currentMouseYPoint) {
         'use strict';
@@ -136,7 +144,7 @@ var VIDEO_MANAGER = (function (me) {
         if (G.videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
             enlargeVideoDiv(videoToEnlarge);
         } else  if (G.videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
-            if (G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoToEnlarge].getPlayerState() !== YT.PlayerState.BUFFERING) {
+            if (G.videos[videoToEnlarge].getPlayer().getPlayerState() !== YT.PlayerState.PLAYING && G.videos[videoToEnlarge].getPlayer().getPlayerState() !== YT.PlayerState.BUFFERING) {
                 enlargeVideoDiv(videoToEnlarge);
             }
         }
@@ -176,8 +184,8 @@ var VIDEO_MANAGER = (function (me) {
         if (videoId !== "") {
             if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
 
-                G.ytPlayers[videoId].seekTo(Math.max(0, videoTime));
-                G.ytPlayers[videoId].playVideo();
+                G.videos[videoId].getPlayer().seekTo(Math.max(0, videoTime));
+                G.videos[videoId].getPlayer().playVideo();
 
             } else if (G.videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
@@ -250,13 +258,22 @@ var VIDEO_MANAGER = (function (me) {
             return;
         }
 
-        createThumbnailAndVideoHolderDiv(scoreId, alignedVideos);
+        currentVideoIdsThatPassedAllFilters = [];
 
-        createVideoThumbnails(scoreId, alignedVideos);
+        var videoId;
+        for (videoId in alignedVideos) {
+            if (alignedVideos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability() && !videoIsFilteredOut(scoreId, videoId)) {
+                currentVideoIdsThatPassedAllFilters.push(videoId);
+            }
+        }
 
-        initVideoDivs(scoreId, alignedVideos);
+        createThumbnailAndVideoHolderDiv(scoreId, currentVideoIdsThatPassedAllFilters);
 
-        setTimeout(function() {preloadVideos(scoreId, alignedVideos);}, 3000);
+        createVideoThumbnails(scoreId, currentVideoIdsThatPassedAllFilters);
+
+        initVideoDivs(scoreId, currentVideoIdsThatPassedAllFilters);
+
+        setTimeout(function() {preloadVideos(scoreId, currentVideoIdsThatPassedAllFilters);}, 3000);
 
     }
 

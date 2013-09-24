@@ -82,7 +82,7 @@ function rbClickHandler(d, scoreId) {
     'use strict';
 
     var splt = d.id.split("_"), currentRBVideoID = "", currentRBSegmentIndex = splt[splt.length - 2], lastRBVideoID,
-        lastRBSegmentIndex, videoID, videoIDToPlay, videoTime, pageTime, scoreTime = 0,
+        lastRBSegmentIndex, videoID, videoIDToPlay, videoTime, pageTime, scoreTime = 0, videos = VIDEO_MANAGER.getCurrentVideoIdsThatPassedAllFilters(),
         playingVideoTime = 0, i, areNeighbours, foundSegmentID, rbIDToCheck, rbToCheckSegmentIndex;
 
     if (document.getElementById(d.id).checked) {
@@ -100,42 +100,41 @@ function rbClickHandler(d, scoreId) {
 
     //console.log("RBClickHandler " + d.id + "   videoID: " + rbVideoID + "     Index: " + rbSegmentIndex);
 
-    for (videoID in G.ytPlayers) {
-        if (G.ytPlayers.hasOwnProperty(videoID)) {
-            if (G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
-                playingVideoTime = G.ytPlayers[videoID].getCurrentTime();
-                pageTime = getPageAndTimeForVideoTime(playingVideoTime, scoreId, videoID);
+    for (i = 0; i < videos.length; i = i + 1) {
+        videoID = videos[i];
+        if (G.videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING || G.videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
+            playingVideoTime = G.videos[videoID].getPlayer().getCurrentTime();
+            pageTime = getPageAndTimeForVideoTime(playingVideoTime, scoreId, videoID);
 
-                if (pageTime === undefined) {
-                    scoreTime = 0;
-                } else {
-                    scoreTime = pageTime.scoreTime;
-                }
+            if (pageTime === undefined) {
+                scoreTime = 0;
+            } else {
+                scoreTime = pageTime.scoreTime;
+            }
 
-                lastRBVideoID = videoID;
-                lastRBSegmentIndex = getSegmentIndexFromVideoTime(videoID, playingVideoTime);
+            lastRBVideoID = videoID;
+            lastRBSegmentIndex = getSegmentIndexFromVideoTime(videoID, playingVideoTime);
 
-                areNeighbours = areRBNeighbours(d.id, lastRBVideoID + "_" + lastRBSegmentIndex + "_RB");
-                if (areNeighbours[0] && scoreTime > 0) {
-                    foundSegmentID = getNextSegmentForScoreTime(lastRBSegmentIndex, areNeighbours[1], scoreTime);
+            areNeighbours = areRBNeighbours(d.id, lastRBVideoID + "_" + lastRBSegmentIndex + "_RB");
+            if (areNeighbours[0] && scoreTime > 0) {
+                foundSegmentID = getNextSegmentForScoreTime(lastRBSegmentIndex, areNeighbours[1], scoreTime);
 
-                    if (foundSegmentID[0] !== "") {
-                        videoIDToPlay = foundSegmentID[0];
-                        rbToCheckSegmentIndex = foundSegmentID[1];
-                        rbIDToCheck = foundSegmentID[0] + "_" + foundSegmentID[1] + "_RB";
+                if (foundSegmentID[0] !== "") {
+                    videoIDToPlay = foundSegmentID[0];
+                    rbToCheckSegmentIndex = foundSegmentID[1];
+                    rbIDToCheck = foundSegmentID[0] + "_" + foundSegmentID[1] + "_RB";
 //                        if (!document.getElementById(rbIDToCheck).checked) {
 //                            document.getElementById(rbIDToCheck).checked = true;
 //                        }
-                    }
-
-                    //console.log("\nfound: " + foundSegmentID + "\n");
-                } else {
-                    //console.log("\nare NOT neighbours\n");
                 }
 
-                if (videoID !== videoIDToPlay) {
-                    G.ytPlayers[videoID].pauseVideo();
-                }
+                //console.log("\nfound: " + foundSegmentID + "\n");
+            } else {
+                //console.log("\nare NOT neighbours\n");
+            }
+
+            if (videoID !== videoIDToPlay) {
+                G.videos[videoID].getPlayer().pauseVideo();
             }
         }
     }

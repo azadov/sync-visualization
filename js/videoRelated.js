@@ -3,7 +3,7 @@ function enlargeVideoDiv(videoId) {
 
     if (videoId === "") return;
 
-    var elementToEnlarge, secondElementToEnlarge, thumbnail, vID, someVideoPlaying = false,
+    var elementToEnlarge, secondElementToEnlarge, thumbnail, i, vID, someVideoPlaying = false, videos = VIDEO_MANAGER.getCurrentVideoIdsThatPassedAllFilters(),
         newWidth = CONSTANTS.PLAYING_VIDEO_WIDTH,
         newHeight = CONSTANTS.PLAYING_VIDEO_HEIGHT,
         pw = Math.ceil(CONSTANTS.PLAYING_VIDEO_WIDTH / 2 - 38.5),
@@ -65,9 +65,10 @@ function enlargeVideoDiv(videoId) {
         G.videos[videoId].setVideoSizeStatus(CONSTANTS.VIDEO_SIZE_STATUS_LARGE);
     }
 
-    for (vID in G.ytPlayers) {
-        if (G.ytPlayers.hasOwnProperty(vID) && vID !== videoId && G.videos[vID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
-            if (G.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[vID].getPlayerState() === YT.PlayerState.BUFFERING) {
+    for (i = 0; i < videos.length; i = i + 1) {
+        vID = videos[i];
+        if (vID !== videoId && G.videos[vID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
+            if (G.videos[vID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING || G.videos[vID].getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
                 someVideoPlaying = true;
             }
         }
@@ -118,8 +119,8 @@ function resetVideoDiv(_videoID) {
     if (G.videos[_videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
         if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY
             && G.videos[_videoID].getVideoSizeStatus() !== CONSTANTS.VIDEO_SIZE_STATUS_NORMAL
-            && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.PLAYING
-            && G.ytPlayers[_videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
+            && G.videos[_videoID].getPlayer().getPlayerState() !== YT.PlayerState.PLAYING
+            && G.videos[_videoID].getPlayer().getPlayerState() !== YT.PlayerState.BUFFERING) {
 //            elementToReset = document.getElementById(getVideoDivId(_videoID));
 //            elementToReset.width = CONSTANTS.VIDEO_WIDTH;
 //            elementToReset.height = CONSTANTS.VIDEO_HEIGHT;
@@ -270,8 +271,6 @@ function onPlayerReady(event) {
 
     G.videos[videoID].setPlayer(event.target);
 
-    G.ytPlayers[videoID] = event.target;
-
     clearInterval(G.videoLoadingInterval[videoID]);
 }
 
@@ -280,7 +279,7 @@ var deleteInterval = true;
 function onPlayerStateChange(event) {
     'use strict';
 
-    var newState = event.data, videoID;
+    var newState = event.data, videoID, i, videos = VIDEO_MANAGER.getCurrentVideoIdsThatPassedAllFilters();
     //console.log("state: " + event.data + "     target: " + event.target.id);
 
     console.log("OnPlayerStateChange: " + "   " + event.target.getVideoData().video_id + "   " + newState);
@@ -292,13 +291,12 @@ function onPlayerStateChange(event) {
             G.currentPlayingYTVideoID = event.target.getVideoData().video_id;
         }
 
-        for (videoID in G.ytPlayers) {
-            if (G.ytPlayers.hasOwnProperty(videoID)) {
-                if (videoID !== G.currentPlayingYTVideoID) {
-                    if (G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
-                        G.ytPlayers[videoID].pauseVideo();
-                        deleteInterval = false;
-                    }
+        for (i = 0; i < videos.length; i = i + 1) {
+            videoID = videos[i];
+            if (videoID !== G.currentPlayingYTVideoID) {
+                if (G.videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING || G.videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
+                    G.videos[videoID].getPlayer().pauseVideo();
+                    deleteInterval = false;
                 }
             }
         }
@@ -326,14 +324,13 @@ function onPlayerStateChange(event) {
 }
 
 function createThumbnailAndVideoHolderDiv(scoreId, videos) {
-    var videoId;
-    for (videoId in videos) {
-        if (videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability() && !videoIsFilteredOut(scoreId, videoId)) {
-            console.log('create thumbnail and video holder ' + videoId);
-            $('<div>')
-                .attr('id', getThumbnailAndVideoHolderDivId(videoId))
-                .appendTo(G.gui.getVideoContainer());
-        }
+    var i, videoId;
+    for (i = 0; i < videos.length; i = i + 1) {
+        videoId = videos[i];
+        console.log('create thumbnail and video holder ' + videoId);
+        $('<div>')
+            .attr('id', getThumbnailAndVideoHolderDivId(videoId))
+            .appendTo(G.gui.getVideoContainer());
     }
 }
 
@@ -351,30 +348,28 @@ function createThumbnailDiv(videoId) {
 }
 
 function createVideoThumbnails(scoreId, videos) {
-    var videoId;
-    for (videoId in videos) {
-        if (videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability() && !videoIsFilteredOut(scoreId, videoId)) {
-            createThumbnailDiv(videoId);
-        }
+    var i, videoId;
+    for (i = 0; i <  videos.length; i = i + 1) {
+        videoId = videos[i];
+        console.log("create thumbnail: " + videoId);
+        createThumbnailDiv(videoId);
     }
 }
 
 function initVideoDivs(scoreId, videos) {
-    var videoId;
-    for (videoId in videos) {
-        if (videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability() && !videoIsFilteredOut(scoreId, videoId)) {
-            console.log('init video div ' + videoId);
-            createVideoDiv(videoId);
-        }
+    var i, videoId;
+    for (i = 0; i < videos.length; i = i + 1) {
+        videoId = videos[i];
+        console.log('init video div ' + videoId);
+        createVideoDiv(videoId);
     }
 }
 
 function preloadVideos(scoreId, videos) {
-    var videoId;
-    for (videoId in videos) {
-        if (videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability() && !videoIsFilteredOut(scoreId, videoId)) {
-            preloadVideo(videoId);
-        }
+    var i, videoId;
+    for (i = 0; i < videos.length; i = i + 1) {
+        videoId = videos[i];
+        preloadVideo(videoId);
     }
 }
 
@@ -394,8 +389,8 @@ function loadVideo(_videoID) {
     if (G.videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
         console.log("id: " + _videoID + " already preloaded");
 
-        G.ytPlayers[_videoID].seekTo(Math.max(0, G.videoStartPosition[_videoID]));
-        G.ytPlayers[_videoID].playVideo();
+        G.videos[_videoID].getPlayer().seekTo(Math.max(0, G.videoStartPosition[_videoID]));
+        G.videos[_videoID].getPlayer().playVideo();
 
         console.log("id: " + _videoID + " play");
     }
@@ -413,7 +408,7 @@ function showAndHideVideos() {
             } else {
                 if (G.videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
                     //console.log("Video in ytPlayer: " + videoID);
-                    if (G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.PLAYING && G.ytPlayers[videoID].getPlayerState() !== YT.PlayerState.BUFFERING) {
+                    if (G.videos[videoID].getPlayer().getPlayerState() !== YT.PlayerState.PLAYING && G.videos[videoID].getPlayer().getPlayerState() !== YT.PlayerState.BUFFERING) {
                         //console.log("HideVideoID: " + videoID + "    state: " + G.ytPlayers[videoID].getPlayerState());
                         hideVideo(videoID);
                     }
@@ -467,7 +462,7 @@ function showVideo(_videoID) {
         elementToShow.width = CONSTANTS.VIDEO_WIDTH;
         elementToShow.height = CONSTANTS.VIDEO_HEIGHT;
 
-        if (G.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.PLAYING || G.ytPlayers[_videoID].getPlayerState() === YT.PlayerState.BUFFERING) {
+        if (G.videos[_videoID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING || G.videos[_videoID].getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
             elementToShow.width = CONSTANTS.PLAYING_VIDEO_WIDTH;
             elementToShow.height = CONSTANTS.PLAYING_VIDEO_HEIGHT;
         }
@@ -493,16 +488,11 @@ function showVideo(_videoID) {
 function pausePlayback() {
     'use strict';
 
-//    for (var videoID in G.visibilityOfVideos) {
-//        if ( G.visibilityOfVideos[videoID] ) {
-//            G.ytPlayers[videoID].pauseVideo();}
-//    }
-    var vID;
-    for (vID in G.ytPlayers) {
-        if (G.ytPlayers.hasOwnProperty(vID)) {
-            if (G.ytPlayers[vID].getPlayerState() === YT.PlayerState.PLAYING) {
-                G.ytPlayers[vID].pauseVideo();
-            }
+    var vID, i, videos = VIDEO_MANAGER.getCurrentVideoIdsThatPassedAllFilters();
+    for (i = 0; i < videos.length; i = i + 1) {
+        vID = videos[i];
+        if (G.videos[vID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING) {
+            G.videos[vID].getPlayer().pauseVideo();
         }
     }
 }

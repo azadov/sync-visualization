@@ -73,10 +73,7 @@ G.videoStatus = {};                 // maps videoId to status
 G.videoStartPosition = {};          // maps videoId to start position
 G.videoLoadingInterval = {};        // maps videoId to interval
 
-
 G.videos = {};
-
-G.ytPlayers = {};
 
 G.mouseTrackLineExist = false;
 G.videoTrackLineExist = false;

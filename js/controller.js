@@ -80,7 +80,7 @@ var CONTROLLER = (function(params) {
         'use strict';
 
         //console.log("updatePosition: videoID: " + G.currentPlayingYTVideoID + "");
-        var videoTime = G.ytPlayers[G.currentPlayingYTVideoID].getCurrentTime(),
+        var videoTime = G.videos[G.currentPlayingYTVideoID].getPlayer().getCurrentTime(),
             scoreId = gui.getSelectedScoreId(),
             pageAndTime = getPageAndTimeForVideoTime(videoTime, scoreId, G.currentPlayingYTVideoID),
             pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + CONSTANTS.FORE_RUNNING_TIME, scoreId, G.currentPlayingYTVideoID),
