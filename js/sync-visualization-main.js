@@ -19,9 +19,9 @@ CONTROLLER.init();
 
 
 function videoIsFilteredOut(scoreId, videoId) {
-    return G.videos[videoId].getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
-        G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() || 
-        !G.videos[videoId].getAvailability();
+    return VIDEO_MANAGER.getVideo(videoId).getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
+           G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() ||
+           !VIDEO_MANAGER.getVideo(videoId).getAvailability();
 }
 
 
@@ -42,7 +42,7 @@ function loadAlignmentList(onSuccess, onFailure) {
 
             video = new Video(videoId);
 
-            G.videos[videoId] = video;
+            VIDEO_MANAGER.addVideo(videoId, video);
 
             G.syncPairs[scoreId] = G.syncPairs[scoreId] ? G.syncPairs[scoreId] : {};
             G.syncPairs[scoreId][videoId] = {alignmentFileName: alignmentFileName, confidence: confidence};
@@ -92,8 +92,8 @@ function computePlotElementsForVideo(scoreId, videoId) {
         alignment = CONTROLLER.getAlignment(scoreId, videoId),
         segment, videoSegment, confidence;
 
-    if (!G.videos.hasOwnProperty(videoId) || !G.videos[videoId].getAvailability() ||
-        videoIsFilteredOut(scoreId, videoId)) {
+    if (!VIDEO_MANAGER.videoExist(videoId) || !VIDEO_MANAGER.getVideo(videoId).getAvailability()
+        || videoIsFilteredOut(scoreId, videoId)) {
         return;
     }
 

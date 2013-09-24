@@ -81,7 +81,7 @@ function createSegmentSwitches(videoSegments, videoId) {
 function rbClickHandler(d, scoreId) {
     'use strict';
 
-    var splt = d.id.split("_"), currentRBVideoID = "", currentRBSegmentIndex = splt[splt.length - 2], lastRBVideoID,
+    var splt = d.id.split("_"), currentRBVideoID = "", currentRBSegmentIndex = splt[splt.length - 2], lastRBVideoID, video,
         lastRBSegmentIndex, videoID, videoIDToPlay, videoTime, pageTime, scoreTime = 0, videos = VIDEO_MANAGER.getCurrentVideoIdsThatPassedAllFilters(),
         playingVideoTime = 0, i, areNeighbours, foundSegmentID, rbIDToCheck, rbToCheckSegmentIndex;
 
@@ -102,8 +102,9 @@ function rbClickHandler(d, scoreId) {
 
     for (i = 0; i < videos.length; i = i + 1) {
         videoID = videos[i];
-        if (G.videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING || G.videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
-            playingVideoTime = G.videos[videoID].getPlayer().getCurrentTime();
+        video = VIDEO_MANAGER.getVideo(videoID);
+        if (video.getPlayer().getPlayerState() === YT.PlayerState.PLAYING || video.getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
+            playingVideoTime = video.getPlayer().getCurrentTime();
             pageTime = getPageAndTimeForVideoTime(playingVideoTime, scoreId, videoID);
 
             if (pageTime === undefined) {
@@ -134,7 +135,7 @@ function rbClickHandler(d, scoreId) {
             }
 
             if (videoID !== videoIDToPlay) {
-                G.videos[videoID].getPlayer().pauseVideo();
+                video.getPlayer().pauseVideo();
             }
         }
     }
@@ -154,7 +155,7 @@ function rbClickHandler(d, scoreId) {
     }
     document.getElementById(rbIDToCheck).focus();
 
-    G.gui.setVideoTitle(G.videos[videoIDToPlay].getTitle());
+    G.gui.setVideoTitle(VIDEO_MANAGER.getVideo(videoIDToPlay).getTitle());
 }
 
 function areRBNeighbours(_firstRBID, _secondRBID) {
@@ -329,7 +330,7 @@ function createAlignmentSegmentRepresentation(_svg, _rects, scoreId) {
         .on("mouseover", CONTROLLER.onMouseOverVideoSegment)
         //.on("mouseout", resetVideoDivRect)
         .append("svg:title")
-        .text(function (d) {return G.videos[d.videoID].getTitle()});
+        .text(function (d) {return VIDEO_MANAGER.getVideo(d.videoID).getTitle()});
     ;
 }
 
@@ -517,13 +518,7 @@ function removeMouseTrackLine(d) {
         d3.select(".mouseTrackLine").remove();
         G.mouseTrackLineExist = false;
 
-        if (!$('#hideVideoDivs').prop('checked')) {
-            for (id in G.visibilityOfVideos) {
-                if (G.visibilityOfVideos.hasOwnProperty(id)) {
-                    resetVideoDiv(id);
-                }
-            }
-        }
+        CONTROLLER.onRemoveMouseTrackLine();
     }
 }
 

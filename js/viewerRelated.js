@@ -1,8 +1,12 @@
-
+/**
+ * returns the first video for which the alignment could be loaded
+ * @param scoreId
+ * @returns {*}
+ */
 function getVideoWithLoadedAlignment(scoreId) {
     var videoId;
     for (videoId in G.syncPairs[scoreId]) {
-        if (G.videos.hasOwnProperty(videoId) && G.videos[videoId].getAvailability()) {
+        if (VIDEO_MANAGER.videoExist(videoId) && VIDEO_MANAGER.getVideo(videoId).getAvailability()) {
             break;
         }
     }

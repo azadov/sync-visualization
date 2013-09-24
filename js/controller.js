@@ -80,7 +80,7 @@ var CONTROLLER = (function(params) {
         'use strict';
 
         //console.log("updatePosition: videoID: " + G.currentPlayingYTVideoID + "");
-        var videoTime = G.videos[G.currentPlayingYTVideoID].getPlayer().getCurrentTime(),
+        var videoTime = VIDEO_MANAGER.getVideo(G.currentPlayingYTVideoID).getPlayer().getCurrentTime(),
             scoreId = gui.getSelectedScoreId(),
             pageAndTime = getPageAndTimeForVideoTime(videoTime, scoreId, G.currentPlayingYTVideoID),
             pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + CONSTANTS.FORE_RUNNING_TIME, scoreId, G.currentPlayingYTVideoID),
@@ -133,6 +133,10 @@ var CONTROLLER = (function(params) {
 
     me.onMouseOverCurve = function(d) {
         VIDEO_MANAGER.onMouseOverCurve(d);
+    }
+
+    me.onRemoveMouseTrackLine = function() {
+        VIDEO_MANAGER.resetSizeOfAllVideos();
     }
 
     me.initializeVisualization = function(scoreId) {
@@ -232,7 +236,7 @@ var CONTROLLER = (function(params) {
 
     function onVideoAvailabilityChecked(scoreId) {
         console.log("video availability checked for score " + scoreId);
-        console.log(G.videos);
+        console.log(VIDEO_MANAGER.getVideos());
         getAlignments(scoreId, function () {
             onAlignmentsFetched(scoreId)();
         });
@@ -293,10 +297,10 @@ var CONTROLLER = (function(params) {
         for (videoId in syncedVideos) {
             if (syncedVideos.hasOwnProperty(videoId)) {
 
-                console.log(G.videos[videoId]);
+                console.log(VIDEO_MANAGER.getVideo(videoId));
 
-                if (!G.videos[videoId].getAvailability() ||
-                    G.videos[videoId].getTitle().indexOf(gui.getVideoTitleFilterString()) == -1 ||
+                if (!VIDEO_MANAGER.getVideo(videoId).getAvailability() ||
+                    VIDEO_MANAGER.getVideo(videoId).getTitle().indexOf(gui.getVideoTitleFilterString()) == -1 ||
                     syncedVideos[videoId].quality < gui.getAlignmentQualityFilter() ||
                     alignments.get(scoreId, videoId)
                     ) {
