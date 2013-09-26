@@ -8,8 +8,10 @@ function Video(id) {
     this.numberOfLoadingAttempts = 0;
     this.displayStatus = CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY;
     this.player = undefined;
-    this.videoSizeStatus = CONSTANTS.VIDEO_SIZE_STATUS_NORMAL;
+    this.playerStatus = CONSTANTS.VIDEO_PLAYER_STATUS_NOTPLAYING;
+    this.playerSizeStatus = CONSTANTS.VIDEO_SIZE_STATUS_NORMAL;
     this.thumbnailSizeStatus = CONSTANTS.VIDEO_SIZE_STATUS_NORMAL;
+    this.playerTrackingInterval = 0;
 }
 
 Video.prototype.getId = function() {
@@ -64,12 +66,20 @@ Video.prototype.getPlayer = function() {
     return this.player;
 }
 
-Video.prototype.setVideoSizeStatus = function(status) {
-    this.videoSizeStatus = status;
+Video.prototype.setPlayerStatus = function(status) {
+    this.playerStatus = status;
 }
 
-Video.prototype.getVideoSizeStatus = function() {
-    return this.videoSizeStatus;
+Video.prototype.getPlayerStatus = function() {
+    return this.playerStatus;
+}
+
+Video.prototype.setPlayerSizeStatus = function(status) {
+    this.playerSizeStatus = status;
+}
+
+Video.prototype.getPlayerSizeStatus = function() {
+    return this.playerSizeStatus;
 }
 
 Video.prototype.setThumbnailSizeStatus = function(status) {
@@ -78,4 +88,12 @@ Video.prototype.setThumbnailSizeStatus = function(status) {
 
 Video.prototype.getThumbnailSizeStatus = function() {
     return this.thumbnailSizeStatus;
+}
+
+Video.prototype.setPlayerTrackingInterval = function(interval) {
+    this.playerTrackingInterval = interval;
+}
+
+Video.prototype.clearPlayerTrackingInterval = function() {
+    clearInterval(this.playerTrackingInterval);
 }

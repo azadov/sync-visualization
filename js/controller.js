@@ -76,14 +76,14 @@ var CONTROLLER = (function(params) {
         VIDEO_MANAGER.updateVideoPosition(G.videoIDNextToCursor, videoTime);
     };
 
-    me.updatePosition = function() {
+    me.updatePosition = function(videoId) {
         'use strict';
 
         //console.log("updatePosition: videoID: " + G.currentPlayingYTVideoID + "");
-        var videoTime = VIDEO_MANAGER.getVideo(G.currentPlayingYTVideoID).getPlayer().getCurrentTime(),
+        var videoTime = VIDEO_MANAGER.getVideo(videoId).getPlayer().getCurrentTime(),
             scoreId = gui.getSelectedScoreId(),
-            pageAndTime = getPageAndTimeForVideoTime(videoTime, scoreId, G.currentPlayingYTVideoID),
-            pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + CONSTANTS.FORE_RUNNING_TIME, scoreId, G.currentPlayingYTVideoID),
+            pageAndTime = getPageAndTimeForVideoTime(videoTime, scoreId, videoId),
+            pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + CONSTANTS.FORE_RUNNING_TIME, scoreId, videoId),
             page, pagePlus,
             scoreTime,
             normalizedPageTime,
@@ -112,7 +112,7 @@ var CONTROLLER = (function(params) {
 
         updateVideoTrackLine(scoreTime);
 
-        rbID = G.currentPlayingYTVideoID + "_" + getSegmentIndexFromVideoTime(G.currentPlayingYTVideoID, videoTime) + "_RB";
+        rbID = videoId + "_" + getSegmentIndexFromVideoTime(videoId, videoTime) + "_RB";
         if (!document.getElementById(rbID).checked) {
             document.getElementById(rbID).checked = true;
             document.getElementById(rbID).focus();
