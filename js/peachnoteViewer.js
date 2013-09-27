@@ -15,6 +15,7 @@ var PeachnoteViewer = (function (me) {
         this.socket = {};
         this.loadedScoreId = undefined;
         this.lastLoadedPage = 0;
+        this.rootElement = params.rootElement;
 
         /**
          * a stub that can later be modified by user.
@@ -109,6 +110,11 @@ var PeachnoteViewer = (function (me) {
         this.measureClickCallback = callback;
     };
 
+    Viewer.prototype.detach = function() {
+        console.log("detaching " + this.rootElement);
+        console.log(this.rootElement);
+         $("#" + this.rootElement).empty();
+    };
 
     me.initializeViewer = function (params, onLoaded) {
 

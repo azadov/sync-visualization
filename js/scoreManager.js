@@ -15,11 +15,6 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
         console.log("initializing score manager");
         this.loadScore(CONSTANTS.DEFAULT_SCORE_ID);
 
-        this.loadScore(1, {
-            'rootElement': 'PeachnoteViewerContainerId', 'widgetHeight': 620, 'widgetWidth': 460,
-            'loadScore': "IMSLP90564", 'loadPage': 5
-        });
-
     };
 
     /**
@@ -33,7 +28,6 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
         for (var viewerId in params) {
             if (params.hasOwnProperty(viewerId)) {
                 var props = params[viewerId];
-
                 if (!viewers.hasOwnProperty(viewerId)) {
                     viewers[viewerId] = PeachnoteViewer.initializeViewer(props);
                 } else {
@@ -55,6 +49,16 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
 
             console.log("loading score in Viewer " + 0 + " with params " + JSON.stringify(params));
             this.loadScores({0: params});
+
+            if (viewerId == CONSTANTS.DEFAULT_SCORE_ID) {
+                this.loadScore(1, {
+                    'rootElement': 'PeachnoteViewerContainerId2', 'widgetHeight': 620, 'widgetWidth': 460,
+                    'loadScore': "IMSLP90564", 'loadPage': 5
+                });
+            } else {
+                this.removeViewer(1);
+            }
+
         } else {
             var p = {};
             p[viewerId] = params;
@@ -119,6 +123,11 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
 
     me.getPageTimes = function(scoreId) {
         return pageTimes[scoreId];
+    };
+
+    me.removeViewer = function(viewerId) {
+        viewers[viewerId].detach();
+        delete viewers[viewerId];
     };
 
     /**
