@@ -16,84 +16,89 @@ function Video(id) {
 
 Video.prototype.getId = function() {
     return this.id;
-}
+};
 
 Video.prototype.getTitle = function() {
     return this.title;
-}
+};
 
 Video.prototype.setTitle = function (title) {
     this.title = title;
-}
+};
 
 Video.prototype.setAvailability = function(availability) {
     this.availability = availability;
-}
+};
 
 Video.prototype.getAvailability = function() {
     return this.availability;
-}
+};
 
 Video.prototype.setLoadingStatus = function(status) {
     this.loadingStatus = status;
-}
+};
 
 Video.prototype.getLoadingStatus = function() {
     return this.loadingStatus;
-}
+};
 
 Video.prototype.increaseNumOfLoadingAttempts = function() {
     this.numberOfLoadingAttempts = this.numberOfLoadingAttempts + 1;
-}
+};
 
 Video.prototype.getNumOfLoadingAttempts = function() {
     return this.numberOfLoadingAttempts;
-}
+};
 
 Video.prototype.setDisplayStatus = function(status) {
     this.displayStatus = status;
-}
+};
 
 Video.prototype.getDisplayStatus = function() {
     return this.displayStatus;
-}
+};
 
 Video.prototype.setPlayer = function(player) {
     this.player = player;
-}
+};
 
 Video.prototype.getPlayer = function() {
     return this.player;
-}
+};
 
 Video.prototype.setPlayerStatus = function(status) {
     this.playerStatus = status;
-}
+};
 
 Video.prototype.getPlayerStatus = function() {
     return this.playerStatus;
-}
+};
 
 Video.prototype.setPlayerSizeStatus = function(status) {
     this.playerSizeStatus = status;
-}
+};
 
 Video.prototype.getPlayerSizeStatus = function() {
     return this.playerSizeStatus;
-}
+};
 
 Video.prototype.setThumbnailSizeStatus = function(status) {
     this.thumbnailSizeStatus = status;
-}
+};
 
 Video.prototype.getThumbnailSizeStatus = function() {
     return this.thumbnailSizeStatus;
-}
+};
 
 Video.prototype.setPlayerTrackingInterval = function(interval) {
+    if (interval != this.playerTrackingInterval) {
+        this.clearPlayerTrackingInterval();
+    }
+    console.log("set tracking interval " + interval + " for video " + this.id);
     this.playerTrackingInterval = interval;
-}
+};
 
 Video.prototype.clearPlayerTrackingInterval = function() {
+    console.log("cleared tracking interval " + this.playerTrackingInterval + " for video " + this.id);
     clearInterval(this.playerTrackingInterval);
-}
+};

@@ -60,8 +60,6 @@ G.maxPlotX = 0;
 G.minPlotY = 0;
 G.maxPlotY = 0;
 
-G.syncPairs = {};          // list of file names of video syncs for a scoreId
-
 G.scoreSyncFileNames = [];
 
 G.allVideoSegments = [];

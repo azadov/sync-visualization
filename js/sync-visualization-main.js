@@ -20,37 +20,8 @@ CONTROLLER.init();
 
 function videoIsFilteredOut(scoreId, videoId) {
     return VIDEO_MANAGER.getVideo(videoId).getTitle().toLowerCase().indexOf(gui.getVideoTitleFilterString().toLowerCase()) == -1 ||
-           G.syncPairs[scoreId][videoId].confidence < gui.getAlignmentQualityFilter() ||
+        CONTROLLER.getSyncedVideosForScore(scoreId)[videoId].confidence < gui.getAlignmentQualityFilter() ||
            !VIDEO_MANAGER.getVideo(videoId).getAvailability();
-}
-
-
-function loadAlignmentList(onSuccess, onFailure) {
-
-    $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
-        'use strict';
-
-        var i, scoreId, videoId,
-            alignmentFileName,
-            confidence, video;
-
-        for (i = 0; i < json.length; i = i + 1) {
-            scoreId = json[i].id0;
-            videoId = json[i].id1;
-            alignmentFileName = "alignments/" + scoreId + '_' + videoId + '.json';
-            confidence = json[i].minConfidence;
-
-            video = new Video(videoId);
-
-            VIDEO_MANAGER.addVideo(videoId, video);
-
-            G.syncPairs[scoreId] = G.syncPairs[scoreId] ? G.syncPairs[scoreId] : {};
-            G.syncPairs[scoreId][videoId] = {alignmentFileName: alignmentFileName, confidence: confidence};
-        }
-    })
-        .done(onSuccess)
-        .fail(onFailure)
-    ;
 }
 
 

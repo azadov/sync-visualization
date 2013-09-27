@@ -297,8 +297,9 @@ function createAlignmentSegmentRepresentation(_svg, _rects, scoreId) {
 //    ];
 
 
-    for (videoId in G.syncPairs[scoreId]) {
-        if (G.syncPairs[scoreId].hasOwnProperty(videoId)) {
+    var syncedVideos = CONTROLLER.getSyncedVideosForScore(scoreId);
+    for (videoId in syncedVideos) {
+        if (syncedVideos.hasOwnProperty(videoId)) {
             if (videoIsFilteredOut(scoreId, videoId)) continue;
             for (segment = 0; segment < CONTROLLER.getAlignment(scoreId, videoId).localTimeMaps.length; segment++) {
                 props = [];

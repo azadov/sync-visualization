@@ -5,14 +5,13 @@
  */
 function getVideoWithLoadedAlignment(scoreId) {
     var videoId;
-    for (videoId in G.syncPairs[scoreId]) {
+    for (videoId in CONTROLLER.getSyncedVideosForScore(scoreId)) {
         if (VIDEO_MANAGER.videoExist(videoId) && VIDEO_MANAGER.getVideo(videoId).getAvailability()) {
             break;
         }
     }
     return videoId;
 }
-
 
 
 function getYtOffsetByScoreTime(scoreId, videoId, time) {
@@ -92,7 +91,7 @@ function getPageAndTimeForVideoTime(time, scoreId, videoId) {
 
     segment = segmentScoreTime[0];
     scoreTime = timeMap[segment][0][segmentScoreTime[1]];
-//console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
+    //console.log("\nVideoTime: " + time + "    Segment: " + segment + "   ScoreTime: " + scoreTime + "\n");
     if (time < timeMap[segment][1][0]) {
         return {"page": 0, "scoreTime": 0};
     }

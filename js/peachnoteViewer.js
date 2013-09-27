@@ -14,6 +14,7 @@ var PeachnoteViewer = (function (me) {
 
         this.socket = {};
         this.loadedScoreId = undefined;
+        this.lastLoadedPage = 0;
 
         /**
          * a stub that can later be modified by user.
@@ -82,8 +83,11 @@ var PeachnoteViewer = (function (me) {
         if (typeof page === 'undefined') page = 0;
         this.socket.postMessage('["loadScore", "' + scoreId + '", ' + page + ']');
     };
-    Viewer.prototype.loadPage = function(page) {
-        this.socket.postMessage('["loadPage", "' + page + '"]');
+    Viewer.prototype.loadPage = function(page, loadAnyway) {
+        if (this.lastLoadedPage != page || loadAnyway) {
+            this.lastLoadedPage = page;
+            this.socket.postMessage('["loadPage", "' + page + '"]');
+        }
     };
     Viewer.prototype.clearMeasureHighlightings = function() {
         this.socket.postMessage('["clearMeasureHighlightings"]');

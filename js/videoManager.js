@@ -15,7 +15,7 @@ var VIDEO_MANAGER = (function (me) {
 
         initYouTubeAPI();
 
-       me.clear();
+        me.clear();
     };
 
     /**
@@ -28,7 +28,7 @@ var VIDEO_MANAGER = (function (me) {
 
     me.getVideo = function (videoId) {
         return videos[videoId];
-    }
+    };
 
     /**
      * returns list of video objects
@@ -39,7 +39,7 @@ var VIDEO_MANAGER = (function (me) {
 
     me.videoExist = function (videoId) {
         return videos.hasOwnProperty(videoId);
-    }
+    };
 
     /**
      *
@@ -66,7 +66,7 @@ var VIDEO_MANAGER = (function (me) {
 
     me.getCurrentVideoIdsThatPassedAllFilters = function() {
         return currentVideoIdsThatPassedAllFilters;
-    }
+    };
 
     me.showSuitableVideoDivsForPlotPosition = function(currentMouseXPoint, currentMouseYPoint) {
         'use strict';
@@ -178,7 +178,7 @@ var VIDEO_MANAGER = (function (me) {
         }
 
         G.videoIDNextToCursor = videoToEnlarge;
-    }
+    };
 
     me.onMouseOverVideoSegment = function(d) {
         'use strict';
@@ -188,37 +188,40 @@ var VIDEO_MANAGER = (function (me) {
         gui.setSegmentQuality(d.segmentConfidence);
         G.segmentNextToCursor = d;
         G.videoIDNextToCursor = d.videoID;
-    }
+    };
 
     me.onMouseOverCurve = function(d) {
         //console.log("videoID rect: " + d[0].videoID);
         enlargeVideoDiv(d.videoID);
-    }
+    };
 
     me.updateVideoPosition = function (videoId, videoTime) {
         console.log("UpdateVideoPosition: " + videoId);
-        if (videoId !== "") {
-            if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+
+        if (videoId == "") return;
+
+        if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
 
 //                videos[videoId].getPlayer().seekTo(Math.max(0, videoTime));
 //                videos[videoId].getPlayer().playVideo();
-                playVideo(videoId, videoTime);
+            playVideo(videoId, videoTime);
 
-            } else if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+        } else if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
-                G.videoStartPosition[videoId] = videoTime;
-                loadVideo(videoId);
-            }
+            G.videoStartPosition[videoId] = videoTime;
+            loadVideo(videoId);
         }
+
     };
 
     me.checkVideoAvailabilities = function (scoreId, onDone) {
-        var videoProperties = G.syncPairs[scoreId],
+        var videoProperties = CONTROLLER.getSyncedVideosForScore(scoreId),
             counter = new FiringCounter(Object.keys(videoProperties).length, onDone),
             videoId;
 
         for (videoId in videoProperties) {
             if (videoProperties.hasOwnProperty(videoId)) {
+                if (videoId.substring(0, 5) == "IMSLP") continue;
                 checkYouTubeVideoAvailability(videoId, counter);
             }
         }
@@ -292,7 +295,7 @@ var VIDEO_MANAGER = (function (me) {
 
         setTimeout(function() {preloadVideos(scoreId, currentVideoIdsThatPassedAllFilters);}, 3000);
 
-    }
+    };
 
     function enlargeVideoDiv(videoId) {
         'use strict';
@@ -437,7 +440,7 @@ var VIDEO_MANAGER = (function (me) {
                 resetVideoDiv(currentVideoIdsThatPassedAllFilters[i]);
             }
         }
-    }
+    };
 
     function getNewYoutubePlayer(_videoContainerId, _videoId) {
         return new YT.Player(_videoContainerId, {
@@ -446,7 +449,7 @@ var VIDEO_MANAGER = (function (me) {
             videoId: _videoId,
             events: {
                 'onReady': onPlayerReady,
-                //'onStateChange': onPlayerStateChange,
+                'onStateChange': onPlayerStateChange,
                 'onError': onPlayerError
             }
         });
@@ -497,47 +500,46 @@ var VIDEO_MANAGER = (function (me) {
         'use strict';
 
         //console.log("OnPlayerError: " + event.data + "      VideoID: " + event.target.getVideoData().video_id);
-        var videoID = event.target.getVideoData().video_id;
-        console.log("OnPlayerError: " + event.target.getVideoData().video_id);
-        deactivateVideo(videoID);
-        clearInterval(G.videoLoadingInterval[videoID]);
+        var videoId = event.target.getVideoData().video_id;
+        console.log("OnPlayerError: " + videoId);
+        deactivateVideo(videoId);
+        clearInterval(G.videoLoadingInterval[videoId]);
     }
 
 
     function onPlayerReady(event) {
         'use strict';
 
-        var videoID = event.target.getVideoData().video_id;
+        var videoId = event.target.getVideoData().video_id;
 
-        console.log("onPlayerReady: " + videoID);
+        console.log("onPlayerReady: " + videoId);
 
-        videos[videoID].setLoadingStatus(CONSTANTS.VIDEO_LOADING_STATUS_READY);
+        videos[videoId].setLoadingStatus(CONSTANTS.VIDEO_LOADING_STATUS_READY);
 
-        videos[videoID].setPlayer(event.target);
+        videos[videoId].setPlayer(event.target);
 
-        event.target.seekTo(Math.max(0, G.videoStartPosition[videoID]));
+        event.target.seekTo(Math.max(0, G.videoStartPosition[videoId]));
 
-        if (videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
-            console.log("       " + videoID + " out of display -> pause");
+        if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+            console.log("       " + videoId + " out of display -> pause");
             //event.target.pauseVideo();
-            pauseVideo(videoID);
-        } else if (videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
-            console.log("       " + videoID + " in display -> play");
+            pauseVideo(videoId);
+        } else if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+            console.log("       " + videoId + " in display -> play");
             //event.target.playVideo();
-            //enlargeVideoDiv(videoID);
-            playVideo(videoID, G.videoStartPosition[videoID]);
+            //enlargeVideoDiv(videoId);
+            playVideo(videoId, G.videoStartPosition[videoId]);
         }
 
-        clearInterval(G.videoLoadingInterval[videoID]);
+        clearInterval(G.videoLoadingInterval[videoId]);
     }
 
     function playVideo(videoId, videoTime) {
         'use strict';
 
-        var currentVideos = currentVideoIdsThatPassedAllFilters, i, vId;
-
-        for (i = 0; i < currentVideos.length; i = i + 1) {
-            vId = currentVideos[i];
+        var i, vId;
+        for (i = 0; i < currentVideoIdsThatPassedAllFilters.length; i = i + 1) {
+            vId = currentVideoIdsThatPassedAllFilters[i];
             if (vId !== videoId) {
                 if (videos[vId].getPlayerStatus() === CONSTANTS.VIDEO_PLAYER_STATUS_PLAYING) {
                     pauseVideo(vId);
@@ -549,8 +551,6 @@ var VIDEO_MANAGER = (function (me) {
 
         videos[videoId].getPlayer().seekTo(Math.max(0, videoTime));
         videos[videoId].getPlayer().playVideo();
-
-        videos[videoId].setPlayerTrackingInterval(setInterval(function() {CONTROLLER.updatePosition(videoId);}, 500));
 
         enlargeVideoDiv(videoId);
 
@@ -569,54 +569,62 @@ var VIDEO_MANAGER = (function (me) {
         resetVideoDiv(videoId);
     }
 
-//    var deleteInterval = true;
-//
-//    function onPlayerStateChange(event) {
-//        'use strict';
-//
-//        var newState = event.data, videoID, i, currentVideos = currentVideoIdsThatPassedAllFilters;
-//        //console.log("state: " + event.data + "     target: " + event.target.id);
-//
-//        console.log("OnPlayerStateChange: " + "   " + event.target.getVideoData().video_id + "   " + newState);
-//
-//
-//        if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
-//            if (G.currentPlayingYTVideoID !== event.target.getVideoData().video_id) {
-//                G.lastPlayedYTVideoID = G.currentPlayingYTVideoID;
-//                G.currentPlayingYTVideoID = event.target.getVideoData().video_id;
-//            }
-//
-//            for (i = 0; i < currentVideos.length; i = i + 1) {
-//                videoID = currentVideos[i];
-//                if (videoID !== G.currentPlayingYTVideoID) {
-//                    if (videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING || videos[videoID].getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
-//                        videos[videoID].getPlayer().pauseVideo();
-//                        deleteInterval = false;
-//                    }
-//                }
-//            }
-//            clearInterval(G.updatePositionInterval);
-//            G.updatePositionInterval = setInterval(function() {CONTROLLER.updatePosition();}, 500);
-//
-//            //console.log("LastPlayedVideo: " + G.lastPlayedYTVideoID + "     current: " + G.currentPlayingYTVideoID);
-//
-//            resetVideoDiv(G.lastPlayedYTVideoID);
-//
-//            enlargeVideoDiv(G.currentPlayingYTVideoID);
-//
-//            G.gui.setVideoTitle(videos[G.currentPlayingYTVideoID].getTitle());
-//
-//        } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
-//            if (deleteInterval) {
-//                clearInterval(G.updatePositionInterval);
-//            } else {
-//                deleteInterval = true;
-//            }
-//            //console.log("video to reset: " + G.lastPlayedYTVideoID);
-//            resetVideoDiv(G.lastPlayedYTVideoID);
-//        }
-//
-//    }
+
+
+    function onPlayerStateChange(event) {
+        'use strict';
+
+        var newState = event.data,
+            currentVideoId = event.target.getVideoData().video_id,
+            videoId, i;
+        //console.log("state: " + event.data + "     target: " + event.target.id);
+
+        console.log("OnPlayerStateChange: " + "   " + currentVideoId + "   " + newState);
+
+
+        if (newState === YT.PlayerState.PLAYING || newState === YT.PlayerState.BUFFERING) {
+            if (G.currentPlayingYTVideoID !== event.target.getVideoData().video_id) {
+                G.lastPlayedYTVideoID = G.currentPlayingYTVideoID;
+                G.currentPlayingYTVideoID = event.target.getVideoData().video_id;
+            }
+
+            for (i = 0; i < currentVideoIdsThatPassedAllFilters.length; i = i + 1) {
+                videoId = currentVideoIdsThatPassedAllFilters[i];
+                if (videoId !== currentVideoId) {
+                    if (videos[videoId].getPlayer().getPlayerState() === YT.PlayerState.PLAYING || videos[videoId].getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
+                        videos[videoId].getPlayer().pauseVideo();
+                        console.log("currentVideoId " + currentVideoId + ", clearing " + videoId);
+                        videos[videoId].clearPlayerTrackingInterval();
+                    }
+                }
+            }
+
+            videos[currentVideoId].setPlayerTrackingInterval(setInterval(function() {
+                var currentVideoTime = VIDEO_MANAGER.getVideo(videoId).getPlayer().getCurrentTime();
+                CONTROLLER.updatePosition(videoId, currentVideoTime, CONSTANTS.FORE_RUNNING_TIME);
+            }, 500));
+
+            //G.updatePositionInterval = setInterval(function() {CONTROLLER.updatePosition();}, 500);
+
+            //console.log("LastPlayedVideo: " + G.lastPlayedYTVideoID + "     current: " + G.currentPlayingYTVideoID);
+
+            resetVideoDiv(G.lastPlayedYTVideoID);
+
+            enlargeVideoDiv(G.currentPlayingYTVideoID);
+
+            G.gui.setVideoTitle(videos[G.currentPlayingYTVideoID].getTitle());
+
+        } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
+
+            console.log("clearing currentVideoId " + currentVideoId);
+
+            videos[currentVideoId].clearPlayerTrackingInterval();
+
+            //console.log("video to reset: " + G.lastPlayedYTVideoID);
+            resetVideoDiv(G.lastPlayedYTVideoID);
+        }
+
+    }
 
     function preloadVideos(scoreId, videos) {
         var i, videoId;
@@ -626,49 +634,49 @@ var VIDEO_MANAGER = (function (me) {
         }
     }
 
-    function loadVideo(_videoID) {
+    function loadVideo(videoId) {
         'use strict';
 
-        console.log("Load video: " + _videoID);
+        console.log("Load video: " + videoId);
 
-        videos[_videoID].setDisplayStatus(CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY);
+        videos[videoId].setDisplayStatus(CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY);
 
-        $("#" + getThumbnailDivId(_videoID)).remove(); // remove thumbnail div
+        $("#" + getThumbnailDivId(videoId)).remove(); // remove thumbnail div
 
-        $("#" + getVideoDivId(_videoID)).css('position', '').css('left', '').css('background-color', 'lightgrey');
+        $("#" + getVideoDivId(videoId)).css('position', '').css('left', '').css('background-color', 'lightgrey');
 
-        enlargeVideoDiv(_videoID);
+        enlargeVideoDiv(videoId);
 
-        if (videos[_videoID].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
-            console.log("id: " + _videoID + " already preloaded");
+        if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
+            console.log("id: " + videoId + " already preloaded");
 
-            //videos[_videoID].getPlayer().seekTo(Math.max(0, G.videoStartPosition[_videoID]));
-            //videos[_videoID].getPlayer().playVideo();
-            playVideo(_videoID, G.videoStartPosition[_videoID]);
+            //videos[videoId].getPlayer().seekTo(Math.max(0, G.videoStartPosition[videoId]));
+            //videos[videoId].getPlayer().playVideo();
+            playVideo(videoId, G.videoStartPosition[videoId]);
 
-            console.log("id: " + _videoID + " play");
+            console.log("id: " + videoId + " play");
         }
     }
 
     function showAndHideVideos() {
         'use strict';
 
-        var videoID;
-        for (videoID in G.visibilityOfVideos) {
-            if (G.visibilityOfVideos.hasOwnProperty(videoID)) {
-                if (G.visibilityOfVideos[videoID]) {
+        var videoId;
+        for (videoId in G.visibilityOfVideos) {
+            if (G.visibilityOfVideos.hasOwnProperty(videoId)) {
+                if (G.visibilityOfVideos[videoId]) {
                     //console.log("SHOW");
-                    showVideo(videoID);
+                    showVideo(videoId);
                 } else {
-                    if (videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
-                        //console.log("Video in ytPlayer: " + videoID);
-                        if (videos[videoID].getPlayer().getPlayerState() !== YT.PlayerState.PLAYING && videos[videoID].getPlayer().getPlayerState() !== YT.PlayerState.BUFFERING) {
-                            //console.log("HideVideoID: " + videoID + "    state: " + G.ytPlayers[videoID].getPlayerState());
-                            hideVideo(videoID);
+                    if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+                        //console.log("Video in ytPlayer: " + videoId);
+                        if (videos[videoId].getPlayer().getPlayerState() !== YT.PlayerState.PLAYING && videos[videoId].getPlayer().getPlayerState() !== YT.PlayerState.BUFFERING) {
+                            //console.log("HideVideoID: " + videoId + "    state: " + G.ytPlayers[videoId].getPlayerState());
+                            hideVideo(videoId);
                         }
                     }
-                    if (videos[videoID].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
-                        hideVideo(videoID);
+                    if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
+                        hideVideo(videoId);
                     }
                 }
             }

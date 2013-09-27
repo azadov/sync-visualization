@@ -1,15 +1,16 @@
-var CONTROLLER = (function(params) {
+var CONTROLLER = (function (params) {
 
     var me = params.controller,
         videoManager = params.videoManager,
         scoreManager = params.scoreManager,
-        alignments = new Alignments()
-    ;
+        alignments = new Alignments(),
+        syncPairs = {}        // list of file names of video syncs for a scoreId
+        ;
 
     /**
      * initialize the application
      */
-    me.init = function() {
+    me.init = function () {
 
         fixIEConsoleBug();
 
@@ -35,39 +36,92 @@ var CONTROLLER = (function(params) {
 
     };
 
+    function loadAlignmentList(onSuccess, onFailure) {
 
-    me.onScoreTimeChanged = function(scoreId, scoreTime) {
+        $.getJSON('IMSLP-YT-AlignmentQuality.json', function (json) {
+            'use strict';
 
-        var oneVideoPlaying = false, videosToPlay = [], randomIndex, videoId, videoTime;
+            var i, scoreId, videoId,
+                alignmentFileName,
+                confidence, video;
+
+            for (i = 0; i < json.length; i = i + 1) {
+                scoreId = json[i].id0;
+                videoId = json[i].id1;
+                alignmentFileName = "alignments/" + scoreId + '_' + videoId + '.json';
+                confidence = json[i].minConfidence;
+
+                video = new Video(videoId);
+
+                VIDEO_MANAGER.addVideo(videoId, video);
+
+                syncPairs[scoreId] = syncPairs[scoreId] ? syncPairs[scoreId] : {};
+                syncPairs[scoreId][videoId] = {alignmentFileName: alignmentFileName, confidence: confidence};
+            }
+        })
+            .done(onSuccess)
+            .fail(onFailure)
+        ;
+    }
+
+    me.getSyncedVideosForScore = function (scoreId) {
+        var videoId, out = {};
+        for (videoId in syncPairs[scoreId]) {
+            if (syncPairs[scoreId].hasOwnProperty(videoId)) {
+                if (videoId.substring(0, 5) == 'IMSLP') continue;
+                out[videoId] = syncPairs[scoreId][videoId];
+            }
+        }
+        return out;
+    };
+
+    me.getSyncedScoresForScore = function (scoreId) {
+        var videoId, out = {};
+        for (videoId in syncPairs[scoreId]) {
+            if (syncPairs[scoreId].hasOwnProperty(videoId)) {
+                if (videoId.substring(0, 5) != 'IMSLP') continue;
+                out[videoId] = syncPairs[scoreId][videoId];
+            }
+        }
+        return out;
+    };
+
+    me.onScoreTimeChanged = function (scoreId, scoreTime, external) {
+
+        var videoId, videoTime;
 
         calculateVisibilityOfVideos(scoreTime);
 
         if (gui.shouldHideVideos()) {
-
             showAndHideVideos();
         }
 
-        for (videoId in G.visibilityOfVideos) {
-            if (G.visibilityOfVideos.hasOwnProperty(videoId)) {
-                if (G.visibilityOfVideos[videoId] || true /* FIXME! */) {
-                    videosToPlay.push(videoId);
-                }
-            }
+        videoId = getRandomVideoToPlay();
+
+        try {
+            videoTime = getVideoTimeForPagePosition(scoreId, videoId, scoreTime);
+            VIDEO_MANAGER.updateVideoPosition(videoId, videoTime);
+        } catch (e) {
+            console.log(e);
         }
 
-        randomIndex = getRandom(0, videosToPlay.length - 1);
-        console.log("length: " + videosToPlay.length + "      index: " + randomIndex);
-
-        videoId = videosToPlay[randomIndex];
-        console.log(G.visibilityOfVideos);
-        videoTime = getVideoTimeForPagePosition(scoreId, videoId, scoreTime);
-        VIDEO_MANAGER.updateVideoPosition(videoId, videoTime);
+        if (!external) CONTROLLER.updateSyncedScores(scoreId, scoreTime);
     };
 
+    me.updateSyncedScores = function(scoreId, scoreTime) {
+        var syncedScores = CONTROLLER.getSyncedScoresForScore(scoreId);
+        for (var syncedScoreId in syncedScores) {
+            if (syncedScores.hasOwnProperty(syncedScoreId)) {
+                var syncedScoreTime = getVideoTimeForPagePosition(scoreId, syncedScoreId, scoreTime);
+                SCORE_MANAGER.updateScorePosition(syncedScoreId, syncedScoreTime);
+            }
+        }
+    };
 
-    me.onPlotClick = function(scoreTime) {
+    me.onPlotClick = function (scoreTime) {
         var scoreId = gui.getSelectedScoreId();
-        SCORE_MANAGER.updateScorePosition(scoreId, scoreTime);
+        //SCORE_MANAGER.updateScorePosition(scoreId, scoreTime);
+        CONTROLLER.onScoreTimeChanged(scoreId, scoreTime);
         //console.log("onPlotClick segmentNextToCursor: " + G.segmentNextToCursor.videoID);
         if (typeof G.segmentNextToCursor.timeMap === 'undefined') {
             throw new ControllerException("no video segment available for this place in the score");
@@ -76,14 +130,13 @@ var CONTROLLER = (function(params) {
         VIDEO_MANAGER.updateVideoPosition(G.videoIDNextToCursor, videoTime);
     };
 
-    me.updatePosition = function(videoId) {
+    me.updatePosition = function (videoId, videoTime, foreRunningTime) {
         'use strict';
 
         //console.log("updatePosition: videoID: " + G.currentPlayingYTVideoID + "");
-        var videoTime = VIDEO_MANAGER.getVideo(videoId).getPlayer().getCurrentTime(),
-            scoreId = gui.getSelectedScoreId(),
+        var scoreId = gui.getSelectedScoreId(),
             pageAndTime = getPageAndTimeForVideoTime(videoTime, scoreId, videoId),
-            pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + CONSTANTS.FORE_RUNNING_TIME, scoreId, videoId),
+            pageAndTimePlus = getPageAndTimeForVideoTime(videoTime + foreRunningTime, scoreId, videoId),
             page, pagePlus,
             scoreTime,
             normalizedPageTime,
@@ -99,8 +152,8 @@ var CONTROLLER = (function(params) {
         normalizedPageTime = SCORE_MANAGER.getNormalizedTime(scoreId, pageAndTime.page, pageAndTime.scoreTime);
         pagePlus = pageAndTimePlus ? pageAndTimePlus.page : pageAndTime.page;
 
-        console.log("page: " + page + " scoreTime: " + scoreTime);
-        console.log(pageAndTime);
+        //console.log("page: " + page + " scoreTime: " + scoreTime);
+        //console.log(pageAndTime);
 
         var viewers = SCORE_MANAGER.getViewersForScore(scoreId);
         for (var i = 0; i < viewers.length; i++) {
@@ -110,7 +163,12 @@ var CONTROLLER = (function(params) {
             viewer.loadPage(pagePlus - 1);
         }
 
+        // FIXME! this is to differentiate between calls from a synced score and a video. Nothing to do with foreRunningTime. Danger!
+        if (foreRunningTime != 0) CONTROLLER.updateSyncedScores(scoreId, scoreTime);
+
         updateVideoTrackLine(scoreTime);
+
+        if (videoId.substring(0, 5) == 'IMSLP') return;
 
         rbID = videoId + "_" + getSegmentIndexFromVideoTime(videoId, videoTime) + "_RB";
         if (!document.getElementById(rbID).checked) {
@@ -119,27 +177,27 @@ var CONTROLLER = (function(params) {
         }
     };
 
-    me.onMouseMove = function(currentMouseXPoint, currentMouseYPoint) {
+    me.onMouseMove = function (currentMouseXPoint, currentMouseYPoint) {
         VIDEO_MANAGER.showSuitableVideoDivsForPlotPosition(currentMouseXPoint, currentMouseYPoint);
-    }
+    };
 
-    me.onRBClick = function(videoIDToPlay, videoTime) {
+    me.onRBClick = function (videoIDToPlay, videoTime) {
         VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime);
-    }
+    };
 
-    me.onMouseOverVideoSegment = function(d) {
+    me.onMouseOverVideoSegment = function (d) {
         VIDEO_MANAGER.onMouseOverVideoSegment(d);
-    }
+    };
 
-    me.onMouseOverCurve = function(d) {
+    me.onMouseOverCurve = function (d) {
         VIDEO_MANAGER.onMouseOverCurve(d);
-    }
+    };
 
-    me.onRemoveMouseTrackLine = function() {
+    me.onRemoveMouseTrackLine = function () {
         VIDEO_MANAGER.resetSizeOfAllVideos();
-    }
+    };
 
-    me.initializeVisualization = function(scoreId) {
+    me.initializeVisualization = function (scoreId) {
 
         if (typeof YT === "undefined") {
             setTimeout(function () {
@@ -158,22 +216,22 @@ var CONTROLLER = (function(params) {
 
         calculateSegmentVelocity(scoreId);
 
-        computePlotElements(scoreId, G.syncPairs[scoreId]);
+        computePlotElements(scoreId, syncPairs[scoreId]);
         computePlotDimensions(scoreId);
         drawPlot(scoreId);
 
-        VIDEO_MANAGER.initVideos(scoreId, G.syncPairs[scoreId]);
+        VIDEO_MANAGER.initVideos(scoreId, syncPairs[scoreId]);
     };
 
-    me.getAlignment = function(scoreId, videoId) {
+    me.getAlignment = function (scoreId, videoId) {
         return alignments.get(scoreId, videoId);
     };
 
-    me.getTimeMap = function(scoreId, videoId) {
+    me.getTimeMap = function (scoreId, videoId) {
         return this.getAlignment(scoreId, videoId).localTimeMaps;
     };
 
-    me.getMaxScoreTime = function(scoreId) {
+    me.getMaxScoreTime = function (scoreId) {
         var availableVideos = alignments.getAvailableVideos(scoreId),
             videoId, timeMap, s, maxTime = 0;
         for (videoId in availableVideos) {
@@ -188,17 +246,34 @@ var CONTROLLER = (function(params) {
         return maxTime;
     };
 
+
+    function getRandomVideoToPlay() {
+        var videoId, videosToPlay = [], randomIndex;
+        for (videoId in G.visibilityOfVideos) {
+            if (G.visibilityOfVideos.hasOwnProperty(videoId)) {
+                if (G.visibilityOfVideos[videoId] || true /* FIXME! */) {
+                    videosToPlay.push(videoId);
+                }
+            }
+        }
+        randomIndex = getRandom(0, videosToPlay.length - 1);
+        console.log("length: " + videosToPlay.length + "      index: " + randomIndex);
+        videoId = videosToPlay[randomIndex];
+        return videoId;
+    }
+
     function calculateSegmentVelocity(scoreId) {
         'use strict';
 
         G.velocities2[scoreId] = {};
 
-        var syncPairs = G.syncPairs[scoreId], videoId, alignment, segment, segmentTimeMap, av, binV;
+        var scoreSyncPairs = syncPairs[scoreId], videoId, alignment, segment, segmentTimeMap, av, binV;
 
-        for (videoId in syncPairs) {
-            if (syncPairs.hasOwnProperty(videoId)) {
+        for (videoId in scoreSyncPairs) {
+            if (scoreSyncPairs.hasOwnProperty(videoId)) {
+                if (videoId.substring(0, 5) == "IMSLP") continue;
                 G.velocities2[scoreId][videoId] = {};
-                if (syncPairs.hasOwnProperty(videoId) && !videoIsFilteredOut(scoreId, videoId)) {
+                if (scoreSyncPairs.hasOwnProperty(videoId) && !videoIsFilteredOut(scoreId, videoId)) {
                     console.log("computing velocity for " + videoId);
                     alignment = alignments.get(scoreId, videoId);
                     for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {
@@ -277,8 +352,8 @@ var CONTROLLER = (function(params) {
 
     function populateScoreSelectionDropdown() {
         var scoreId;
-        for (scoreId in G.syncPairs) {
-            if (G.syncPairs.hasOwnProperty(scoreId)) {
+        for (scoreId in syncPairs) {
+            if (syncPairs.hasOwnProperty(scoreId)) {
                 gui.addScoreToDropdown(scoreId);
             }
         }
@@ -290,14 +365,19 @@ var CONTROLLER = (function(params) {
     }
 
     function getAlignments(scoreId, onAlignmentsFetched) {
-        var syncedVideos = G.syncPairs[scoreId],
+        var syncedVideos = syncPairs[scoreId],
             counter = new FiringCounter(Object.keys(syncedVideos).length, onAlignmentsFetched),
             videoId, jsonPath;
 
         for (videoId in syncedVideos) {
             if (syncedVideos.hasOwnProperty(videoId)) {
 
-                console.log(VIDEO_MANAGER.getVideo(videoId));
+                jsonPath = syncedVideos[videoId].alignmentFileName;
+
+                if (videoId.substring(0, 5) == 'IMSLP') {
+                    fetchAlignmentData(scoreId, videoId, jsonPath, counter);
+                    continue;
+                }
 
                 if (!VIDEO_MANAGER.getVideo(videoId).getAvailability() ||
                     VIDEO_MANAGER.getVideo(videoId).getTitle().indexOf(gui.getVideoTitleFilterString()) == -1 ||
@@ -308,7 +388,6 @@ var CONTROLLER = (function(params) {
                     continue;
                 }
 
-                jsonPath = syncedVideos[videoId].alignmentFileName;
                 fetchAlignmentData(scoreId, videoId, jsonPath, counter);
             }
         }
@@ -319,6 +398,13 @@ var CONTROLLER = (function(params) {
         $.getJSON(jsonPath)
             .done(function (json) {
                 alignments.add(scoreId, videoId, json);
+
+                // check if we are dealing with a score instead of a video
+                if (videoId.substring(0, 5) == 'IMSLP') {
+                    console.log("loaded page times for " + videoId);
+                    SCORE_MANAGER.setPageTimes(videoId, json.streamTimes1);
+                }
+
                 counter.increment();
             })
             .fail(function (jqxhr, textStatus, error) {
@@ -330,7 +416,8 @@ var CONTROLLER = (function(params) {
         // needed for IE to have browser console.log
         if (!window.console) {
             window.console = {};
-            window.console.log = function (msg) {};
+            window.console.log = function (msg) {
+            };
         }
     }
 

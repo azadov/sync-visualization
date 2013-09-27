@@ -143,9 +143,21 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
 
         console.log("clicked on page " + page + " of " + scoreId
             + ", measure " + measureNumber + " of total " + totalMeasures + " measures");
+
+
         var scoreTime = pageTimes[scoreId][page] + pageDuration(scoreId, page) * (measureNumber - 1) / totalMeasures;
 
-        CONTROLLER.onScoreTimeChanged(scoreId, scoreTime);
+        if (scoreId === gui.getSelectedScoreId()) {
+            // click on the central score
+            CONTROLLER.onScoreTimeChanged(scoreId, scoreTime);
+        } else {
+            // click on an adjacent score
+            var centralScoreId = gui.getSelectedScoreId();
+            var centralScoreTime = getPageAndTimeForVideoTime(scoreTime, centralScoreId, scoreId).scoreTime;
+            CONTROLLER.onScoreTimeChanged(centralScoreId, centralScoreTime, true);
+            CONTROLLER.updatePosition(scoreId, scoreTime, 0);
+        }
+
     }
 
 
