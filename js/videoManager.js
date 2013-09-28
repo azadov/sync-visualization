@@ -245,7 +245,6 @@ var VIDEO_MANAGER = (function (me) {
         var url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
         $.getJSON(url)
             .done(function (data) {
-                videos[videoId].setAvailability(true);
 
                 if (data['entry'].hasOwnProperty("app$control") &&
                     data['entry']['app$control'].hasOwnProperty("yt$state") &&
@@ -254,9 +253,9 @@ var VIDEO_MANAGER = (function (me) {
                     videos[videoId].setAvailability(false);
                 } else {
                     console.log("video " + videoId + " is available");
+                    videos[videoId].setTitle(data['entry']['title']['$t']);
+                    videos[videoId].setAvailability(true);
                 }
-
-                videos[videoId].setTitle(data['entry']['title']['$t']);
                 counter.increment();
             })
             .fail(function (jqxhr, textStatus, error) {
@@ -600,8 +599,8 @@ var VIDEO_MANAGER = (function (me) {
             }
 
             videos[currentVideoId].setPlayerTrackingInterval(setInterval(function() {
-                var currentVideoTime = VIDEO_MANAGER.getVideo(videoId).getPlayer().getCurrentTime();
-                CONTROLLER.updatePosition(videoId, currentVideoTime, CONSTANTS.FORE_RUNNING_TIME);
+                var currentVideoTime = VIDEO_MANAGER.getVideo(currentVideoId).getPlayer().getCurrentTime();
+                CONTROLLER.updatePosition(currentVideoId, currentVideoTime, CONSTANTS.FORE_RUNNING_TIME);
             }, 500));
 
             //G.updatePositionInterval = setInterval(function() {CONTROLLER.updatePosition();}, 500);

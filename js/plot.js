@@ -273,7 +273,7 @@ function getGradientValues(tickVelocities) {
     'use strict';
 
     var tick, gradientValues = [], value, currentVel;
-    console.log(tickVelocities);
+
     for (tick in tickVelocities) {
         if (tickVelocities.hasOwnProperty(tick)) {
             currentVel = tickVelocities[tick];

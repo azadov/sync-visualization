@@ -112,8 +112,12 @@ var CONTROLLER = (function (params) {
         var syncedScores = CONTROLLER.getSyncedScoresForScore(scoreId);
         for (var syncedScoreId in syncedScores) {
             if (syncedScores.hasOwnProperty(syncedScoreId)) {
-                var syncedScoreTime = getVideoTimeForPagePosition(scoreId, syncedScoreId, scoreTime);
-                SCORE_MANAGER.updateScorePosition(syncedScoreId, syncedScoreTime);
+                try {
+                    var syncedScoreTime = getVideoTimeForPagePosition(scoreId, syncedScoreId, scoreTime);
+                    SCORE_MANAGER.updateScorePosition(syncedScoreId, syncedScoreTime);
+                } catch (e) {
+                    console.log(e);
+                }
             }
         }
     };
@@ -250,7 +254,7 @@ var CONTROLLER = (function (params) {
     function getRandomVideoToPlay() {
         var videoId, videosToPlay = [], randomIndex;
         for (videoId in G.visibilityOfVideos) {
-            if (G.visibilityOfVideos.hasOwnProperty(videoId)) {
+            if (G.visibilityOfVideos.hasOwnProperty(videoId) && videoId.substring(0, 5) !== 'IMSLP') {
                 if (G.visibilityOfVideos[videoId] || true /* FIXME! */) {
                     videosToPlay.push(videoId);
                 }
@@ -329,7 +333,6 @@ var CONTROLLER = (function (params) {
     function computePageTimes(scoreId) {
         var videoId = getVideoWithLoadedAlignment(scoreId);
         // get videoId for which we should have downloaded the alignment data (if it was available we did that)
-        console.log(alignments + scoreId);
         return alignments.get(scoreId, videoId).streamTimes0;
     }
 

@@ -126,6 +126,7 @@ var SCORE_MANAGER = (function (me, PeachnoteViewer) {
     };
 
     me.removeViewer = function(viewerId) {
+        if (!viewers.hasOwnProperty(viewerId)) return;
         viewers[viewerId].detach();
         delete viewers[viewerId];
     };
