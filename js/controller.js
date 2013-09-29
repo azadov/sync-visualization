@@ -122,6 +122,11 @@ var CONTROLLER = (function (params) {
         }
     };
 
+    me.onThumbnailClick = function(_videoID) {
+        var videoTime = 0;
+        VIDEO_MANAGER.updateVideoPosition(_videoID, videoTime);
+    };
+
     me.onPlotClick = function (scoreTime) {
         var scoreId = gui.getSelectedScoreId();
         if (typeof G.segmentNextToCursor.timeMap === 'undefined') {

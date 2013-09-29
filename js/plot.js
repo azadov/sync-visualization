@@ -103,7 +103,7 @@ function rbClickHandler(d, scoreId) {
     for (i = 0; i < videos.length; i = i + 1) {
         videoID = videos[i];
         video = VIDEO_MANAGER.getVideo(videoID);
-        if (video.getPlayerStatus() === CONSTANTS.VIDEO_PLAYER_STATUS_PLAYING) {
+        if (video.getPlayer().getPlayerState() === YT.PlayerState.PLAYING || video.getPlayer().getPlayerState() === YT.PlayerState.BUFFERING) {
             playingVideoTime = video.getPlayer().getCurrentTime();
             pageTime = getPageAndTimeForVideoTime(playingVideoTime, scoreId, videoID);
 

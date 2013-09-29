@@ -8,9 +8,9 @@ function Video(id) {
     this.numberOfLoadingAttempts = 0;
     this.displayStatus = CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY;
     this.player = undefined;
-    this.playerStatus = CONSTANTS.VIDEO_PLAYER_STATUS_NOTPLAYING;
-    this.playerSizeStatus = CONSTANTS.VIDEO_SIZE_STATUS_NORMAL;
-    this.thumbnailSizeStatus = CONSTANTS.VIDEO_SIZE_STATUS_NORMAL;
+    //this.playerStatus = CONSTANTS.VIDEO_PLAYER_STATUS_NOTPLAYING;
+    this.playerSizeStatus = CONSTANTS.VIDEO_PLAYER_SIZE_STATUS_NORMAL;
+    this.thumbnailSizeStatus = CONSTANTS.VIDEO_PLAYER_SIZE_STATUS_NORMAL;
     this.playerTrackingInterval = 0;
 }
 
@@ -66,13 +66,6 @@ Video.prototype.getPlayer = function() {
     return this.player;
 };
 
-Video.prototype.setPlayerStatus = function(status) {
-    this.playerStatus = status;
-};
-
-Video.prototype.getPlayerStatus = function() {
-    return this.playerStatus;
-};
 
 Video.prototype.setPlayerSizeStatus = function(status) {
     this.playerSizeStatus = status;

@@ -87,7 +87,7 @@ GUI.prototype.getThumbnailDiv = function(_videoID) {
     // The image+button overlay code.
     var code = '<div style="width:'
         + CONSTANTS.VIDEO_WIDTH + 'px; height:' + CONSTANTS.VIDEO_HEIGHT
-        + 'px; margin:0 auto"><a href="#"  onclick="loadVideo(\'' + _videoID
+        + 'px; margin:0 auto"><a href="#"  onclick="CONTROLLER.onThumbnailClick(\'' + _videoID
         + '\');return false;" id="skipser-youtubevid-' + _videoID + '"><img src="http://i.ytimg.com/vi/' + _videoID
         + '/hqdefault.jpg" style="width:' + CONSTANTS.VIDEO_WIDTH + 'px; height:' + CONSTANTS.VIDEO_HEIGHT
         + 'px;" /><div class="yt-thumbnail-playbutton" style="margin-left:'
