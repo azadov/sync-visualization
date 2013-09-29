@@ -255,7 +255,7 @@ var CONTROLLER = (function (params) {
         var videoId, videosToPlay = [], randomIndex;
         for (videoId in G.visibilityOfVideos) {
             if (G.visibilityOfVideos.hasOwnProperty(videoId) && videoId.substring(0, 5) !== 'IMSLP') {
-                if (G.visibilityOfVideos[videoId] || true /* FIXME! */) {
+                if (G.visibilityOfVideos[videoId]) {
                     videosToPlay.push(videoId);
                 }
             }

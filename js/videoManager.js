@@ -611,7 +611,7 @@ var VIDEO_MANAGER = (function (me) {
 
             enlargeVideoDiv(G.currentPlayingYTVideoID);
 
-            G.gui.setVideoTitle(videos[G.currentPlayingYTVideoID].getTitle());
+            gui.setVideoTitle(videos[G.currentPlayingYTVideoID].getTitle());
 
         } else if (newState === YT.PlayerState.ENDED || newState === YT.PlayerState.PAUSED) {
 
