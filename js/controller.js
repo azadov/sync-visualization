@@ -124,9 +124,6 @@ var CONTROLLER = (function (params) {
 
     me.onPlotClick = function (scoreTime) {
         var scoreId = gui.getSelectedScoreId();
-        //SCORE_MANAGER.updateScorePosition(scoreId, scoreTime);
-        CONTROLLER.onScoreTimeChanged(scoreId, scoreTime);
-        //console.log("onPlotClick segmentNextToCursor: " + G.segmentNextToCursor.videoID);
         if (typeof G.segmentNextToCursor.timeMap === 'undefined') {
             throw new ControllerException("no video segment available for this place in the score");
         }
