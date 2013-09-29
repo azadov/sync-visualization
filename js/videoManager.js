@@ -748,15 +748,17 @@ var VIDEO_MANAGER = (function (me) {
         }
     }
 
-    function pausePlayback() {
+    me.pausePlayback = function() {
         'use strict';
 
-        var vID, i, videos = currentVideoIdsThatPassedAllFilters;
-        for (i = 0; i < videos.length; i = i + 1) {
-            vID = videos[i];
+        var vID, i, currentVideos = currentVideoIdsThatPassedAllFilters;
+        for (i = 0; i < currentVideos.length; i = i + 1) {
+            vID = currentVideos[i];
             if (videos[vID].getPlayer().getPlayerState() === YT.PlayerState.PLAYING) {
+                //console.log(vID + " playing -> pause");
                 videos[vID].getPlayer().pauseVideo();
-                //pauseVideo(vID);
+            } else {
+                //console.log(vID + " not playing");
             }
         }
     }
