@@ -240,9 +240,21 @@ var VIDEO_MANAGER = (function (me) {
             return;
         }
 
-        var url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
+        var url, success = false;
+
+        setTimeout(function() {
+            if (!success) {
+                // Handle error accordingly
+                videos[videoId].setTitle("Data not available");
+                videos[videoId].setAvailability(false);
+                counter.increment();
+            }
+        }, 500);
+
+        url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
         $.getJSON(url)
             .done(function (data) {
+                success = true;
 
                 if (data['entry'].hasOwnProperty("app$control") &&
                     data['entry']['app$control'].hasOwnProperty("yt$state") &&
@@ -257,6 +269,8 @@ var VIDEO_MANAGER = (function (me) {
                 counter.increment();
             })
             .fail(function (jqxhr, textStatus, error) {
+                success = true;
+
                 videos[videoId].setTitle("Data not available");
                 videos[videoId].setAvailability(true);
                 counter.increment();
