@@ -159,7 +159,7 @@ var VIDEO_MANAGER = (function (me) {
 
         if (videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
             enlargeVideoDiv(videoToEnlarge);
-        } else  if (videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+        } else  if (videos[videoToEnlarge].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY && videos[videoToEnlarge].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
             if (videos[videoToEnlarge].getPlayer().getPlayerState() !== YT.PlayerState.PLAYING && videos[videoToEnlarge].getPlayer().getPlayerState() !== YT.PlayerState.BUFFERING) {
                 enlargeVideoDiv(videoToEnlarge);
             }
@@ -200,7 +200,7 @@ var VIDEO_MANAGER = (function (me) {
 
         if (videoId == "") return;
 
-        if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY) {
+        if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_IN_DISPLAY && videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
             videos[videoId].getPlayer().seekTo(Math.max(0, videoTime));
             videos[videoId].getPlayer().playVideo();
 
@@ -220,6 +220,7 @@ var VIDEO_MANAGER = (function (me) {
         for (videoId in videoProperties) {
             if (videoProperties.hasOwnProperty(videoId)) {
                 if (videoId.substring(0, 5) == "IMSLP") continue;
+                //console.log("check availability: " + videoId);
                 checkYouTubeVideoAvailability(videoId, counter);
             }
         }
@@ -242,14 +243,6 @@ var VIDEO_MANAGER = (function (me) {
 
         var url, success = false;
 
-        setTimeout(function() {
-            if (!success) {
-                // Handle error accordingly
-                videos[videoId].setTitle("Data not available");
-                videos[videoId].setAvailability(false);
-                counter.increment();
-            }
-        }, 500);
 
         url = "http://gdata.youtube.com/feeds/api/videos/" + videoId + "?v=2&alt=json-in-script&callback=?"; // prettyprint=true
         $.getJSON(url)
@@ -275,6 +268,17 @@ var VIDEO_MANAGER = (function (me) {
                 videos[videoId].setAvailability(true);
                 counter.increment();
             });
+
+        // handles youtube server errors
+        setTimeout(function() {
+            if (!success) {
+                // Handle error accordingly
+                console.log("video " + videoId + ": youtube server returns error");
+                videos[videoId].setTitle("Data not available");
+                videos[videoId].setAvailability(false);
+                counter.increment();
+            }
+        }, 500);
     }
 
 
