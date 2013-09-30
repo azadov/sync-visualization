@@ -100,7 +100,7 @@ var CONTROLLER = (function (params) {
 
         try {
             videoTime = getVideoTimeForPagePosition(scoreId, videoId, scoreTime);
-            VIDEO_MANAGER.updateVideoPosition(videoId, videoTime);
+            VIDEO_MANAGER.updateVideoPosition(videoId, videoTime, 0);
         } catch (e) {
             console.log(e);
         }
@@ -124,7 +124,7 @@ var CONTROLLER = (function (params) {
 
     me.onThumbnailClick = function(_videoID) {
         var videoTime = 0;
-        VIDEO_MANAGER.updateVideoPosition(_videoID, videoTime);
+        VIDEO_MANAGER.updateVideoPosition(_videoID, videoTime, 0);
     };
 
     me.onPlotClick = function (scoreTime) {
@@ -133,7 +133,7 @@ var CONTROLLER = (function (params) {
             throw new ControllerException("no video segment available for this place in the score");
         }
         var videoTime = getVideoTimeFromScoreTime(scoreTime, G.segmentNextToCursor.timeMap);
-        VIDEO_MANAGER.updateVideoPosition(G.videoIDNextToCursor, videoTime);
+        VIDEO_MANAGER.updateVideoPosition(G.videoIDNextToCursor, videoTime, 0);
     };
 
     me.updatePosition = function (videoId, videoTime, foreRunningTime) {
@@ -188,7 +188,7 @@ var CONTROLLER = (function (params) {
     };
 
     me.onRBClick = function (videoIDToPlay, videoTime) {
-        VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime);
+        VIDEO_MANAGER.updateVideoPosition(videoIDToPlay, videoTime, 0);
     };
 
     me.onMouseOverVideoSegment = function (d) {
