@@ -12,6 +12,7 @@ function Video(id) {
     this.playerSizeStatus = CONSTANTS.VIDEO_PLAYER_SIZE_STATUS_NORMAL;
     this.thumbnailSizeStatus = CONSTANTS.VIDEO_PLAYER_SIZE_STATUS_NORMAL;
     this.playerTrackingInterval = 0;
+    this.startPosition = 0;
 }
 
 Video.prototype.getId = function() {
@@ -95,3 +96,11 @@ Video.prototype.clearPlayerTrackingInterval = function() {
     console.log("cleared tracking interval " + this.playerTrackingInterval + " for video " + this.id);
     clearInterval(this.playerTrackingInterval);
 };
+
+Video.prototype.setStartPosition = function(pos) {
+    this.startPosition = pos;
+};
+
+Video.prototype.getStartPosition = function() {
+    return this.startPosition;
+}

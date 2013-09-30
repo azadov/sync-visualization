@@ -35,8 +35,6 @@ function clearVideoAndPlotState() {
     G.curves = [];
     G.radiobuttons = [];
     G.visibilityOfVideos = {};
-    G.videoTimeMaps = {};
-    G.videoStatus = {};
     G.maxPlotX = 0;
     G.ytPlayers = {};
     G.ytPlayerThumbnails = {};
@@ -69,15 +67,8 @@ function computePlotElementsForVideo(scoreId, videoId) {
     }
 
     G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
-    G.videoTimeMaps[videoId] = G.videoTimeMaps[videoId] ? G.videoTimeMaps[videoId] : alignment.localTimeMaps;
-    G.videoStartPosition[videoId] = G.videoStartPosition[videoId] ? G.videoStartPosition[videoId] : 0;
     G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
     G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;
-    if (typeof YT.PlayerState !== "undefined") {
-        G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : YT.PlayerState.PAUSED;
-    } else {
-        G.videoStatus[videoId] = G.videoStatus[videoId] ? G.videoStatus[videoId] : 2;
-    }
 
     // iterating over video segments, creating their rendering data
     for (segment = 0; segment < alignment.localTimeMaps.length; segment = segment + 1) {

@@ -213,12 +213,12 @@ var VIDEO_MANAGER = (function (me) {
 //                    setTimeout(me.updateVideoPosition(videoId, videoTime, counter), 500);
 //                }
                 // it will start to play at videoTime when onPlayerReady fires
-                G.videoStartPosition[videoId] = videoTime;
+                videos[videoId].setStartPosition(videoTime);
             }
 
         } else if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
 
-            G.videoStartPosition[videoId] = videoTime;
+            videos[videoId].setStartPosition(videoTime);
             loadVideo(videoId);
         }
 
@@ -546,7 +546,7 @@ var VIDEO_MANAGER = (function (me) {
 
         videos[videoId].setPlayer(event.target);
 
-        event.target.seekTo(Math.max(0, G.videoStartPosition[videoId]));
+        event.target.seekTo(Math.max(0, videos[videoId].getStartPosition()));
 
         if (videos[videoId].getDisplayStatus() === CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY) {
             console.log("       " + videoId + " out of display -> pause");
@@ -682,7 +682,7 @@ var VIDEO_MANAGER = (function (me) {
         if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
             console.log("id: " + videoId + " already preloaded");
 
-            videos[videoId].getPlayer().seekTo(Math.max(0, G.videoStartPosition[videoId]));
+            videos[videoId].getPlayer().seekTo(Math.max(0, videos[videoId].getStartPosition()));
             videos[videoId].getPlayer().playVideo();
 
             console.log("id: " + videoId + " play");
