@@ -234,6 +234,7 @@ var CONTROLLER = (function (params) {
     };
 
     me.getTimeMap = function (scoreId, videoId) {
+        //console.log("getTimeMap " + scoreId + "   " + videoId);
         return this.getAlignment(scoreId, videoId).localTimeMaps;
     };
 
