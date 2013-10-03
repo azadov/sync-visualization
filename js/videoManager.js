@@ -320,7 +320,7 @@ var VIDEO_MANAGER = (function (me) {
 
         initVideoDivs(scoreId, currentVideoIdsThatPassedAllFilters);
 
-        setTimeout(function() {preloadVideos(scoreId, currentVideoIdsThatPassedAllFilters);}, 3000);
+        setTimeout(function() {preloadVideos();}, 3000);
 
     };
 
@@ -495,7 +495,7 @@ var VIDEO_MANAGER = (function (me) {
         } else if (videos[_videoID].getLoadingStatus()!== CONSTANTS.VIDEO_LOADING_STATUS_READY && videos[_videoID].getNumOfLoadingAttempts() < 3) {
 
             console.log("VideoID: " + _videoID + "   LoadingAttempts: " + videos[_videoID].getNumOfLoadingAttempts() + "   VideoContainer: " + videoContainerID);
-            //G.ytPlayers[_videoID] = getNewYoutubePlayer(videoContainerID, _videoID);
+
             player = getNewYoutubePlayer(videoContainerID, _videoID);
 
             videos[_videoID].increaseNumOfLoadingAttempts();
@@ -512,16 +512,15 @@ var VIDEO_MANAGER = (function (me) {
             return;
         }
 
-        if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED) {
-            console.log("preload " + videoId);
+        console.log("preload " + videoId);
 
-            videos[videoId].setLoadingStatus(CONSTANTS.VIDEO_LOADING_STATUS_LOAD);
+        videos[videoId].setLoadingStatus(CONSTANTS.VIDEO_LOADING_STATUS_LOAD);
 
-            tryToLoad(videoId);
+        tryToLoad(videoId);
 //            G.videoLoadingInterval[videoId] = setInterval(function () {
 //                tryToLoad(videoId);
 //            }, CONSTANTS.VIDEO_LOADING_WAITING_TIME);
-        }
+
     }
 
     function onPlayerError(event) {
@@ -532,6 +531,8 @@ var VIDEO_MANAGER = (function (me) {
         console.log("OnPlayerError: " + videoId);
         deactivateVideo(videoId);
         clearInterval(G.videoLoadingInterval[videoId]);
+
+        preloadVideos();
     }
 
 
@@ -558,6 +559,8 @@ var VIDEO_MANAGER = (function (me) {
         }
 
         clearInterval(G.videoLoadingInterval[videoId]);
+
+        preloadVideos();
     }
 
     /*    function playVideo(videoId, videoTime) {
@@ -602,7 +605,8 @@ var VIDEO_MANAGER = (function (me) {
         return function onPlayerStateChange(event) {
             'use strict';
 
-            console.log("Object state changed: " + event);
+            console.log("Object state changed: ");
+            console.log(event);
 
             var newState = event.data, videoId, i;
 
@@ -662,11 +666,14 @@ var VIDEO_MANAGER = (function (me) {
         }
     }
 
-    function preloadVideos(scoreId, videos) {
-        var i, videoId;
-        for (i = 0; i < videos.length; i = i + 1) {
-            videoId = videos[i];
-            preloadVideo(videoId);
+    function preloadVideos() {
+        var i, videoId, currentVideoIds = currentVideoIdsThatPassedAllFilters;
+        for (i = 0; i < currentVideoIds.length; i = i + 1) {
+            videoId = currentVideoIds[i];
+            if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED) {
+                preloadVideo(videoId);
+                i = currentVideoIds.length;
+            }
         }
     }
 
@@ -684,12 +691,17 @@ var VIDEO_MANAGER = (function (me) {
         enlargeVideoDiv(videoId);
 
         if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
-            console.log("id: " + videoId + " already preloaded");
+            console.log("     " + videoId + " already preloaded");
 
             videos[videoId].getPlayer().seekTo(Math.max(0, videos[videoId].getStartPosition()));
             videos[videoId].getPlayer().playVideo();
 
-            console.log("id: " + videoId + " play");
+            console.log("     " + videoId + " play");
+        } else if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED) {
+            console.log("     " + videoId + " not preloaded");
+            preloadVideo(videoId);
+        } else if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_LOAD) {
+            console.log("     " + videoId + " is loaded...wait");
         }
     }
 

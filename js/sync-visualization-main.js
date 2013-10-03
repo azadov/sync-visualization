@@ -36,12 +36,13 @@ function clearVideoAndPlotState() {
     G.radiobuttons = [];
     G.visibilityOfVideos = {};
     G.maxPlotX = 0;
-    G.ytPlayers = {};
-    G.ytPlayerThumbnails = {};
-    G.videoReadiness = {};
     G.videoNumOfLoadingAttempts = {};
     G.averageVelocity = [];
     G.velocities = [];
+
+    if (VIDEO_MANAGER.getVideos().hasOwnProperty(G.currentPlayingYTVideoID)) {
+        VIDEO_MANAGER.getVideo(G.currentPlayingYTVideoID).clearPlayerTrackingInterval();
+    }
 }
 
 
@@ -67,7 +68,6 @@ function computePlotElementsForVideo(scoreId, videoId) {
     }
 
     G.visibilityOfVideos[videoId] = G.visibilityOfVideos[videoId] ? G.visibilityOfVideos[videoId] : false;
-    G.videoReadiness[videoId] = G.videoReadiness[videoId] ? G.videoReadiness[videoId] : 0;
     G.videoNumOfLoadingAttempts[videoId] = G.videoNumOfLoadingAttempts[videoId] ? G.videoNumOfLoadingAttempts[videoId] : 0;
 
     // iterating over video segments, creating their rendering data
