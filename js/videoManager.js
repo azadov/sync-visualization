@@ -61,7 +61,7 @@ var VIDEO_MANAGER = (function (me) {
      */
     me.clear = function () {
         videos = [];
-        currentVideoIdsThatPassedAllFilters = {};
+        currentVideoIdsThatPassedAllFilters = [];
     };
 
     me.getCurrentVideoIdsThatPassedAllFilters = function() {
@@ -310,6 +310,7 @@ var VIDEO_MANAGER = (function (me) {
         var videoId;
         for (videoId in alignedVideos) {
             if (alignedVideos.hasOwnProperty(videoId) && videos[videoId].getAvailability() && !videoIsFilteredOut(scoreId, videoId)) {
+                videos[videoId].resetVideoState();
                 currentVideoIdsThatPassedAllFilters.push(videoId);
             }
         }

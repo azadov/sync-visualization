@@ -4,6 +4,9 @@ function Video(id) {
     this.id = id;
     this.title = "";
     this.availability = undefined;
+}
+
+Video.prototype.resetVideoState = function() {
     this.loadingStatus = CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED;
     this.numberOfLoadingAttempts = 0;
     this.displayStatus = CONSTANTS.VIDEO_DISPLAY_STATUS_OUT_OF_DISPLAY;

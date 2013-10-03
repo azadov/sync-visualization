@@ -52,6 +52,7 @@ var CONTROLLER = (function (params) {
                 confidence = json[i].minConfidence;
 
                 video = new Video(videoId);
+                video.resetVideoState();
 
                 VIDEO_MANAGER.addVideo(videoId, video);
 
