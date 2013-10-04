@@ -689,13 +689,13 @@ var VIDEO_MANAGER = (function (me) {
 
         $("#" + getVideoDivId(videoId)).css('position', '').css('left', '').css('background-color', 'lightgrey');
 
-        enlargeVideoDiv(videoId);
-
         if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_READY) {
             console.log("     " + videoId + " already preloaded");
 
             videos[videoId].getPlayer().seekTo(Math.max(0, videos[videoId].getStartPosition()));
             videos[videoId].getPlayer().playVideo();
+
+            enlargeVideoDiv(videoId);
 
             console.log("     " + videoId + " play");
         } else if (videos[videoId].getLoadingStatus() === CONSTANTS.VIDEO_LOADING_STATUS_UNLOADED) {
