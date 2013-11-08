@@ -232,7 +232,6 @@ var VIDEO_MANAGER = (function (me) {
         for (videoId in videoProperties) {
             if (videoProperties.hasOwnProperty(videoId)) {
                 if (videoId.substring(0, 5) == "IMSLP") continue;
-                //console.log("check availability: " + videoId);
                 checkYouTubeVideoAvailability(videoId, counter);
             }
         }

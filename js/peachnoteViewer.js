@@ -25,6 +25,7 @@ var PeachnoteViewer = (function (me) {
             this.loadedScoreId = event.scoreId;
         };
         this.measureClickCallback = function(event) {};
+        this.pageClickCallback = function(event) {};
 
         var iFrameUrl = 'http://www.peachnote.com/viewer-embedded.html?'
             + '&width=' + params.widgetWidth
@@ -70,6 +71,8 @@ var PeachnoteViewer = (function (me) {
             viewer.scoreLoadedCallback(m);
         } else if ("measureClick" == m.type) {
             viewer.measureClickCallback(m);
+        } else if ("pageClick" == m.type) {
+            viewer.pageClickCallback(m);
         }
     }
 
@@ -108,6 +111,9 @@ var PeachnoteViewer = (function (me) {
     };
     Viewer.prototype.setMeasureClickCallback = function(callback) {
         this.measureClickCallback = callback;
+    };
+    Viewer.prototype.setPageClickCallback = function(callback) {
+        this.pageClickCallback = callback;
     };
 
     Viewer.prototype.detach = function() {
